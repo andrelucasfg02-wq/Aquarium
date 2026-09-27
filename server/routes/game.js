@@ -262,6 +262,27 @@ module.exports = function gameRoutes(db) {
     res.json({ ok: true });
   }));
 
+  // ---------- transfer a fish to another owned tank ----------
+  r.post('/fish/transfer', ah(async (req, res) => {
+    const uid = req.user.id;
+    const { fish_id, tier } = req.body || {};
+    if (!['small', 'medium', 'large'].includes(tier)) {
+      return res.status(400).json({ ok: false, error: 'invalid tank' });
+    }
+    const fish = await db.get(
+      "SELECT id, tank FROM fish WHERE id=? AND user_id=? AND location='tank'", fish_id, uid);
+    if (!fish) return res.status(404).json({ ok: false, error: 'fish not found' });
+    if (fish.tank === tier) return res.status(400).json({ ok: false, error: 'already in that tank' });
+    const tanks = await H.getTanks(uid);
+    if (!tanks[tier]) return res.status(400).json({ ok: false, error: 'tank not owned' });
+    if (await H.tankFishCount(uid, tier) >= C.TANK_CAPACITY[tier]) {
+      return res.status(400).json({ ok: false, error: 'target tank is full' });
+    }
+    await db.run('UPDATE fish SET tank=?, x=?, y=? WHERE id=? AND user_id=?',
+      tier, Math.random(), 0.2 + Math.random() * 0.6, fish_id, uid);
+    res.json({ ok: true, tier });
+  }));
+
   // ---------- tanks ----------
   r.post('/tanks/buy', ah(async (req, res) => {
     const uid = req.user.id;

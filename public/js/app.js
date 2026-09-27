@@ -200,15 +200,19 @@ const App = (() => {
   }
 
   /* ---------- tank events ---------- */
+  async function petFish(fishId) {
+    const now = Date.now();
+    if (now - tapThrottle < 1500) return; // don't spam the server
+    tapThrottle = now;
+    await Api.tapFish(fishId);
+    // tiny XP may have changed; refresh lightly (no full re-render storm)
+    const r = await Api.state();
+    if (r.ok) { state = r.state; UI.updateHUD(state); tank.syncState(state); }
+  }
   function wireTank() {
-    tank.on("fishTap", async (fishId) => {
-      const now = Date.now();
-      if (now - tapThrottle < 1500) return; // don't spam the server
-      tapThrottle = now;
-      await Api.tapFish(fishId);
-      // tiny XP may have changed; refresh lightly (no full re-render storm)
-      const r = await Api.state();
-      if (r.ok) { state = r.state; UI.updateHUD(state); tank.syncState(state); }
+    tank.on("fishTap", (fishId) => {
+      const f = (state.fish || []).find((x) => x.id === fishId);
+      if (f) UI.openFishMenu(f);
     });
 
     tank.on("wiped", async (ids) => {
@@ -265,7 +269,7 @@ const App = (() => {
 
   document.addEventListener("DOMContentLoaded", boot);
   return {
-    refresh, applySettings, beginPlace, setDecoCatalog, onScreenClosed,
+    refresh, applySettings, beginPlace, setDecoCatalog, onScreenClosed, petFish,
     get state() { return state; },
   };
 })();

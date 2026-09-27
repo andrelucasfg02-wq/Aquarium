@@ -27,6 +27,83 @@ const UI = (() => {
     const filt = $("btn-filter");
     if (st.dirt.green) { filt.classList.remove("hidden"); filt.textContent = `🫧 Filtrar (${DATA.FILTER_PRICE})`; }
     else filt.classList.add("hidden");
+    renderTankTabs();
+  }
+
+  /* ---------- tank quick-switch tabs (home screen) ---------- */
+  const TANK_LABELS = { small: "🥣 Small", medium: "🪣 Medium", large: "🌊 Large" };
+  function renderTankTabs() {
+    const bar = $("tank-tabs");
+    if (!bar || !state || !state.tanks) return;
+    const owned = state.tanks.owned || [], active = state.tanks.active;
+    if (owned.length < 2) { bar.hidden = true; return; }
+    bar.hidden = false;
+    bar.innerHTML = owned.map((t) =>
+      `<button class="tank-tab${t === active ? " active" : ""}" data-tanktab="${t}">${TANK_LABELS[t] || t}</button>`
+    ).join("");
+    bar.querySelectorAll("[data-tanktab]").forEach((b) => b.onclick = async () => {
+      if (b.dataset.tanktab === state.tanks.active) return;
+      const r = await Api.switchTank(b.dataset.tanktab);
+      if (r.ok) { toast("Switched tank 🏠"); await App.refresh(); }
+      else { AudioFX.error(); toast(r.error || "Couldn't switch"); }
+    });
+  }
+
+  /* ---------- fish tap menu: Pet / Transfer / Breed ---------- */
+  function openFishMenu(fish) {
+    closeFishMenu();
+    const overlay = document.createElement("div");
+    overlay.id = "fish-menu-overlay";
+    overlay.innerHTML = `
+      <div class="fish-menu">
+        <div class="fish-menu-head">${fishImg(fish.species_id)}
+          <div><b>${esc(fish.name || speciesName(fish.species_id))}</b>
+          <div class="sub">${fish.gender === "male" ? "♂" : "♀"} ${esc(speciesName(fish.species_id))}</div></div>
+          <button class="hud-btn" id="fish-menu-x">✕</button>
+        </div>
+        <div class="fish-menu-btns">
+          <button class="pill-btn pink" id="fm-pet">💕 Pet</button>
+          <button class="pill-btn blue" id="fm-transfer">🔀 Transfer</button>
+          <button class="pill-btn" id="fm-breed">🥚 Breed</button>
+        </div>
+        <div id="fm-transfer-row" class="fish-menu-btns" hidden></div>
+      </div>`;
+    overlay.onclick = (e) => { if (e.target === overlay) closeFishMenu(); };
+    document.body.appendChild(overlay);
+    $("fish-menu-x").onclick = closeFishMenu;
+    $("fm-pet").onclick = async () => { closeFishMenu(); await App.petFish(fish.id); };
+    $("fm-breed").onclick = () => { closeFishMenu(); openBreedingWith(fish); };
+    $("fm-transfer").onclick = () => {
+      const row = $("fm-transfer-row");
+      const owned = (state.tanks.owned || []).filter((t) => t !== fish.tank);
+      if (!owned.length) { toast("No other tank owned yet 🏠"); return; }
+      row.hidden = false;
+      row.innerHTML = owned.map((t) =>
+        `<button class="pill-btn blue" data-fmto="${t}">→ ${TANK_LABELS[t] || t}</button>`).join("");
+      row.querySelectorAll("[data-fmto]").forEach((b) => b.onclick = async () => {
+        b.disabled = true;
+        const r = await Api.transferFish(fish.id, b.dataset.fmto);
+        if (r.ok) { AudioFX.coin(); toast(`Moved to the ${b.dataset.fmto} tank 🔀🐠`); }
+        else { AudioFX.error(); toast(r.error || "Couldn't transfer"); }
+        closeFishMenu();
+        await App.refresh();
+      });
+    };
+  }
+  function closeFishMenu() { const o = $("fish-menu-overlay"); if (o) o.remove(); }
+
+  async function openBreedingWith(fish) {
+    const tf = (state.fish || []).filter((f) =>
+      f.tank === state.tanks.active && (!f.location || f.location === "tank"));
+    const f = tf.find((x) => x.id === fish.id) || fish;
+    if (f.gender === "male") {
+      breedMale = f; breedFemale = null; partners = null; partnersFor = null;
+      const r = await Api.breedingPartners(f.id);
+      if (r.ok) { partners = r.partners; partnersFor = f.id; }
+    } else {
+      breedFemale = f; breedMale = null; partners = null; partnersFor = null;
+    }
+    open("breeding");
   }
 
   function open(name) {
@@ -147,7 +224,7 @@ const UI = (() => {
     for (const it of list) {
       const qty = ownedMap[it.id] || 0;
       html += `<div class="deco-card">
-        <img src="assets/furniture/${esc(it.file)}" alt="" loading="lazy">
+        <img src="${esc(it.file)}" alt="" loading="lazy">
         <div class="nm">${esc(it.name)}</div>
         <div class="price">🪙 ${fmtCoins(it.price)}</div>
         <button class="pill-btn pink" data-buydeco="${esc(it.id)}">Buy</button>
@@ -322,7 +399,7 @@ const UI = (() => {
       const it = (decorCatalog || []).find((d) => d.id === o.deco_id);
       const nm = it ? it.name : o.deco_id, file = it ? it.file : "";
       html += `<div class="row-card">
-        ${file ? `<img src="assets/furniture/${esc(file)}" style="width:56px;height:44px;object-fit:contain" alt="">` : ""}
+        ${file ? `<img src="${esc(file)}" style="width:56px;height:44px;object-fit:contain" alt="">` : ""}
         <div class="grow"><b>${esc(nm)}</b><div class="sub">×${o.qty}</div></div>
         <button class="pill-btn blue" data-placeinv="${esc(o.deco_id)}">Place in tank</button>
       </div>`;
@@ -483,6 +560,7 @@ const UI = (() => {
 
   return {
     toast, updateHUD, open, close,
+    openFishMenu, closeFishMenu, openBreedingWith, renderTankTabs,
     setCatalogs(f, d) { fishCatalog = f; decorCatalog = d; },
     get decorCatalog() { return decorCatalog; },
     refreshCurrent() {

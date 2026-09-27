@@ -463,7 +463,7 @@ Object.assign(TankView.prototype, {
   drawPlacement(p, v, T) {
     const file = this.decoFiles[p.deco_id];
     if (!file) return;
-    const im = loadImg(`assets/furniture/${file}`);
+    const im = loadImg(file);
     if (!imgReady(im)) return;
     const [x, y] = fracToPx(p.x, p.y, v, T.w, T.h);
     const w = im.naturalWidth * v.s, h = im.naturalHeight * v.s;
@@ -512,7 +512,7 @@ Object.assign(TankView.prototype, {
       } else if (this.mode === "edit" && this.dragging) {
         const T = DATA.TANKS[this.tier];
         let [fx, fy] = this.toFraction(x, y);
-        const im = loadImg(`assets/furniture/${this.decoFiles[this.dragging.deco_id] || ""}`);
+        const im = loadImg(this.decoFiles[this.dragging.deco_id] || "");
         const hw = imgReady(im) ? im.naturalWidth / 2 : 40;
         const hh = imgReady(im) ? im.naturalHeight / 2 : 40;
         [fx, fy] = clampToGlass(fx, fy, hw, hh, this.tier);

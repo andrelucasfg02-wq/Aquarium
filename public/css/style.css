@@ -137,6 +137,25 @@ input{font-family:inherit}
 .screen-body{overflow-y:auto;padding:4px 14px calc(20px + var(--safe-b));-webkit-overflow-scrolling:touch}
 .screen-body h3{margin:14px 0 8px;font-size:15px;color:#8a5f9e}
 
+/* tank quick-switch tabs */
+#tank-tabs{display:flex;gap:6px;justify-content:center;padding:6px 10px 0;position:relative;z-index:5}
+.tank-tab{background:rgba(255,255,255,.88);border:2px solid #f3e8ff;border-radius:999px;
+  padding:5px 13px;font-size:12px;font-weight:800;color:#8a5f9e}
+.tank-tab.active{background:linear-gradient(135deg,#8fcdf0,#5aa9dd);color:#fff;border-color:#fff}
+.tank-tab:active{transform:scale(.94)}
+
+/* fish tap menu popup */
+#fish-menu-overlay{position:absolute;inset:0;z-index:40;display:flex;align-items:center;
+  justify-content:center;background:rgba(74,63,85,.4)}
+.fish-menu{background:var(--cream);border-radius:20px;padding:16px;width:min(330px,88vw);
+  border:3px solid #fff;box-shadow:var(--shadow);animation:slideup .2s ease-out}
+.fish-menu-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.fish-menu-head .fish-prev{width:58px;height:46px;object-fit:contain}
+.fish-menu-head .sub{font-size:12px;color:var(--ink-soft)}
+.fish-menu-head .hud-btn{margin-left:auto}
+.fish-menu-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.fish-menu-btns .pill-btn{flex:1;padding:10px 6px;font-size:13px}
+
 /* cards & lists */
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .card{

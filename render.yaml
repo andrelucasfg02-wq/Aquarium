@@ -1,0 +1,32 @@
+# Render Blueprint for the Aquarium game (free tier).
+#
+# How to use it:
+#   1. Push this folder to a GitHub repo.
+#   2. In Render: New -> Blueprint -> pick the repo. Render reads this file.
+#   3. In the Render dashboard, fill in the two secret env vars below
+#      (they are marked sync:false, so Render asks you to type them manually):
+#        TURSO_DATABASE_URL  -> libsql://<your-db>-<your-org>.turso.io
+#        TURSO_AUTH_TOKEN    -> the token from `turso db tokens create <db-name>`
+#   4. Deploy. The game is then live at https://<service-name>.onrender.com
+#
+# Notes:
+# - The free Render service has no persistent disk, so game data lives in
+#   Turso (hosted SQLite/libSQL), not on the Render machine.
+# - PORT is set automatically by Render; the app reads process.env.PORT.
+# - /health is the health check endpoint.
+services:
+  - type: web
+    name: aquarium-game
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      # PORT is injected by Render automatically; do not set it here.

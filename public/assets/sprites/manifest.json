@@ -1,0 +1,184 @@
+{
+ "species": {
+  "pink": {
+   "name": "Sakura Goldfish",
+   "rarity": "Rare Starter",
+   "frames": [
+    "sprites/pink/frame0.png",
+    "sprites/pink/frame1.png",
+    "sprites/pink/frame2.png",
+    "sprites/pink/frame3.png",
+    "sprites/pink/frame4.png",
+    "sprites/pink/frame5.png",
+    "sprites/pink/frame6.png",
+    "sprites/pink/frame7.png"
+   ],
+   "swim": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "swim_facing": "right",
+   "idle": 0,
+   "eat": 5,
+   "special": 6,
+   "rear": 7,
+   "special_kind": "sleep"
+  },
+  "blue": {
+   "name": "Azure Tang",
+   "rarity": "Rare Starter",
+   "frames": [
+    "sprites/blue/frame0.png",
+    "sprites/blue/frame1.png",
+    "sprites/blue/frame2.png",
+    "sprites/blue/frame3.png",
+    "sprites/blue/frame4.png",
+    "sprites/blue/frame5.png",
+    "sprites/blue/frame6.png",
+    "sprites/blue/frame7.png"
+   ],
+   "swim": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "swim_facing": "right",
+   "idle": 0,
+   "eat": 5,
+   "special": 6,
+   "rear": 7,
+   "special_kind": "happy"
+  },
+  "orange": {
+   "name": "Ember Clownfish",
+   "rarity": "Rare Starter",
+   "frames": [
+    "sprites/orange/frame0.png",
+    "sprites/orange/frame1.png",
+    "sprites/orange/frame2.png",
+    "sprites/orange/frame3.png",
+    "sprites/orange/frame4.png",
+    "sprites/orange/frame5.png",
+    "sprites/orange/frame6.png",
+    "sprites/orange/frame7.png"
+   ],
+   "swim": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "swim_facing": "right",
+   "idle": 0,
+   "eat": 5,
+   "special": 6,
+   "rear": 7,
+   "special_kind": "happy"
+  },
+  "yellow": {
+   "name": "Lemon Drop Goldfish",
+   "rarity": "Rare Starter",
+   "frames": [
+    "sprites/yellow/frame0.png",
+    "sprites/yellow/frame1.png",
+    "sprites/yellow/frame2.png",
+    "sprites/yellow/frame3.png",
+    "sprites/yellow/frame4.png",
+    "sprites/yellow/frame5.png",
+    "sprites/yellow/frame6.png",
+    "sprites/yellow/frame7.png"
+   ],
+   "swim": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "swim_facing": "right",
+   "idle": 0,
+   "eat": 5,
+   "special": 6,
+   "rear": 7,
+   "special_kind": "happy"
+  },
+  "black": {
+   "name": "Midnight Moor",
+   "rarity": "Rare Starter",
+   "frames": [
+    "sprites/black/frame0.png",
+    "sprites/black/frame1.png",
+    "sprites/black/frame2.png",
+    "sprites/black/frame3.png",
+    "sprites/black/frame4.png",
+    "sprites/black/frame5.png",
+    "sprites/black/frame6.png",
+    "sprites/black/frame7.png"
+   ],
+   "swim": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "swim_facing": "right",
+   "idle": 0,
+   "eat": 5,
+   "special": 6,
+   "rear": 7,
+   "special_kind": "sleep"
+  }
+ },
+ "decor": [
+  {
+   "name": "plant",
+   "file": "sprites/decor/plant.png"
+  },
+  {
+   "name": "coral",
+   "file": "sprites/decor/coral.png"
+  },
+  {
+   "name": "cave",
+   "file": "sprites/decor/cave.png"
+  },
+  {
+   "name": "log",
+   "file": "sprites/decor/log.png"
+  }
+ ],
+ "fx": [
+  {
+   "name": "heart",
+   "file": "sprites/fx/heart.png"
+  },
+  {
+   "name": "sparkle",
+   "file": "sprites/fx/sparkle.png"
+  },
+  {
+   "name": "splash",
+   "file": "sprites/fx/splash.png"
+  },
+  {
+   "name": "bubble1",
+   "file": "sprites/fx/bubble1.png"
+  },
+  {
+   "name": "bubble2",
+   "file": "sprites/fx/bubble2.png"
+  },
+  {
+   "name": "bubble3",
+   "file": "sprites/fx/bubble3.png"
+  }
+ ],
+ "notes": "Each species: 8 frames. swim 1-5 loop while moving (all face right; mirror horizontally for leftward). idle 0 = front view (use when tapped). eat 5 = feeding (pellets baked at mouth side). special 6 = sleep or happy. rear 7 = turning (show briefly on direction change)."
+}

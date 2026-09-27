@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#7fc8e8">
+<title>🐠 Chibi Aquarium</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ============ AUTH ============ -->
+<div id="auth-screen" class="auth-screen" hidden>
+  <div class="auth-card">
+    <div class="auth-logo">🐠</div>
+    <h1>Chibi Aquarium</h1>
+    <p class="auth-sub">Your pocket pastel aquarium</p>
+    <div class="auth-tabs">
+      <button id="tab-login" class="auth-tab active">Log in</button>
+      <button id="tab-register" class="auth-tab">Register</button>
+    </div>
+    <form id="form-login" class="auth-form">
+      <input type="email" id="login-email" placeholder="Email" autocomplete="email" required>
+      <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" required>
+      <button type="submit" class="btn-primary">🐟 Dive in</button>
+      <p class="auth-error" id="login-error" hidden></p>
+    </form>
+    <form id="form-register" class="auth-form" hidden>
+      <input type="text" id="reg-name" placeholder="Your name" autocomplete="name" required>
+      <input type="email" id="reg-email" placeholder="Email" autocomplete="email" required>
+      <input type="password" id="reg-password" placeholder="Password (min 6 chars)" autocomplete="new-password" minlength="6" required>
+      <button type="submit" class="btn-primary">🌊 Create aquarium</button>
+      <p class="auth-error" id="reg-error" hidden></p>
+    </form>
+    <p class="auth-note">A fresh tank, two starter fish and treats await. 🫧</p>
+  </div>
+</div>
+
+<!-- ============ GAME ============ -->
+<div id="game" hidden>
+  <canvas id="tank"></canvas>
+
+  <!-- slim top HUD -->
+  <header id="hud-top">
+    <div class="hud-left">
+      <span class="hud-chip" id="hud-player" title="Player">😊 —</span>
+      <span class="hud-chip" id="hud-level" title="Level">⭐ 1</span>
+    </div>
+    <div class="hud-right">
+      <span class="hud-chip" id="hud-coins" title="Coins">🪙 0</span>
+      <span class="hud-chip" id="hud-gems" title="Gems">💎 0</span>
+      <span class="hud-chip" id="hud-food" title="Food">🍤 0</span>
+      <button class="hud-btn" id="btn-edit" title="Edit decorations">✏️</button>
+      <button class="hud-btn" id="btn-settings" title="Settings">⚙️</button>
+    </div>
+  </header>
+
+  <!-- home floating actions -->
+  <div id="home-actions">
+    <button class="fab" id="btn-feed" title="Feed fish">🍽️</button>
+    <button class="fab" id="btn-clean" title="Clean tank">🧽</button>
+    <button class="fab hidden" id="btn-filter" title="Filter green water">🫧</button>
+    <button class="fab" id="btn-minigame" title="Play minigame">🎮</button>
+    <button class="fab" id="btn-breed" title="Breeding">🥚</button>
+  </div>
+
+  <!-- edit mode bar -->
+  <div id="edit-bar" hidden>
+    <span id="edit-hint">Drag decorations · tap one to select</span>
+    <button id="btn-remove-deco" class="btn-small danger" disabled>Remove</button>
+    <button id="btn-edit-done" class="btn-small primary">Done ✓</button>
+  </div>
+
+  <!-- full-screen screens (shops, etc.) -->
+  <div id="screen-overlay" hidden>
+    <div class="screen-sheet">
+      <div class="screen-head">
+        <h2 id="screen-title">Shop</h2>
+        <button id="screen-close" class="hud-btn">✕</button>
+      </div>
+      <div id="screen-body" class="screen-body"></div>
+    </div>
+  </div>
+
+  <!-- bottom nav -->
+  <nav id="bottom-nav">
+    <button class="nav-tab active" data-screen="home"><span class="nav-ico">🏠</span><span class="nav-lbl">Home</span></button>
+    <button class="nav-tab" data-screen="fishshop"><span class="nav-ico">🐟</span><span class="nav-lbl">Fish Shop</span></button>
+    <button class="nav-tab" data-screen="decor"><span class="nav-ico">🪸</span><span class="nav-lbl">Decor</span></button>
+    <button class="nav-tab" data-screen="collection"><span class="nav-ico">📖</span><span class="nav-lbl">Collection</span></button>
+    <button class="nav-tab" data-screen="inventory"><span class="nav-ico">🎒</span><span class="nav-lbl">Inventory</span></button>
+    <button class="nav-tab" data-screen="quests"><span class="nav-ico">🎯</span><span class="nav-lbl">Quests</span></button>
+  </nav>
+
+  <div id="toast" hidden></div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/api.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/tank.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

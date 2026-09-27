@@ -1,0 +1,471 @@
+{
+  "pack": "furniture_sheet_1",
+  "count": 93,
+  "items": [
+    {
+      "id": "deco_sand_beige",
+      "file": "sand_beige.png",
+      "name": "Beige Sand Pile"
+    },
+    {
+      "id": "deco_sand_white",
+      "file": "sand_white.png",
+      "name": "White Sand Pile"
+    },
+    {
+      "id": "deco_gravel_black",
+      "file": "gravel_black.png",
+      "name": "Black Gravel Pile"
+    },
+    {
+      "id": "deco_gravel_brown",
+      "file": "gravel_brown.png",
+      "name": "Brown Gravel Pile"
+    },
+    {
+      "id": "deco_gravel_blue",
+      "file": "gravel_blue.png",
+      "name": "Blue Gravel Pile"
+    },
+    {
+      "id": "deco_gravel_pink",
+      "file": "gravel_pink.png",
+      "name": "Pink Gravel Pile"
+    },
+    {
+      "id": "deco_gravel_gold",
+      "file": "gravel_gold.png",
+      "name": "Golden Gravel Pile"
+    },
+    {
+      "id": "deco_brick_tan",
+      "file": "brick_tan.png",
+      "name": "Sandstone Brick"
+    },
+    {
+      "id": "deco_brick_dark",
+      "file": "brick_dark.png",
+      "name": "Dark Stone Brick"
+    },
+    {
+      "id": "deco_block_grass_sand",
+      "file": "block_grass_sand.png",
+      "name": "Grassy Sand Block"
+    },
+    {
+      "id": "deco_block_grass_stone",
+      "file": "block_grass_stone.png",
+      "name": "Grassy Stone Block"
+    },
+    {
+      "id": "deco_block_moss_dark",
+      "file": "block_moss_dark.png",
+      "name": "Mossy Dark Block"
+    },
+    {
+      "id": "deco_rocks_purple",
+      "file": "rocks_purple.png",
+      "name": "Purple Rock Cluster"
+    },
+    {
+      "id": "deco_rocks_gray",
+      "file": "rocks_gray.png",
+      "name": "Gray Rock Cluster"
+    },
+    {
+      "id": "deco_rocks_cairn",
+      "file": "rocks_cairn.png",
+      "name": "Stone Cairn"
+    },
+    {
+      "id": "deco_arch_stone",
+      "file": "arch_stone.png",
+      "name": "Stone Arch"
+    },
+    {
+      "id": "deco_rock_lava",
+      "file": "rock_lava.png",
+      "name": "Lava Rock"
+    },
+    {
+      "id": "deco_rocks_jagged",
+      "file": "rocks_jagged.png",
+      "name": "Jagged Rocks"
+    },
+    {
+      "id": "deco_rocks_brick_stack",
+      "file": "rocks_brick_stack.png",
+      "name": "Stacked Stone Bricks"
+    },
+    {
+      "id": "deco_rocks_blue",
+      "file": "rocks_blue.png",
+      "name": "Blue Rock Cluster"
+    },
+    {
+      "id": "deco_arch_clay",
+      "file": "arch_clay.png",
+      "name": "Clay Arch"
+    },
+    {
+      "id": "deco_rocks_mossy",
+      "file": "rocks_mossy.png",
+      "name": "Mossy Rocks"
+    },
+    {
+      "id": "deco_wood_driftwood",
+      "file": "wood_driftwood.png",
+      "name": "Driftwood"
+    },
+    {
+      "id": "deco_wood_log_mossy",
+      "file": "wood_log_mossy.png",
+      "name": "Mossy Hollow Log"
+    },
+    {
+      "id": "deco_wood_log_hollow",
+      "file": "wood_log_hollow.png",
+      "name": "Hollow Log"
+    },
+    {
+      "id": "deco_wood_arch_log",
+      "file": "wood_arch_log.png",
+      "name": "Fallen Log Arch"
+    },
+    {
+      "id": "deco_wood_log_mossy2",
+      "file": "wood_log_mossy2.png",
+      "name": "Mossy Log"
+    },
+    {
+      "id": "deco_wood_arch_log2",
+      "file": "wood_arch_log2.png",
+      "name": "Log Arch"
+    },
+    {
+      "id": "deco_wood_log_hollow2",
+      "file": "wood_log_hollow2.png",
+      "name": "Hollow Log Den"
+    },
+    {
+      "id": "deco_wood_tree_bare",
+      "file": "wood_tree_bare.png",
+      "name": "Bare Tree"
+    },
+    {
+      "id": "deco_wood_stump",
+      "file": "wood_stump.png",
+      "name": "Tree Stump"
+    },
+    {
+      "id": "deco_plant_broadleaf",
+      "file": "plant_broadleaf.png",
+      "name": "Broadleaf Plant"
+    },
+    {
+      "id": "deco_plant_broadleaf2",
+      "file": "plant_broadleaf2.png",
+      "name": "Lush Broadleaf"
+    },
+    {
+      "id": "deco_plant_grass",
+      "file": "plant_grass.png",
+      "name": "Grass Tuft"
+    },
+    {
+      "id": "deco_plant_leafy",
+      "file": "plant_leafy.png",
+      "name": "Leafy Greens"
+    },
+    {
+      "id": "deco_plant_red",
+      "file": "plant_red.png",
+      "name": "Ruby Plant"
+    },
+    {
+      "id": "deco_plant_pink",
+      "file": "plant_pink.png",
+      "name": "Pink Kelp"
+    },
+    {
+      "id": "deco_plant_fern",
+      "file": "plant_fern.png",
+      "name": "Aqua Fern"
+    },
+    {
+      "id": "deco_plant_clover",
+      "file": "plant_clover.png",
+      "name": "Water Clover"
+    },
+    {
+      "id": "deco_plant_roundleaf",
+      "file": "plant_roundleaf.png",
+      "name": "Roundleaf Plant"
+    },
+    {
+      "id": "deco_plant_tall",
+      "file": "plant_tall.png",
+      "name": "Tall Leafy Plant"
+    },
+    {
+      "id": "deco_plant_feather",
+      "file": "plant_feather.png",
+      "name": "Feather Plant"
+    },
+    {
+      "id": "deco_plant_bush_arch",
+      "file": "plant_bush_arch.png",
+      "name": "Bush Arch"
+    },
+    {
+      "id": "deco_crystal_blue",
+      "file": "crystal_blue.png",
+      "name": "Blue Crystal"
+    },
+    {
+      "id": "deco_crystal_purple",
+      "file": "crystal_purple.png",
+      "name": "Purple Crystal"
+    },
+    {
+      "id": "deco_crystal_pink",
+      "file": "crystal_pink.png",
+      "name": "Pink Crystal"
+    },
+    {
+      "id": "deco_crystal_cluster",
+      "file": "crystal_cluster.png",
+      "name": "Crystal Cluster"
+    },
+    {
+      "id": "deco_coral_pink",
+      "file": "coral_pink.png",
+      "name": "Pink Branch Coral"
+    },
+    {
+      "id": "deco_coral_orange",
+      "file": "coral_orange.png",
+      "name": "Orange Branch Coral"
+    },
+    {
+      "id": "deco_coral_blue",
+      "file": "coral_blue.png",
+      "name": "Blue Branch Coral"
+    },
+    {
+      "id": "deco_coral_brain",
+      "file": "coral_brain.png",
+      "name": "Brain Coral"
+    },
+    {
+      "id": "deco_sponge_tube",
+      "file": "sponge_tube.png",
+      "name": "Tube Sponges"
+    },
+    {
+      "id": "deco_coral_tube_blue",
+      "file": "coral_tube_blue.png",
+      "name": "Blue Tube Coral"
+    },
+    {
+      "id": "deco_starfish_pink",
+      "file": "starfish_pink.png",
+      "name": "Pink Starfish"
+    },
+    {
+      "id": "deco_anemone_pink",
+      "file": "anemone_pink.png",
+      "name": "Pink Anemone"
+    },
+    {
+      "id": "deco_anemone_blue",
+      "file": "anemone_blue.png",
+      "name": "Blue Anemone"
+    },
+    {
+      "id": "deco_ruin_arch",
+      "file": "ruin_arch.png",
+      "name": "Ancient Arch"
+    },
+    {
+      "id": "deco_ruin_pillar",
+      "file": "ruin_pillar.png",
+      "name": "Stone Pillar"
+    },
+    {
+      "id": "deco_ruin_castle",
+      "file": "ruin_castle.png",
+      "name": "Castle Gate"
+    },
+    {
+      "id": "deco_shipwreck",
+      "file": "shipwreck.png",
+      "name": "Shipwreck"
+    },
+    {
+      "id": "deco_chest_treasure",
+      "file": "chest_treasure.png",
+      "name": "Treasure Chest"
+    },
+    {
+      "id": "deco_barrel",
+      "file": "barrel.png",
+      "name": "Sunken Barrel"
+    },
+    {
+      "id": "deco_hut",
+      "file": "hut.png",
+      "name": "Tiny Hut"
+    },
+    {
+      "id": "deco_lantern_stone",
+      "file": "lantern_stone.png",
+      "name": "Stone Lantern"
+    },
+    {
+      "id": "deco_bridge",
+      "file": "bridge.png",
+      "name": "Stone Bridge"
+    },
+    {
+      "id": "deco_waterwheel",
+      "file": "waterwheel.png",
+      "name": "Waterwheel"
+    },
+    {
+      "id": "deco_dock",
+      "file": "dock.png",
+      "name": "Wooden Dock"
+    },
+    {
+      "id": "deco_clam_pearl_blue",
+      "file": "clam_pearl_blue.png",
+      "name": "Blue Pearl Clam"
+    },
+    {
+      "id": "deco_clam_pearl_pink",
+      "file": "clam_pearl_pink.png",
+      "name": "Pink Pearl Clam"
+    },
+    {
+      "id": "deco_shell_spiral",
+      "file": "shell_spiral.png",
+      "name": "Spiral Shell"
+    },
+    {
+      "id": "deco_shell_purple",
+      "file": "shell_purple.png",
+      "name": "Purple Shell"
+    },
+    {
+      "id": "deco_pebbles",
+      "file": "pebbles.png",
+      "name": "Pebble Stack"
+    },
+    {
+      "id": "deco_starfish_orange",
+      "file": "starfish_orange.png",
+      "name": "Orange Starfish"
+    },
+    {
+      "id": "deco_sand_dollar",
+      "file": "sand_dollar.png",
+      "name": "Sand Dollar"
+    },
+    {
+      "id": "deco_shell_conch",
+      "file": "shell_conch.png",
+      "name": "Conch Shell"
+    },
+    {
+      "id": "deco_pot_clay",
+      "file": "pot_clay.png",
+      "name": "Clay Pot"
+    },
+    {
+      "id": "deco_pot_clay2",
+      "file": "pot_clay2.png",
+      "name": "Clay Urn"
+    },
+    {
+      "id": "deco_pot_broken",
+      "file": "pot_broken.png",
+      "name": "Broken Pot"
+    },
+    {
+      "id": "deco_volcano",
+      "file": "volcano.png",
+      "name": "Mini Volcano"
+    },
+    {
+      "id": "deco_bubbler_round",
+      "file": "bubbler_round.png",
+      "name": "Round Bubbler"
+    },
+    {
+      "id": "deco_bubbler_tall",
+      "file": "bubbler_tall.png",
+      "name": "Tall Bubbler"
+    },
+    {
+      "id": "deco_bubbler_tall2",
+      "file": "bubbler_tall2.png",
+      "name": "Slim Bubbler"
+    },
+    {
+      "id": "deco_bubbler_glow",
+      "file": "bubbler_glow.png",
+      "name": "Glowing Bubbler"
+    },
+    {
+      "id": "deco_lily_flower",
+      "file": "lily_flower.png",
+      "name": "Flowering Lily Pad"
+    },
+    {
+      "id": "deco_lily_pads",
+      "file": "lily_pads.png",
+      "name": "Lily Pads"
+    },
+    {
+      "id": "deco_lotus",
+      "file": "lotus.png",
+      "name": "Lotus Bloom"
+    },
+    {
+      "id": "deco_duckweed",
+      "file": "duckweed.png",
+      "name": "Duckweed"
+    },
+    {
+      "id": "deco_bubble_ring",
+      "file": "bubble_ring.png",
+      "name": "Bubble Ring"
+    },
+    {
+      "id": "deco_filter_stone",
+      "file": "filter_stone.png",
+      "name": "Stone Filter"
+    },
+    {
+      "id": "deco_tube_glass",
+      "file": "tube_glass.png",
+      "name": "Glass Tube"
+    },
+    {
+      "id": "deco_waterfall",
+      "file": "waterfall.png",
+      "name": "Waterfall Filter"
+    },
+    {
+      "id": "deco_lamp",
+      "file": "lamp.png",
+      "name": "Spotlight"
+    },
+    {
+      "id": "deco_beam_light",
+      "file": "beam_light.png",
+      "name": "Light Beam"
+    }
+  ]
+}

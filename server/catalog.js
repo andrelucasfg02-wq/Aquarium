@@ -1,0 +1,160 @@
+// Static catalog + game constants, mirroring API_CONTRACT.md "Catalog (static...)".
+// The frontend must implement these identically.
+const fs = require('fs');
+const path = require('path');
+
+const GROUPS = {
+  goldfish: ['sakura_goldfish', 'azure_tang', 'ember_clownfish', 'lemon_drop_goldfish', 'midnight_moor'],
+  betta: ['fullmoon_betta', 'crowntail_betta', 'veiltail_betta', 'female_betta', 'plakat_betta'],
+  shrimp: ['red_shrimp', 'blue_shrimp', 'yellow_shrimp'],
+  snail: ['snail'],
+  bottom_fish: ['bottom_fish'],
+};
+
+const SPECIES_NAMES = {
+  sakura_goldfish: 'Sakura Goldfish', azure_tang: 'Azure Tang', ember_clownfish: 'Ember Clownfish',
+  lemon_drop_goldfish: 'Lemon Drop Goldfish', midnight_moor: 'Midnight Moor',
+  fullmoon_betta: 'Full Moon Betta', crowntail_betta: 'Crown-tail Betta', veiltail_betta: 'Veil Tail Betta',
+  female_betta: 'Female Betta', plakat_betta: 'Plakat Betta',
+  red_shrimp: 'Red Shrimp', blue_shrimp: 'Blue Shrimp', yellow_shrimp: 'Yellow Shrimp',
+  snail: 'Snail', bottom_fish: 'Bottom Fish',
+};
+
+// price_coins / price_gems(null if not purchasable with gems)
+const SPECIES_PRICES = {
+  sakura_goldfish: { coins: 800, gems: null }, azure_tang: { coins: 800, gems: null },
+  ember_clownfish: { coins: 800, gems: null }, lemon_drop_goldfish: { coins: 800, gems: null },
+  midnight_moor: { coins: 800, gems: null },
+  red_shrimp: { coins: 200, gems: null }, blue_shrimp: { coins: 200, gems: null },
+  yellow_shrimp: { coins: 200, gems: null },
+  snail: { coins: 250, gems: null }, bottom_fish: { coins: 400, gems: null },
+  fullmoon_betta: { coins: 1000, gems: null }, crowntail_betta: { coins: 1000, gems: null },
+  female_betta: { coins: 1000, gems: null },
+  veiltail_betta: { coins: 1400, gems: 8 }, plakat_betta: { coins: 1400, gems: 8 },
+};
+
+const SPECIES_RARITY = {
+  sakura_goldfish: 'rare', azure_tang: 'rare', ember_clownfish: 'rare',
+  lemon_drop_goldfish: 'rare', midnight_moor: 'rare',
+  fullmoon_betta: 'epic', crowntail_betta: 'epic', veiltail_betta: 'epic',
+  female_betta: 'epic', plakat_betta: 'epic',
+  red_shrimp: 'common', blue_shrimp: 'common', yellow_shrimp: 'common',
+  snail: 'common', bottom_fish: 'uncommon',
+};
+
+function speciesGroup(speciesId) {
+  for (const [g, list] of Object.entries(GROUPS)) if (list.includes(speciesId)) return g;
+  return null;
+}
+
+function fishCatalog() {
+  const items = [];
+  for (const [group, list] of Object.entries(GROUPS)) {
+    for (const species_id of list) {
+      items.push({
+        species_id,
+        name: SPECIES_NAMES[species_id] || species_id,
+        group,
+        rarity: SPECIES_RARITY[species_id] || 'common',
+        price_coins: SPECIES_PRICES[species_id].coins,
+        price_gems: SPECIES_PRICES[species_id].gems,
+        desc: `${SPECIES_NAMES[species_id] || species_id} — ${group.replace('_', ' ')}.`,
+      });
+    }
+  }
+  return items;
+}
+
+// ---- breeding: hatch hours / growth days per stage ----
+const HATCH_HOURS = { goldfish: 1, shrimp: 2, betta: 3, snail: 4, bottom_fish: 5 };
+const GROWTH_DAYS = { goldfish: 1, betta: 2, bottom_fish: 3, shrimp: 1, snail: 1 };
+const HYBRID_HATCH_HOURS = 24;
+const HYBRID_GROWTH_DAYS = 3;
+
+function growthStage(grp, hybrid, bornAt, now) {
+  const daysPerStage = hybrid ? HYBRID_GROWTH_DAYS : (GROWTH_DAYS[grp] || 1);
+  const ageDays = (now - bornAt) / 86400;
+  if (ageDays < daysPerStage) return 'baby';
+  if (ageDays < daysPerStage * 2) return 'juvenile';
+  return 'adult';
+}
+
+// ---- tanks ----
+const TANK_CAPACITY = { small: 12, medium: 22, large: 35 };
+const DECOR_SLOTS = { small: 10, medium: 20, large: 30 };
+const TANK_PRICES = { medium: 5000, large: 10000 };
+
+// Glass bounds (fractions of artwork)
+const GLASS = {
+  small:  { left: 0.1076, right: 0.8924, top: 0.0951, bottom: 0.8978 },
+  medium: { left: 0.0880, right: 0.9156, top: 0.1230, bottom: 0.8959 },
+  large:  { left: 0.1378, right: 0.8622, top: 0.2387, bottom: 0.8293 },
+};
+
+function clamp01(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+
+// Clamp decor center into the glass rect. Server doesn't know each PNG's
+// rendered size, so use a 0.03 margin when size is unknown (per contract).
+function clampDecor(tank, x, y, halfW = 0.03, halfH = 0.03) {
+  const g = GLASS[tank] || GLASS.small;
+  return {
+    x: clamp01(Number(x) || 0, g.left + halfW, g.right - halfW),
+    y: clamp01(Number(y) || 0, g.top + halfH, g.bottom - halfH),
+  };
+}
+
+function randomPointInGlass(tank, margin = 0.05) {
+  const g = GLASS[tank] || GLASS.small;
+  const x = g.left + margin + Math.random() * Math.max(0.01, (g.right - g.left) - margin * 2);
+  const y = g.top + margin + Math.random() * Math.max(0.01, (g.bottom - g.top) - margin * 2);
+  return { x, y };
+}
+
+// ---- decor catalog: 93 items from public/assets/furniture/manifest.json ----
+// Price = tiered by manifest order: idx 0-30 -> 120, 31-61 -> 300, 62-92 -> 600.
+let _decorCache = null;
+function decorCatalog() {
+  if (_decorCache) return _decorCache;
+  const manifestPath = path.resolve(process.cwd(), 'public/assets/furniture/manifest.json');
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  _decorCache = manifest.items.map((it, idx) => ({
+    id: it.id,
+    name: it.name,
+    file: `assets/furniture/${it.file}`,
+    price: idx <= 30 ? 120 : idx <= 61 ? 300 : 600,
+    index: idx,
+  }));
+  return _decorCache;
+}
+function decorItem(decoId) {
+  return decorCatalog().find((d) => d.id === decoId) || null;
+}
+
+// ---- quests ----
+const QUEST_DEFS = [
+  { id: 'feed_3',       title: 'Feed your fish 3 times', desc: 'Use the Feed button 3 times.',   period: 'daily',  target: 3, reward_coins: 100, reward_gems: 0 },
+  { id: 'wipe_5',       title: 'Wipe 5 dirt spots',      desc: 'Clean 5 dirt spots with the sponge.', period: 'daily',  target: 5, reward_coins: 80,  reward_gems: 0 },
+  { id: 'minigame_1',   title: 'Play the minigame',      desc: 'Finish a minigame round.',       period: 'daily',  target: 1, reward_coins: 50,  reward_gems: 0 },
+  { id: 'breed_1',      title: 'Breed a pair',           desc: 'Breed any compatible pair once.', period: 'weekly', target: 1, reward_coins: 0,   reward_gems: 5 },
+  { id: 'buy_decor_1',  title: 'Buy 1 decoration',       desc: 'Buy any item from the Decoration Shop.', period: 'weekly', target: 1, reward_coins: 200, reward_gems: 0 },
+  { id: 'own_8_fish',   title: 'Own 8 fish',             desc: 'Have 8 fish at once.',           period: 'weekly', target: 8, reward_coins: 300, reward_gems: 0 },
+];
+
+function periodKey(period, nowSec) {
+  const d = new Date(nowSec * 1000);
+  const ymd = d.toISOString().slice(0, 10);
+  if (period === 'daily') return ymd;
+  // weekly: Monday (UTC) of the current week
+  const dow = (d.getUTCDay() + 6) % 7; // 0 = Monday
+  const monday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - dow));
+  return monday.toISOString().slice(0, 10);
+}
+
+module.exports = {
+  GROUPS, SPECIES_NAMES, SPECIES_PRICES, SPECIES_RARITY,
+  speciesGroup, fishCatalog,
+  HATCH_HOURS, GROWTH_DAYS, HYBRID_HATCH_HOURS, HYBRID_GROWTH_DAYS, growthStage,
+  TANK_CAPACITY, DECOR_SLOTS, TANK_PRICES, GLASS, clampDecor, randomPointInGlass,
+  decorCatalog, decorItem,
+  QUEST_DEFS, periodKey,
+};

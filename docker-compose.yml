@@ -1,0 +1,15 @@
+services:
+  aquarium:
+    build: .
+    container_name: aquarium-public
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - aquarium-data:/data
+    environment:
+      - PORT=3000
+      - DB_PATH=/data/aquarium.db
+
+volumes:
+  aquarium-data:

@@ -1,0 +1,88 @@
+/* data.js — static catalog, glass bounds, remap math. No DOM here. */
+"use strict";
+
+const DATA = {
+  TANKS: {
+    small:  { file: "assets/tanks/tank_small.jpg",  w: 1125, h: 1125, price: 0,     capacity: 12, decorSlots: 10 },
+    medium: { file: "assets/tanks/tank_medium.jpg",  w: 1125, h: 634,  price: 5000,  capacity: 22, decorSlots: 20 },
+    large:  { file: "assets/tanks/tank_large.jpg",   w: 1125, h: 750,  price: 10000, capacity: 35, decorSlots: 30 },
+  },
+  // measured glass rectangles, fractions of artwork (per API_CONTRACT.md §Glass)
+  GLASS: {
+    small:  { left: .1076, right: .8924, top: .0951, bottom: .8978 },
+    medium: { left: .0880, right: .9156, top: .1230, bottom: .8959 },
+    large:  { left: .1378, right: .8622, top: .2387, bottom: .8293 },
+  },
+  // species → {group, name, folder sprite path builder, price fallback, base size in artwork px}
+  SPECIES: {
+    sakura_goldfish:      { group:"goldfish", name:"Sakura Goldfish",   folder:"pink",   price:800 },
+    azure_tang:            { group:"goldfish", name:"Azure Tang",        folder:"blue",   price:800 },
+    ember_clownfish:       { group:"goldfish", name:"Ember Clownfish",   folder:"orange", price:800 },
+    lemon_drop_goldfish:   { group:"goldfish", name:"Lemon Drop Goldfish",folder:"yellow",price:800 },
+    midnight_moor:         { group:"goldfish", name:"Midnight Moor",     folder:"black",  price:800 },
+    fullmoon_betta:        { group:"betta", name:"Full Moon Betta",  price:1000 },
+    crowntail_betta:       { group:"betta", name:"Crown-tail Betta", price:1000 },
+    veiltail_betta:        { group:"betta", name:"Veil Tail Betta",  price:1400, priceGems:8 },
+    female_betta:          { group:"betta", name:"Female Betta",     price:1000 },
+    plakat_betta:          { group:"betta", name:"Plakat Betta",     price:1400, priceGems:8 },
+    red_shrimp:            { group:"shrimp", name:"Red Shrimp",   price:200 },
+    blue_shrimp:           { group:"shrimp", name:"Blue Shrimp",  price:200 },
+    yellow_shrimp:         { group:"shrimp", name:"Yellow Shrimp",price:200 },
+    snail:                 { group:"snail",  name:"Snail",        price:250 },
+    bottom_fish:           { group:"bottom_fish", name:"Bottom Fish", price:400 },
+  },
+  GROUP_BASE_PX: { goldfish: 150, betta: 140, shrimp: 85, snail: 95, bottom_fish: 130 },
+  GROUP_SPEED:  { goldfish: .055, betta: .05, shrimp: .05, snail: .008, bottom_fish: .035 }, // fractions/sec
+  STAGE_SCALE: { baby: .4, juvenile: .7, adult: 1 },
+  FOOD_PRICE: 10,
+  FILTER_PRICE: 100,
+  BREED_GEMS: 2,
+};
+
+/** Frame roles: 0 idle, 1-5 swim, 5 eat, 6 special, 7 rear/turn */
+function spriteURL(speciesId, frame) {
+  const s = DATA.SPECIES[speciesId];
+  if (!s) return "";
+  if (s.folder) return `assets/sprites/${s.folder}/frame${frame}.png`;
+  return `assets/new_critters/${speciesId}_0${frame + 1}.png`; // _01.._08 → frames 0..7
+}
+function speciesName(id) { return (DATA.SPECIES[id] || {}).name || id; }
+function speciesGroup(id) { return (DATA.SPECIES[id] || {}).group || "goldfish"; }
+
+/**
+ * Cover-style mapping: artwork fills viewport edge-to-edge, no letterboxing.
+ * Returns {s, ox, oy} so fraction→css-px is  x = ox + fx*artW*s.
+ */
+function coverView(cssW, cssH, artW, artH) {
+  const s = Math.max(cssW / artW, cssH / artH);
+  return { s, ox: (cssW - artW * s) / 2, oy: (cssH - artH * s) / 2 };
+}
+function fracToPx(fx, fy, view, artW, artH) {
+  return [view.ox + fx * artW * view.s, view.oy + fy * artH * view.s];
+}
+function pxToFrac(px, py, view, artW, artH) {
+  return [(px - view.ox) / (artW * view.s), (py - view.oy) / (artH * view.s)];
+}
+
+/** Clamp a center fraction using the item's rendered half-size (in artwork px). */
+function clampToGlass(fx, fy, halfWPx, halfHPx, tier) {
+  const T = DATA.TANKS[tier], g = DATA.GLASS[tier];
+  const hw = halfWPx / T.w, hh = halfHPx / T.h;
+  return [
+    Math.min(Math.max(fx, g.left + hw), g.right - hw),
+    Math.min(Math.max(fy, g.top + hh), g.bottom - hh),
+  ];
+}
+
+function fmtCoins(n) { return Number(n || 0).toLocaleString("en-US"); }
+function fmtCountdown(ms) {
+  if (ms <= 0) return "hatching…";
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+  const p = (n) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${p(m)}:${p(ss)}` : `${p(m)}:${p(ss)}`;
+}
+function esc(str) {
+  return String(str == null ? "" : str).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}

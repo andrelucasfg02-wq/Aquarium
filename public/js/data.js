@@ -40,7 +40,7 @@ const DATA = {
   RENAME_GEMS: 3,
 };
 
-/** Frame roles: 0 idle, 1-5 swim, 5 eat, 6 special, 7 rear/turn */
+/** Frame roles: 0 idle, 1-4 swim, 5 eat (only while eating), 6 sleep, 7 rear/turn */
 function spriteURL(speciesId, frame) {
   const s = DATA.SPECIES[speciesId];
   if (!s) return "";

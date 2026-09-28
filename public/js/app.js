@@ -184,6 +184,10 @@ const App = (() => {
       const on = tank.mode === "edit";
       tank.mode = on ? null : "edit";
       tank.placeDecoId = null;
+      // exiting edit mode: drop any selection ring and stale drag state
+      tank.selectedPlacement = null;
+      tank.dragging = null;
+      $("btn-remove-deco").disabled = true;
       $("btn-edit").classList.toggle("on", !on);
       $("edit-bar").hidden = on;
       if (!on) UI.toast("Edit mode: drag decorations ✏️");
@@ -224,9 +228,12 @@ const App = (() => {
     });
 
     tank.on("decoMoved", async ({ id, x, y }) => {
+      // local position is already updated — save quietly, no full refresh
+      // (keeps the drag buttery and avoids any flicker/jump)
+      tank.selectedPlacement = null;
+      $("btn-remove-deco").disabled = true;
       const r = await Api.moveDecor(id, x, y);
-      if (!r.ok) UI.toast(r.error || "Couldn't move");
-      await refresh();
+      if (!r.ok) { UI.toast(r.error || "Couldn't move"); await refresh(); }
     });
 
     tank.on("decoSelect", (p) => {
@@ -234,11 +241,15 @@ const App = (() => {
     });
 
     tank.on("placeTap", async ({ deco_id, x, y }) => {
-      const T = DATA.TANKS[state.tanks.active];
       // clamp with a small default half-size (server clamps too)
       const [cx, cy] = clampToGlass(x, y, 50, 50, state.tanks.active);
+      // optimistic: draw it instantly, reconcile with the server after
+      const tmp = { id: "tmp-" + Date.now(), deco_id, tank: state.tanks.active, x: cx, y: cy };
+      tank.placements.push(tmp);
+      AudioFX.pop();
       const r = await Api.placeDecor(deco_id, state.tanks.active, cx, cy);
-      if (r.ok) { UI.toast("Placed! 🪸"); AudioFX.pop(); }
+      tank.placements = tank.placements.filter((p) => p !== tmp);
+      if (r.ok) UI.toast("Placed! 🪸");
       else { AudioFX.error(); UI.toast(r.error || r.message || "Couldn't place"); }
       await refresh();
     });
@@ -247,6 +258,9 @@ const App = (() => {
   function beginPlace(deco_id) {
     goHome();
     tank.mode = null;
+    tank.selectedPlacement = null;
+    tank.dragging = null;
+    $("btn-remove-deco").disabled = true;
     $("btn-edit").classList.remove("on");
     $("edit-bar").hidden = true;
     tank.placeDecoId = deco_id;

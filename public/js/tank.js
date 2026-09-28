@@ -236,7 +236,7 @@ class TankView {
         const p = e.chasePellet;
         if (!p || p.gone) { e.state = "swim"; this.pickTarget(e); break; }
         e.tx = p.x; e.ty = p.y;
-        e.frame = 1 + Math.floor(e.animT * 10) % 5;
+        e.frame = 1 + Math.floor(e.animT * 10) % 4;
         if (wantDir !== e.dir) { e.dir = wantDir; }
         this.moveToward(e, speed * 2.4, dt);
         if (Math.hypot(p.x - e.px, p.y - e.py) < .028) {
@@ -253,7 +253,7 @@ class TankView {
         break;
       case "swim":
       default:
-        e.frame = 1 + Math.floor(e.animT * 7) % 5;
+        e.frame = 1 + Math.floor(e.animT * 7) % 4;
         if (dist > .004 && wantDir !== e.dir) {
           e.state = "turn"; e.turnT = .32; e.frame = 7;
           break;

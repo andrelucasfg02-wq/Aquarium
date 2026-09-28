@@ -46,11 +46,12 @@ const AudioFX = (() => {
   }
 
   // Event song (ex: tema do Autumn Crush): pausa o pad ambiente enquanto toca.
+  // Toca independente da config de musica: e parte da experiencia do evento.
   // Resolve com o <audio> se o autoplay foi bloqueado (quem chama tenta de novo
   // no proximo gesto do usuario), ou null.
   function setEventTrack(url) {
     if (evTrack) { try { evTrack.pause(); } catch (e) {} evTrack = null; }
-    if (url && musicOn) {
+    if (url) {
       stopMusic();
       evTrack = new Audio(url);
       evTrack.loop = true;

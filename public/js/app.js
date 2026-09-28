@@ -12,6 +12,9 @@ const App = (() => {
 
   /* ---------- boot ---------- */
   async function boot() {
+    // iOS Safari ignores viewport user-scalable=no — block pinch zoom explicitly
+    document.addEventListener("gesturestart", (e) => e.preventDefault());
+    document.addEventListener("gesturechange", (e) => e.preventDefault());
     Api.onAuthFail(showAuth);
     bindAuth();
     bindNav();

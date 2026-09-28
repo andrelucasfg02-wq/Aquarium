@@ -37,6 +37,7 @@ const DATA = {
   FOOD_PRICE: 10,
   FILTER_PRICE: 100,
   BREED_GEMS: 2,
+  RENAME_GEMS: 3,
 };
 
 /** Frame roles: 0 idle, 1-5 swim, 5 eat, 6 special, 7 rear/turn */

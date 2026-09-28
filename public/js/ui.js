@@ -57,7 +57,7 @@ const UI = (() => {
     overlay.innerHTML = `
       <div class="fish-menu">
         <div class="fish-menu-head">${fishImg(fish.species_id)}
-          <div><b>${esc(fish.name || speciesName(fish.species_id))}</b>
+          <div><b>${esc(fish.nickname || fish.name || speciesName(fish.species_id))}</b>
           <div class="sub">${fish.gender === "male" ? "♂" : "♀"} ${esc(speciesName(fish.species_id))}</div></div>
           <button class="hud-btn" id="fish-menu-x">✕</button>
         </div>
@@ -66,13 +66,40 @@ const UI = (() => {
           <button class="pill-btn blue" id="fm-transfer">🔀 Transfer</button>
           <button class="pill-btn" id="fm-breed">🥚 Breed</button>
         </div>
+        <div class="fish-menu-btns">
+          <button class="pill-btn gold" id="fm-rename">✏️ Name (💎${DATA.RENAME_GEMS})</button>
+        </div>
         <div id="fm-transfer-row" class="fish-menu-btns" hidden></div>
+        <div id="fm-rename-row" class="fish-menu-btns" hidden>
+          <input id="fm-rename-input" maxlength="20" placeholder="Pet name..."
+            style="flex:2;padding:10px;border-radius:12px;border:2px solid var(--pink-d)" />
+          <button class="pill-btn gold" id="fm-rename-ok">OK 💎${DATA.RENAME_GEMS}</button>
+        </div>
       </div>`;
     overlay.onclick = (e) => { if (e.target === overlay) closeFishMenu(); };
     document.body.appendChild(overlay);
     $("fish-menu-x").onclick = closeFishMenu;
     $("fm-pet").onclick = async () => { closeFishMenu(); await App.petFish(fish.id); };
     $("fm-breed").onclick = () => { closeFishMenu(); openBreedingWith(fish); };
+    $("fm-rename").onclick = () => {
+      const row = $("fm-rename-row");
+      row.hidden = !row.hidden;
+      const inp = $("fm-rename-input");
+      inp.value = fish.nickname || "";
+      if (!row.hidden) inp.focus();
+    };
+    $("fm-rename-ok").onclick = async () => {
+      const name = $("fm-rename-input").value.trim();
+      if (!name) { toast("Type a name first ✏️"); return; }
+      const r = await Api.renameFish(fish.id, name);
+      if (r.ok) {
+        AudioFX.coin(); toast(`"${r.nickname}" — what a cute name! 💎`);
+        closeFishMenu(); await App.refresh();
+      } else {
+        AudioFX.error();
+        toast(r.error === "not enough gems" ? "Not enough diamonds 💎" : (r.error || "Couldn't rename"));
+      }
+    };
     $("fm-transfer").onclick = () => {
       const row = $("fm-transfer-row");
       const owned = (state.tanks.owned || []).filter((t) => t !== fish.tank);
@@ -366,7 +393,7 @@ const UI = (() => {
     html += `<h3>🐠 My fish (tap to sell)</h3>`;
     html += (state.fish || []).map((f) => `
       <div class="row-card">${fishImg(f.species_id)}<div class="grow">
-        <b>${esc(f.name || speciesName(f.species_id))}</b>
+        <b>${esc(f.nickname || f.name || speciesName(f.species_id))}</b>
         <div class="sub">${f.gender === "male" ? "♂" : "♀"} · ${esc(f.stage || "adult")} · ${f.location === "inventory" ? "🎒 inventory" : "🏠 " + esc(f.tank || "")} tank</div>
       </div><button class="pill-btn" data-sell="${f.id}">Sell</button></div>`).join("")
       || `<div class="empty">No fish yet</div>`;

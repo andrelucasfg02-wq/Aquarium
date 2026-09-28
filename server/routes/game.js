@@ -72,6 +72,7 @@ function helpers(db) {
     return {
       id: row.id, species_id: row.species_id, group: row.grp, variant: row.variant,
       name: C.SPECIES_NAMES[row.species_id] || row.species_id,
+      nickname: row.nickname || null,
       gender: row.gender, location: row.location, tank: row.tank,
       x: row.x, y: row.y, born_at: row.born_at,
       stage: C.growthStage(row.grp, !!lineage.hybrid, row.born_at, now),
@@ -260,6 +261,24 @@ module.exports = function gameRoutes(db) {
       await Ht.addXp(uid, 1);
     });
     res.json({ ok: true });
+  }));
+
+  // ---------- rename a pet (3 gems) ----------
+  r.post('/fish/rename', ah(async (req, res) => {
+    const uid = req.user.id;
+    const { fish_id, name } = req.body || {};
+    const fish = await db.get('SELECT id FROM fish WHERE id=? AND user_id=?', fish_id, uid);
+    if (!fish) return res.status(404).json({ ok: false, error: 'fish not found' });
+    const nickname = String(name || '').trim().slice(0, 20);
+    if (!nickname) return res.status(400).json({ ok: false, error: 'empty name' });
+    const RENAME_GEMS = 3;
+    const w = await H.getWallet(uid);
+    if (w.gems < RENAME_GEMS) return res.status(400).json({ ok: false, error: 'not enough gems' });
+    await db.tx(async (txDb) => {
+      await txDb.run('UPDATE wallets SET gems=gems-? WHERE user_id=?', RENAME_GEMS, uid);
+      await txDb.run('UPDATE fish SET nickname=? WHERE id=? AND user_id=?', nickname, fish_id, uid);
+    });
+    res.json({ ok: true, nickname, gems: w.gems - RENAME_GEMS });
   }));
 
   // ---------- transfer a fish to another owned tank ----------

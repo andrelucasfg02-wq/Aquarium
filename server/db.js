@@ -25,7 +25,8 @@ const SCHEMA = `
     CREATE TABLE IF NOT EXISTS fish(
       id INTEGER PRIMARY KEY, user_id INTEGER, species_id TEXT, grp TEXT,
       variant TEXT, gender TEXT, location TEXT, tank TEXT,
-      x REAL, y REAL, born_at INTEGER, fed_at INTEGER, lineage TEXT);
+      x REAL, y REAL, born_at INTEGER, fed_at INTEGER, lineage TEXT,
+      nickname TEXT);
     CREATE TABLE IF NOT EXISTS eggs(
       id INTEGER PRIMARY KEY, user_id INTEGER, grp TEXT,
       variant_a TEXT, variant_b TEXT, hybrid INTEGER,
@@ -113,6 +114,14 @@ async function openDb() {
     try { await client.execute('PRAGMA journal_mode=WAL'); } catch (_) { /* non-fatal */ }
   }
   await client.executeMultiple(SCHEMA);
+
+  // lightweight migrations for databases created before a column existed
+  try {
+    const cols = await client.execute('PRAGMA table_info(fish)');
+    if (!cols.rows.some((c) => c.name === 'nickname')) {
+      await client.execute('ALTER TABLE fish ADD COLUMN nickname TEXT');
+    }
+  } catch (_) { /* non-fatal */ }
 
   const db = wrap(client);
   db.mode = remote ? 'turso' : 'local';

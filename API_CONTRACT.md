@@ -42,6 +42,8 @@ Fish: `{id, species_id, group, variant, name, gender, location, tank, x, y,
 - `POST /api/fish/feed` → `{ok, pellets:n}` — needs food>0 (400: "no food"); n = max(fish in tank, 1);
   deducts 1 food; sets fed_at=now for tank fish. Client animates pellets + rush + munch (visual only).
 - `POST /api/fish/tap` `{fish_id}` → `{ok}` — sets fed_at/happy_at (hearts emote), tiny XP (+1).
+- `POST /api/fish/transfer` `{fish_id, tier}` → `{ok, tier}` — moves a fish to an owned tank
+  with space; also places fish from inventory into a tank (`location` becomes 'tank').
 
 ## Tanks
 - `POST /api/tanks/buy` `{tier:"medium"|"large"}` → `{ok}` — medium 5000 coins (any time),

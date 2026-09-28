@@ -59,6 +59,15 @@ const App = (() => {
         if (!dot) { dot = document.createElement("span"); dot.className = "dot"; b.appendChild(dot); }
       } else if (dot) dot.remove();
     });
+    // weekly event badge on the event button (shows while the prize is unclaimed)
+    Api.eventProgress("autumn1").then((s) => {
+      const b = document.getElementById("btn-event");
+      if (!b) return;
+      let dot = b.querySelector(".dot");
+      if (s.ok && !s.claimed) {
+        if (!dot) { dot = document.createElement("span"); dot.className = "dot"; b.appendChild(dot); }
+      } else if (dot) dot.remove();
+    });
     if (!decorCatalogLoaded) {
       // mark loaded only on success so a failed fetch retries on next refresh
       Api.decorCatalog().then((dc) => {
@@ -151,6 +160,11 @@ const App = (() => {
       cancelPlace();
       document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
       UI.open("minigame");
+    };
+    $("btn-event").onclick = () => {
+      cancelPlace();
+      document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
+      UI.open("event");
     };
 
     $("btn-feed").onclick = async () => {

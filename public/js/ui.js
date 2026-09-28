@@ -63,7 +63,7 @@ const UI = (() => {
         </div>
         <div class="fish-menu-btns">
           <button class="pill-btn pink" id="fm-pet">💕 Pet</button>
-          <button class="pill-btn blue" id="fm-transfer">🔀 Transfer</button>
+          <button class="pill-btn blue" id="fm-transfer">${fish.location === "inventory" ? "🏠 Place in tank" : "🔀 Transfer"}</button>
           <button class="pill-btn" id="fm-breed">🥚 Breed</button>
         </div>
         <div class="fish-menu-btns">
@@ -102,15 +102,16 @@ const UI = (() => {
     };
     $("fm-transfer").onclick = () => {
       const row = $("fm-transfer-row");
-      const owned = (state.tanks.owned || []).filter((t) => t !== fish.tank);
-      if (!owned.length) { toast("No other tank owned yet 🏠"); return; }
+      const inInv = fish.location === "inventory";
+      const owned = (state.tanks.owned || []).filter((t) => inInv || t !== fish.tank);
+      if (!owned.length) { toast(inInv ? "No tank owned yet 🏠" : "No other tank owned yet 🏠"); return; }
       row.hidden = false;
       row.innerHTML = owned.map((t) =>
         `<button class="pill-btn blue" data-fmto="${t}">→ ${TANK_LABELS[t] || t}</button>`).join("");
       row.querySelectorAll("[data-fmto]").forEach((b) => b.onclick = async () => {
         b.disabled = true;
         const r = await Api.transferFish(fish.id, b.dataset.fmto);
-        if (r.ok) { AudioFX.coin(); toast(`Moved to the ${b.dataset.fmto} tank 🔀🐠`); }
+        if (r.ok) { AudioFX.coin(); toast(inInv ? `Placed in the ${b.dataset.fmto} tank 🏠🐠` : `Moved to the ${b.dataset.fmto} tank 🔀🐠`); }
         else { AudioFX.error(); toast(r.error || "Couldn't transfer"); }
         closeFishMenu();
         await App.refresh();
@@ -140,6 +141,7 @@ const UI = (() => {
     RENDER[name]();
   }
   function close(silent) {
+    if (window.EventCrush) EventCrush.unmount();
     $("screen-overlay").hidden = true;
     $("screen-body").innerHTML = "";
     if (eggTimer) { clearInterval(eggTimer); eggTimer = null; }
@@ -148,7 +150,7 @@ const UI = (() => {
   const TITLES = {
     fishshop: "🐟 Fish Shop", decor: "🪸 Decoration Shop", breeding: "🥚 Breeding",
     collection: "📖 Collection", inventory: "🎒 Inventory", quests: "🎯 Quests",
-    settings: "⚙️ Settings", minigame: "🎮 Tap-the-Fish",
+    settings: "⚙️ Settings", minigame: "🎮 Tap-the-Fish", event: "🍂 Autumn Event",
   };
 
   /* ---------- helpers ---------- */
@@ -390,14 +392,18 @@ const UI = (() => {
       <button class="pill-btn" data-sell="${f.id}">Sell</button></div>`;
     }).join("") : `<div class="empty">No bred fish yet — lineage appears here 🧬</div>`;
 
-    html += `<h3>🐠 My fish (tap to sell)</h3>`;
+    html += `<h3>🐠 My fish (tap a fish for options)</h3>`;
     html += (state.fish || []).map((f) => `
-      <div class="row-card">${fishImg(f.species_id)}<div class="grow">
+      <div class="row-card"><span data-fishmenu="${f.id}" style="cursor:pointer;display:flex;align-items:center">${fishImg(f.species_id)}</span><div class="grow">
         <b>${esc(f.nickname || f.name || speciesName(f.species_id))}</b>
-        <div class="sub">${f.gender === "male" ? "♂" : "♀"} · ${esc(f.stage || "adult")} · ${f.location === "inventory" ? "🎒 inventory" : "🏠 " + esc(f.tank || "")} tank</div>
+        <div class="sub">${f.gender === "male" ? "♂" : "♀"} · ${esc(f.stage || "adult")} · ${f.location === "inventory" ? "🎒 inventory — tap the fish to place it" : "🏠 " + esc(f.tank || "")} tank</div>
       </div><button class="pill-btn" data-sell="${f.id}">Sell</button></div>`).join("")
       || `<div class="empty">No fish yet</div>`;
     body.innerHTML = html;
+    body.querySelectorAll("[data-fishmenu]").forEach((el) => el.onclick = () => {
+      const f = (state.fish || []).find((x) => x.id === +el.dataset.fishmenu);
+      if (f) openFishMenu(f);
+    });
     body.querySelectorAll("[data-sell]").forEach((b) => b.onclick = async () => {
       if (!confirm("Sell this fish? 💰")) return;
       const r = await Api.sellFish(+b.dataset.sell);
@@ -578,6 +584,14 @@ const UI = (() => {
     };
   }
 
+  /* ================= WEEKLY EVENT: AUTUMN CRUSH ================= */
+  function renderEvent() {
+    const body = $("screen-body");
+    body.innerHTML = `<div id="ev-root"></div>`;
+    if (window.EventCrush) EventCrush.mount(body.querySelector("#ev-root"));
+    else body.innerHTML = `<div class="empty">Couldn't load the event game 🍂</div>`;
+  }
+
   function renderMinigame() {
     const body = $("screen-body");
     MG.round = 0; MG.times = []; MG.active = false;
@@ -648,7 +662,7 @@ const UI = (() => {
   const RENDER = {
     fishshop: renderFishShop, decor: renderDecorShop, breeding: renderBreeding,
     collection: renderCollection, inventory: renderInventory, quests: renderQuests,
-    settings: renderSettings, minigame: renderMinigame,
+    settings: renderSettings, minigame: renderMinigame, event: renderEvent,
   };
 
   return {

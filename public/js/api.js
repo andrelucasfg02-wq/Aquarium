@@ -57,6 +57,9 @@ const Api = (() => {
     minigameFinish: (score) => post("/api/minigame/finish", { score }),
     shellStatus: () => get("/api/shell/status"),
     shellPlay: (pick) => post("/api/shell/play", { pick }),
+    eventProgress: (event) => get(`/api/event/progress?event=${encodeURIComponent(event)}`),
+    eventSave: (event, score, level, moves) => post("/api/event/progress", { event, score, level, moves }),
+    eventClaim: (event) => post("/api/event/claim", { event }),
     transferFish: (fish_id, tier) => post("/api/fish/transfer", { fish_id, tier }),
     renameFish: (fish_id, name) => post("/api/fish/rename", { fish_id, name }),
   };

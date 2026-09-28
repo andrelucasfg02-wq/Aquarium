@@ -188,13 +188,15 @@ module.exports = function gameRoutes(db) {
   }));
 
   // ---------- fish shop ----------
-  r.post('/shop/fish', ah(async (req, res) => res.json({ ok: true, items: C.fishCatalog() })));
+  r.post('/shop/fish', ah(async (req, res) => res.json({ ok: true, items: C.fishCatalog().filter((i) => i.price_coins != null || i.price_gems != null) })));
 
   r.post('/shop/fish/buy', ah(async (req, res) => {
     const uid = req.user.id; const t = now();
     const { species_id } = req.body || {};
     const item = C.fishCatalog().find((i) => i.species_id === species_id);
     if (!item) return res.status(400).json({ ok: false, error: 'unknown species' });
+    if (item.price_coins == null && item.price_gems == null)
+      return res.status(400).json({ ok: false, error: 'not for sale — event exclusive' });
 
     const tank = await H.activeTank(uid);
     if (await H.tankFishCount(uid, tank) >= C.TANK_CAPACITY[tank]) {
@@ -281,7 +283,7 @@ module.exports = function gameRoutes(db) {
     res.json({ ok: true, nickname, gems: w.gems - RENAME_GEMS });
   }));
 
-  // ---------- transfer a fish to another owned tank ----------
+  // ---------- transfer a fish to another owned tank (or place from inventory) ----------
   r.post('/fish/transfer', ah(async (req, res) => {
     const uid = req.user.id;
     const { fish_id, tier } = req.body || {};
@@ -289,15 +291,16 @@ module.exports = function gameRoutes(db) {
       return res.status(400).json({ ok: false, error: 'invalid tank' });
     }
     const fish = await db.get(
-      "SELECT id, tank FROM fish WHERE id=? AND user_id=? AND location='tank'", fish_id, uid);
+      "SELECT id, tank, location FROM fish WHERE id=? AND user_id=?", fish_id, uid);
     if (!fish) return res.status(404).json({ ok: false, error: 'fish not found' });
-    if (fish.tank === tier) return res.status(400).json({ ok: false, error: 'already in that tank' });
+    if (fish.location === 'tank' && fish.tank === tier)
+      return res.status(400).json({ ok: false, error: 'already in that tank' });
     const tanks = await H.getTanks(uid);
     if (!tanks[tier]) return res.status(400).json({ ok: false, error: 'tank not owned' });
     if (await H.tankFishCount(uid, tier) >= C.TANK_CAPACITY[tier]) {
       return res.status(400).json({ ok: false, error: 'target tank is full' });
     }
-    await db.run('UPDATE fish SET tank=?, x=?, y=? WHERE id=? AND user_id=?',
+    await db.run("UPDATE fish SET tank=?, location='tank', x=?, y=? WHERE id=? AND user_id=?",
       tier, Math.random(), 0.2 + Math.random() * 0.6, fish_id, uid);
     res.json({ ok: true, tier });
   }));
@@ -580,6 +583,70 @@ module.exports = function gameRoutes(db) {
       await txDb.run('INSERT OR REPLACE INTO daily_shell(user_id,last_played_at) VALUES(?,?)', uid, t);
       if (win) await txDb.run('UPDATE wallets SET gems=gems+? WHERE user_id=?', SHELL_PRIZE, uid);
       return { ok: true, win, winning, gems: win ? SHELL_PRIZE : 0 };
+    });
+    if (!out.ok) return res.status(400).json(out);
+    res.json(out);
+  }));
+
+  // ---------- weekly event: Autumn Crush (event_id "autumn1") ----------
+  // Progress is stored per account on the server. Claim is atomic: the
+  // event_rewards PK (user_id,event_id) makes double-claims impossible.
+  const EVENT_GOALS = { autumn1: 300000 };
+  const EVENT_FISH = { autumn1: 'autumn_fish' };
+  const validEvent = (e) => typeof e === 'string' && EVENT_GOALS[e] != null;
+
+  r.get('/event/progress', ah(async (req, res) => {
+    const uid = req.user.id;
+    const event = String(req.query.event || '');
+    if (!validEvent(event)) return res.status(400).json({ ok: false, error: 'unknown event' });
+    const p = await db.get('SELECT score,level,moves FROM event_progress WHERE user_id=? AND event_id=?', uid, event);
+    const rw = await db.get('SELECT claimed_at FROM event_rewards WHERE user_id=? AND event_id=?', uid, event);
+    res.json({ ok: true, score: p ? p.score : 0, level: p ? p.level : 0, moves: p ? p.moves : 0,
+               claimed: !!rw, goal: EVENT_GOALS[event] });
+  }));
+
+  r.post('/event/progress', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const { event, score, level, moves } = req.body || {};
+    if (!validEvent(event)) return res.status(400).json({ ok: false, error: 'unknown event' });
+    const s = Math.floor(Number(score)), l = Math.floor(Number(level)), m = Math.floor(Number(moves));
+    if (!Number.isFinite(s) || !Number.isFinite(l) || !Number.isFinite(m) || s < 0 || l < 0 || m < 0)
+      return res.status(400).json({ ok: false, error: 'invalid progress' });
+    if (l > 9 || s > EVENT_GOALS[event]) return res.status(400).json({ ok: false, error: 'invalid progress' });
+    const prev = await db.get('SELECT score, moves, updated_at FROM event_progress WHERE user_id=? AND event_id=?', uid, event);
+    if (prev && s > prev.score) {
+      // anti-cheat: the game saves after every move, so a single save can only add what
+      // one move can plausibly produce. Generous caps so legit play is never affected.
+      const elapsed = Math.max(1, t - (prev.updated_at || t));
+      const gainCap = Math.max(20000, elapsed * 5000);
+      if (s - prev.score > gainCap || m < prev.moves)
+        return res.status(400).json({ ok: false, error: 'suspicious progress' });
+    }
+    // only forward progress is kept: a replayed/lower score never overwrites a better one
+    await db.run(`INSERT INTO event_progress(user_id,event_id,score,level,moves,updated_at)
+                  VALUES(?,?,?,?,?,?)
+                  ON CONFLICT(user_id,event_id) DO UPDATE SET
+                    score=MAX(score,excluded.score), level=MAX(level,excluded.level),
+                    moves=MAX(moves,excluded.moves), updated_at=excluded.updated_at`,
+                  uid, event, s, l, m, t);
+    res.json({ ok: true });
+  }));
+
+  r.post('/event/claim', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const { event } = req.body || {};
+    if (!validEvent(event)) return res.status(400).json({ ok: false, error: 'unknown event' });
+    const out = await db.tx(async (txDb) => {
+      const Ht = helpers(txDb);
+      const p = await txDb.get('SELECT score FROM event_progress WHERE user_id=? AND event_id=?', uid, event);
+      if (!p || p.score < EVENT_GOALS[event])
+        return { ok: false, error: 'goal not reached yet' };
+      const rw = await txDb.get('SELECT claimed_at FROM event_rewards WHERE user_id=? AND event_id=?', uid, event);
+      if (rw) return { ok: false, error: 'already claimed' };
+      await txDb.run('INSERT INTO event_rewards(user_id,event_id,claimed_at) VALUES(?,?,?)', uid, event, t);
+      // prize goes to inventory — the player places it in the tank themselves
+      const fish = await Ht.addFish(uid, EVENT_FISH[event], { location: 'inventory' }, t);
+      return { ok: true, fish_id: fish.id, species_id: EVENT_FISH[event] };
     });
     if (!out.ok) return res.status(400).json(out);
     res.json(out);

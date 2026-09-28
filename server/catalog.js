@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const GROUPS = {
-  goldfish: ['sakura_goldfish', 'azure_tang', 'ember_clownfish', 'lemon_drop_goldfish', 'midnight_moor'],
+  goldfish: ['sakura_goldfish', 'azure_tang', 'ember_clownfish', 'lemon_drop_goldfish', 'midnight_moor', 'autumn_fish'],
   betta: ['fullmoon_betta', 'crowntail_betta', 'veiltail_betta', 'female_betta', 'plakat_betta'],
   shrimp: ['red_shrimp', 'blue_shrimp', 'yellow_shrimp'],
   snail: ['snail'],
@@ -14,6 +14,7 @@ const GROUPS = {
 const SPECIES_NAMES = {
   sakura_goldfish: 'Sakura Goldfish', azure_tang: 'Azure Tang', ember_clownfish: 'Ember Clownfish',
   lemon_drop_goldfish: 'Lemon Drop Goldfish', midnight_moor: 'Midnight Moor',
+  autumn_fish: 'Autumn Fish',
   fullmoon_betta: 'Full Moon Betta', crowntail_betta: 'Crown-tail Betta', veiltail_betta: 'Veil Tail Betta',
   female_betta: 'Female Betta', plakat_betta: 'Plakat Betta',
   red_shrimp: 'Red Shrimp', blue_shrimp: 'Blue Shrimp', yellow_shrimp: 'Yellow Shrimp',
@@ -21,10 +22,12 @@ const SPECIES_NAMES = {
 };
 
 // price_coins / price_gems(null if not purchasable with gems)
+// species with BOTH null are event-exclusive: never sold in the shop.
 const SPECIES_PRICES = {
   sakura_goldfish: { coins: 800, gems: null }, azure_tang: { coins: 800, gems: null },
   ember_clownfish: { coins: 800, gems: null }, lemon_drop_goldfish: { coins: 800, gems: null },
   midnight_moor: { coins: 800, gems: null },
+  autumn_fish: { coins: null, gems: null },
   red_shrimp: { coins: 200, gems: null }, blue_shrimp: { coins: 200, gems: null },
   yellow_shrimp: { coins: 200, gems: null },
   snail: { coins: 250, gems: null }, bottom_fish: { coins: 400, gems: null },
@@ -36,6 +39,7 @@ const SPECIES_PRICES = {
 const SPECIES_RARITY = {
   sakura_goldfish: 'rare', azure_tang: 'rare', ember_clownfish: 'rare',
   lemon_drop_goldfish: 'rare', midnight_moor: 'rare',
+  autumn_fish: 'legendary',
   fullmoon_betta: 'epic', crowntail_betta: 'epic', veiltail_betta: 'epic',
   female_betta: 'epic', plakat_betta: 'epic',
   red_shrimp: 'common', blue_shrimp: 'common', yellow_shrimp: 'common',

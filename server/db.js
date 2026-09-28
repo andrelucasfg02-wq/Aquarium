@@ -49,6 +49,12 @@ const SCHEMA = `
       user_id INTEGER PRIMARY KEY, music INTEGER, sfx INTEGER, quality TEXT);
     CREATE TABLE IF NOT EXISTS daily_shell(
       user_id INTEGER PRIMARY KEY, last_played_at INTEGER);
+    CREATE TABLE IF NOT EXISTS event_progress(
+      user_id INTEGER, event_id TEXT, score INTEGER, level INTEGER, moves INTEGER,
+      updated_at INTEGER, PRIMARY KEY(user_id,event_id));
+    CREATE TABLE IF NOT EXISTS event_rewards(
+      user_id INTEGER, event_id TEXT, claimed_at INTEGER,
+      PRIMARY KEY(user_id,event_id));
     CREATE INDEX IF NOT EXISTS idx_fish_user ON fish(user_id);
     CREATE INDEX IF NOT EXISTS idx_eggs_user ON eggs(user_id);
     CREATE INDEX IF NOT EXISTS idx_dirt_user ON dirt_spots(user_id);

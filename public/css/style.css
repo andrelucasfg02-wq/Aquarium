@@ -138,7 +138,13 @@ input{font-family:inherit}
 .screen-body h3{margin:14px 0 8px;font-size:15px;color:#8a5f9e}
 
 /* tank quick-switch tabs */
-#tank-tabs{display:flex;gap:6px;justify-content:center;padding:6px 10px 0;position:relative;z-index:5}
+#tank-tabs{
+  display:flex;gap:6px;justify-content:flex-start;align-items:center;
+  position:absolute;left:0;right:0;z-index:15;pointer-events:none;
+  bottom:calc(var(--nav-h) + var(--safe-b) + 10px);
+  padding:0 76px 0 10px;
+}
+.tank-tab{pointer-events:auto}
 .tank-tab{background:rgba(255,255,255,.88);border:2px solid #f3e8ff;border-radius:999px;
   padding:5px 13px;font-size:12px;font-weight:800;color:#8a5f9e}
 .tank-tab.active{background:linear-gradient(135deg,#8fcdf0,#5aa9dd);color:#fff;border-color:#fff}

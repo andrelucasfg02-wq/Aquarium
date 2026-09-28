@@ -272,3 +272,7 @@ select.sel{padding:10px;border-radius:12px;border:2px solid var(--blue);font-siz
   background:#fff;color:#7a2d12;font-size:19px;font-weight:900;border:3px solid #e8a34c;
   box-shadow:0 4px 12px rgba(0,0,0,.35);cursor:pointer;line-height:1}
 #promo-x:active{transform:scale(.9)}
+
+/* ---------- fish market ---------- */
+.mk-price{font-size:17px;font-weight:800;color:#8a6d1f;margin-bottom:6px;white-space:nowrap}
+.fm-note{padding:8px 12px;font-size:13px;color:var(--ink-soft);text-align:center}

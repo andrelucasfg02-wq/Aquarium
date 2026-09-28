@@ -102,6 +102,24 @@ a 0.03 margin when size unknown).
 - `POST /api/minigame/finish` `{score}` → `{ok, coins}` — awards min(score,100) coins,
   max 3 payouts/day (anti-abuse). Frontend implements a simple tap-the-fish game.
 
+## Player marketplace (diamonds)
+- Fish carry `origin` (`shop`|`bred`|`event`) and `event_id`. Tradeability (`fish.tradeable`,
+  `fish.trade_lock` in state):
+  - `shop` (commons bought in the Fish Shop): bound to the account, never tradeable.
+  - `bred` (hatched from eggs): tradeable for diamonds.
+  - `event` (event prizes) + offspring with `event_id`: locked as trophies while the
+    event runs (`EVENT_META[event].ends_at`), tradeable after it ends.
+- `GET /api/market/listings` → `{ok, listings:[{listing_id, price_diamonds, listed_at, seller_id, seller_name, fish}]}` (newest first, max 100).
+- `POST /api/market/list` `{fish_id, price_diamonds}` → `{ok, listing_id}` — fish must be
+  tradeable and not already listed; it leaves the tank/inventory (`location='market'`).
+  Price 1–999999.
+- `POST /api/market/cancel` `{listing_id}` → `{ok}` — seller only; fish returns to inventory.
+- `POST /api/market/buy` `{listing_id}` → `{ok, fish_id, fee_diamonds}` — atomic: buyer
+  pays diamonds, seller receives price minus 10% fee (burned), fish transfers to buyer's
+  inventory. Can't buy your own listing; needs enough diamonds.
+- Listed fish (`location='market'`) are excluded from tank, breeding partners, and are
+  blocked from transfer/sell/breed until the listing is cancelled.
+
 ## Catalog (static, implement identically both sides)
 Groups: goldfish: [sakura_goldfish, azure_tang, ember_clownfish, lemon_drop_goldfish, midnight_moor];
 betta: [fullmoon_betta, crowntail_betta, veiltail_betta, female_betta, plakat_betta];

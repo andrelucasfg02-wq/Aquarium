@@ -26,11 +26,11 @@ const SCHEMA = `
       id INTEGER PRIMARY KEY, user_id INTEGER, species_id TEXT, grp TEXT,
       variant TEXT, gender TEXT, location TEXT, tank TEXT,
       x REAL, y REAL, born_at INTEGER, fed_at INTEGER, lineage TEXT,
-      nickname TEXT);
+      nickname TEXT, origin TEXT, event_id TEXT);
     CREATE TABLE IF NOT EXISTS eggs(
       id INTEGER PRIMARY KEY, user_id INTEGER, grp TEXT,
       variant_a TEXT, variant_b TEXT, hybrid INTEGER,
-      generation INTEGER, hatch_at INTEGER, created_at INTEGER);
+      generation INTEGER, hatch_at INTEGER, created_at INTEGER, event_id TEXT);
     CREATE TABLE IF NOT EXISTS decor_owned(
       user_id INTEGER, deco_id TEXT, qty INTEGER, PRIMARY KEY(user_id,deco_id));
     CREATE TABLE IF NOT EXISTS decor_placements(
@@ -55,6 +55,11 @@ const SCHEMA = `
     CREATE TABLE IF NOT EXISTS event_rewards(
       user_id INTEGER, event_id TEXT, claimed_at INTEGER,
       PRIMARY KEY(user_id,event_id));
+    CREATE TABLE IF NOT EXISTS market_listings(
+      id INTEGER PRIMARY KEY, seller_id INTEGER, fish_id INTEGER UNIQUE,
+      price_diamonds INTEGER, listed_at INTEGER);
+    CREATE INDEX IF NOT EXISTS idx_market_seller ON market_listings(seller_id);
+    CREATE INDEX IF NOT EXISTS idx_market_fish ON market_listings(fish_id);
     CREATE INDEX IF NOT EXISTS idx_fish_user ON fish(user_id);
     CREATE INDEX IF NOT EXISTS idx_eggs_user ON eggs(user_id);
     CREATE INDEX IF NOT EXISTS idx_dirt_user ON dirt_spots(user_id);
@@ -128,6 +133,26 @@ async function openDb() {
     const cols = await client.execute('PRAGMA table_info(fish)');
     if (!cols.rows.some((c) => c.name === 'nickname')) {
       await client.execute('ALTER TABLE fish ADD COLUMN nickname TEXT');
+    }
+    // marketplace: fish origin ('shop'|'bred'|'event') + source event id
+    if (!cols.rows.some((c) => c.name === 'origin')) {
+      await client.execute('ALTER TABLE fish ADD COLUMN origin TEXT');
+    }
+    if (!cols.rows.some((c) => c.name === 'event_id')) {
+      await client.execute('ALTER TABLE fish ADD COLUMN event_id TEXT');
+    }
+    // backfill origin for fish created before the marketplace:
+    // event fish first, then bred (has parents in lineage) vs shop-bought.
+    await client.execute(
+      "UPDATE fish SET origin='event', event_id='autumn1' WHERE origin IS NULL AND species_id='autumn_fish'");
+    await client.execute(
+      `UPDATE fish SET origin=CASE
+         WHEN lineage IS NOT NULL AND json_extract(lineage,'$.mother') IS NOT NULL THEN 'bred'
+         ELSE 'shop' END
+       WHERE origin IS NULL`);
+    const eggCols = await client.execute('PRAGMA table_info(eggs)');
+    if (!eggCols.rows.some((c) => c.name === 'event_id')) {
+      await client.execute('ALTER TABLE eggs ADD COLUMN event_id TEXT');
     }
   } catch (_) { /* non-fatal */ }
 

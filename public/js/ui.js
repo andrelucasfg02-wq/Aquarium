@@ -52,6 +52,7 @@ const UI = (() => {
   /* ---------- fish tap menu: Pet / Transfer / Breed ---------- */
   function openFishMenu(fish) {
     closeFishMenu();
+    const listed = fish.location === "market";
     const overlay = document.createElement("div");
     overlay.id = "fish-menu-overlay";
     overlay.innerHTML = `
@@ -59,28 +60,80 @@ const UI = (() => {
         <div class="fish-menu-head">${fishImg(fish.species_id)}
           <div><b>${esc(fish.nickname || fish.name || speciesName(fish.species_id))}</b>
           <div class="sub">${fish.gender === "male" ? "♂" : "♀"} ${esc(speciesName(fish.species_id))}</div></div>
-          <button class="hud-btn" id="fish-menu-x">✕</button>
+          <button class="hud-btn" id="fish-menu-x">\u2715</button>
         </div>
+        ${listed ? `
+        <div class="fm-note">\uD83D\uDC8E Listed on the market for <b>${fish.listing_price} \uD83D\uDC8E</b></div>
         <div class="fish-menu-btns">
-          <button class="pill-btn pink" id="fm-pet">💕 Pet</button>
-          <button class="pill-btn blue" id="fm-transfer">${fish.location === "inventory" ? "🏠 Place in tank" : "🔀 Transfer"}</button>
-          <button class="pill-btn" id="fm-breed">🥚 Breed</button>
+          <button class="pill-btn" id="fm-mkcancel">\u274C Cancel listing</button>
+        </div>` : `
+        <div class="fish-menu-btns">
+          <button class="pill-btn pink" id="fm-pet">\uD83D\uDC95 Pet</button>
+          <button class="pill-btn blue" id="fm-transfer">${fish.location === "inventory" ? "\uD83C\uDFE0 Place in tank" : "\uD83D\uDD00 Transfer"}</button>
+          <button class="pill-btn" id="fm-breed">\uD83E\uDD5A Breed</button>
         </div>
+        ${fish.tradeable ? `
         <div class="fish-menu-btns">
-          <button class="pill-btn gold" id="fm-rename">✏️ Name (💎${DATA.RENAME_GEMS})</button>
+          <button class="pill-btn gold" id="fm-mksell">\uD83D\uDC8E Sell on market</button>
+        </div>
+        <div id="fm-mkrow" class="fish-menu-btns" hidden>
+          <input id="fm-mkprice" type="number" min="1" max="999999" placeholder="Price in \uD83D\uDC8E"
+            style="flex:2;padding:10px;border-radius:12px;border:2px solid var(--pink-d)" />
+          <button class="pill-btn gold" id="fm-mkok">List \uD83D\uDC8E</button>
+        </div>` : `
+        <div class="fm-note sub">${esc(fish.trade_lock || "\uD83C\uDF92 Shop fish are bound to your account")}</div>`}`}
+        <div class="fish-menu-btns">
+          <button class="pill-btn gold" id="fm-rename">\u2710\uFE0F Name (\uD83D\uDC8E${DATA.RENAME_GEMS})</button>
         </div>
         <div id="fm-transfer-row" class="fish-menu-btns" hidden></div>
         <div id="fm-rename-row" class="fish-menu-btns" hidden>
           <input id="fm-rename-input" maxlength="20" placeholder="Pet name..."
             style="flex:2;padding:10px;border-radius:12px;border:2px solid var(--pink-d)" />
-          <button class="pill-btn gold" id="fm-rename-ok">OK 💎${DATA.RENAME_GEMS}</button>
+          <button class="pill-btn gold" id="fm-rename-ok">OK \uD83D\uDC8E${DATA.RENAME_GEMS}</button>
         </div>
       </div>`;
     overlay.onclick = (e) => { if (e.target === overlay) closeFishMenu(); };
     document.body.appendChild(overlay);
     $("fish-menu-x").onclick = closeFishMenu;
-    $("fm-pet").onclick = async () => { closeFishMenu(); await App.petFish(fish.id); };
-    $("fm-breed").onclick = () => { closeFishMenu(); openBreedingWith(fish); };
+    if (listed) {
+      $("fm-mkcancel").onclick = async () => {
+        const r = await Api.marketCancel(fish.listing_id);
+        if (r.ok) { AudioFX.coin(); toast("Listing cancelled \u2014 fish is back in your inventory \uD83C\uDF92"); }
+        else { AudioFX.error(); toast(r.error || "Couldn't cancel"); }
+        closeFishMenu(); await App.refresh();
+      };
+    } else {
+      $("fm-pet").onclick = async () => { closeFishMenu(); await App.petFish(fish.id); };
+      $("fm-breed").onclick = () => { closeFishMenu(); openBreedingWith(fish); };
+      $("fm-transfer").onclick = () => {
+        const row = $("fm-transfer-row");
+        const inInv = fish.location === "inventory";
+        const owned = (state.tanks.owned || []).filter((t) => inInv || t !== fish.tank);
+        if (!owned.length) { toast(inInv ? "No tank owned yet \uD83C\uDFE0" : "No other tank owned yet \uD83C\uDFE0"); return; }
+        row.hidden = false;
+        row.innerHTML = owned.map((t) =>
+          `<button class="pill-btn blue" data-fmto="${t}">\u2192 ${TANK_LABELS[t] || t}</button>`).join("");
+        row.querySelectorAll("[data-fmto]").forEach((b) => b.onclick = async () => {
+          b.disabled = true;
+          const r = await Api.transferFish(fish.id, b.dataset.fmto);
+          if (r.ok) { AudioFX.coin(); toast(inInv ? `Placed in the ${b.dataset.fmto} tank \uD83C\uDFE0\uD83D\uDC20` : `Moved to the ${b.dataset.fmto} tank \uD83D\uDD00\uD83D\uDC20`); }
+          else { AudioFX.error(); toast(r.error || "Couldn't transfer"); }
+          closeFishMenu();
+          await App.refresh();
+        });
+      };
+      if ($("fm-mksell")) {
+        $("fm-mksell").onclick = () => { const row = $("fm-mkrow"); row.hidden = !row.hidden; };
+        $("fm-mkok").onclick = async () => {
+          const price = Math.floor(Number($("fm-mkprice").value));
+          if (!price || price < 1 || price > 999999) { toast("Enter a price from 1 to 999999 \uD83D\uDC8E"); return; }
+          if (!confirm(`List this fish for ${price} \uD83D\uDC8E? (10% fee on sale)`)) return;
+          const r = await Api.marketList(fish.id, price);
+          if (r.ok) { AudioFX.coin(); toast("Listed on the fish market \uD83D\uDC8E"); closeFishMenu(); await App.refresh(); }
+          else { AudioFX.error(); toast(r.error || "Couldn't list"); }
+        };
+      }
+    }
     $("fm-rename").onclick = () => {
       const row = $("fm-rename-row");
       row.hidden = !row.hidden;
@@ -90,32 +143,15 @@ const UI = (() => {
     };
     $("fm-rename-ok").onclick = async () => {
       const name = $("fm-rename-input").value.trim();
-      if (!name) { toast("Type a name first ✏️"); return; }
+      if (!name) { toast("Type a name first \u2710\uFE0F"); return; }
       const r = await Api.renameFish(fish.id, name);
       if (r.ok) {
-        AudioFX.coin(); toast(`"${r.nickname}" — what a cute name! 💎`);
+        AudioFX.coin(); toast(`"${r.nickname}" \u2014 what a cute name! \uD83D\uDC8E`);
         closeFishMenu(); await App.refresh();
       } else {
         AudioFX.error();
-        toast(r.error === "not enough gems" ? "Not enough diamonds 💎" : (r.error || "Couldn't rename"));
+        toast(r.error === "not enough gems" ? "Not enough diamonds \uD83D\uDC8E" : (r.error || "Couldn't rename"));
       }
-    };
-    $("fm-transfer").onclick = () => {
-      const row = $("fm-transfer-row");
-      const inInv = fish.location === "inventory";
-      const owned = (state.tanks.owned || []).filter((t) => inInv || t !== fish.tank);
-      if (!owned.length) { toast(inInv ? "No tank owned yet 🏠" : "No other tank owned yet 🏠"); return; }
-      row.hidden = false;
-      row.innerHTML = owned.map((t) =>
-        `<button class="pill-btn blue" data-fmto="${t}">→ ${TANK_LABELS[t] || t}</button>`).join("");
-      row.querySelectorAll("[data-fmto]").forEach((b) => b.onclick = async () => {
-        b.disabled = true;
-        const r = await Api.transferFish(fish.id, b.dataset.fmto);
-        if (r.ok) { AudioFX.coin(); toast(inInv ? `Placed in the ${b.dataset.fmto} tank 🏠🐠` : `Moved to the ${b.dataset.fmto} tank 🔀🐠`); }
-        else { AudioFX.error(); toast(r.error || "Couldn't transfer"); }
-        closeFishMenu();
-        await App.refresh();
-      });
     };
   }
   function closeFishMenu() { const o = $("fish-menu-overlay"); if (o) o.remove(); }
@@ -151,6 +187,7 @@ const UI = (() => {
     fishshop: "🐟 Fish Shop", decor: "🪸 Decoration Shop", breeding: "🥚 Breeding",
     collection: "📖 Collection", inventory: "🎒 Inventory", quests: "🎯 Quests",
     settings: "⚙️ Settings", minigame: "🎮 Tap-the-Fish", event: "🍂 Autumn Event",
+    market: "💎 Fish Market",
   };
 
   /* ---------- helpers ---------- */
@@ -393,11 +430,17 @@ const UI = (() => {
     }).join("") : `<div class="empty">No bred fish yet — lineage appears here 🧬</div>`;
 
     html += `<h3>🐠 My fish (tap a fish for options)</h3>`;
-    html += (state.fish || []).map((f) => `
+    html += (state.fish || []).map((f) => {
+      const locSub = f.location === "market"
+        ? `💎 on the market for <b>${f.listing_price} 💎</b> — tap the fish to manage`
+        : f.location === "inventory" ? "🎒 inventory — tap the fish to place it" : "🏠 " + esc(f.tank || "") + " tank";
+      return `
       <div class="row-card"><span data-fishmenu="${f.id}" style="cursor:pointer;display:flex;align-items:center">${fishImg(f.species_id)}</span><div class="grow">
         <b>${esc(f.nickname || f.name || speciesName(f.species_id))}</b>
-        <div class="sub">${f.gender === "male" ? "♂" : "♀"} · ${esc(f.stage || "adult")} · ${f.location === "inventory" ? "🎒 inventory — tap the fish to place it" : "🏠 " + esc(f.tank || "")} tank</div>
-      </div><button class="pill-btn" data-sell="${f.id}">Sell</button></div>`).join("")
+        ${f.tradeable && f.location !== "market" ? ' <span class="tag">💎 tradeable</span>' : ""}
+        <div class="sub">${f.gender === "male" ? "♂" : "♀"} · ${esc(f.stage || "adult")} · ${locSub}</div>
+      </div>${f.location === "market" ? "" : `<button class="pill-btn" data-sell="${f.id}">Sell</button>`}</div>`;
+    }).join("")
       || `<div class="empty">No fish yet</div>`;
     body.innerHTML = html;
     body.querySelectorAll("[data-fishmenu]").forEach((el) => el.onclick = () => {
@@ -659,10 +702,56 @@ const UI = (() => {
     };
   }
 
+  async function renderMarket() {
+    const body = $("screen-body");
+    body.innerHTML = `<div class="empty">Loading market… 💎</div>`;
+    const r = await Api.marketListings();
+    if (!r.ok) { body.innerHTML = `<div class="empty">Couldn't load the market 😢</div>`; return; }
+    const me = state.user && state.user.id;
+    let html = `<div class="sub" style="margin-bottom:8px">Player-to-player market · prices in 💎 diamonds · 10% fee on every sale</div>`;
+    if (!r.listings.length) {
+      html += `<div class="empty">No fish listed yet.<br>List yours from the Collection 💎</div>`;
+    }
+    for (const l of r.listings) {
+      const f = l.fish, lin = f.lineage || {};
+      const tags = [];
+      if (lin.hybrid) tags.push("✨ hybrid");
+      if (lin.generation) tags.push(`gen ${lin.generation}`);
+      if (f.origin === "event") tags.push("🏆 event");
+      if (f.origin === "bred" && !lin.hybrid) tags.push("🧬 bred");
+      const own = l.seller_id === me;
+      html += `<div class="row-card">${fishImg(f.species_id, 0)}<div class="grow">
+        <b>${esc(f.nickname || f.name)}</b>
+        <span class="tag">${f.gender === "male" ? "♂" : "♀"}</span>${tags.map((t) => ` <span class="tag">${t}</span>`).join("")}
+        <div class="sub">${esc(f.name)} · seller: ${esc(l.seller_name || "player")}</div></div>
+        <div style="text-align:right;flex-shrink:0">
+          <div class="mk-price">💎 ${l.price_diamonds}</div>
+          ${own
+            ? `<button class="pill-btn" data-mkcancel="${l.listing_id}">Cancel</button>`
+            : `<button class="pill-btn gold" data-mkbuy="${l.listing_id}">Buy</button>`}
+        </div></div>`;
+    }
+    body.innerHTML = html;
+    body.querySelectorAll("[data-mkbuy]").forEach((b) => b.onclick = async () => {
+      const id = Number(b.dataset.mkbuy);
+      if (!confirm("Buy this fish with diamonds? 💎")) return;
+      b.disabled = true;
+      const r2 = await Api.marketBuy(id);
+      if (r2.ok) { AudioFX.coin(); toast("Fish bought! It's in your inventory 🎒"); await App.refresh(); renderMarket(); }
+      else { AudioFX.error(); toast(r2.error || "Buy failed"); b.disabled = false; }
+    });
+    body.querySelectorAll("[data-mkcancel]").forEach((b) => b.onclick = async () => {
+      const r2 = await Api.marketCancel(Number(b.dataset.mkcancel));
+      if (r2.ok) { toast("Listing cancelled — fish is back in your inventory 🎒"); await App.refresh(); renderMarket(); }
+      else toast(r2.error || "Cancel failed");
+    });
+  }
+
   const RENDER = {
     fishshop: renderFishShop, decor: renderDecorShop, breeding: renderBreeding,
     collection: renderCollection, inventory: renderInventory, quests: renderQuests,
     settings: renderSettings, minigame: renderMinigame, event: renderEvent,
+    market: renderMarket,
   };
 
   return {

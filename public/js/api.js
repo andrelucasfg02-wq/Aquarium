@@ -62,5 +62,9 @@ const Api = (() => {
     eventClaim: (event) => post("/api/event/claim", { event }),
     transferFish: (fish_id, tier) => post("/api/fish/transfer", { fish_id, tier }),
     renameFish: (fish_id, name) => post("/api/fish/rename", { fish_id, name }),
+    marketListings: () => get("/api/market/listings"),
+    marketList: (fish_id, price_diamonds) => post("/api/market/list", { fish_id, price_diamonds }),
+    marketCancel: (listing_id) => post("/api/market/cancel", { listing_id }),
+    marketBuy: (listing_id) => post("/api/market/buy", { listing_id }),
   };
 })();

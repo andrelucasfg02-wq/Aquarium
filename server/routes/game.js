@@ -6,6 +6,34 @@ const C = require('../catalog');
 
 const rand = (lo, hi) => lo + Math.random() * (hi - lo);
 
+// Weekly event config. ends_at = unix seconds when the event ends.
+// Event fish (and their offspring) are trophies locked to the account while
+// the event runs; they become market-tradeable only after it ends.
+// ends_at: null = end date not announced yet (fish stay locked).
+const EVENT_META = {
+  autumn1: { goal: 300000, fish: 'autumn_fish', ends_at: null },
+};
+const EVENT_GOALS = { autumn1: EVENT_META.autumn1.goal };
+const EVENT_FISH = { autumn1: EVENT_META.autumn1.fish };
+const eventEnded = (eventId, nowT) => {
+  const m = EVENT_META[eventId];
+  return !!(m && m.ends_at != null && nowT >= m.ends_at);
+};
+// Marketplace tradeability:
+// - shop-bought commons: bound to the account, never tradeable
+// - bred fish: tradeable, unless they carry an event lineage whose event hasn't ended
+// - event fish: locked as trophies until their event ends
+const fishTradeable = (fish, nowT) => {
+  if (!fish) return { ok: false, reason: 'fish not found' };
+  if (fish.origin === 'shop' || !fish.origin) {
+    return { ok: false, reason: '🎒 Shop fish are bound to your account' };
+  }
+  if (fish.event_id && !eventEnded(fish.event_id, nowT)) {
+    return { ok: false, reason: '🏆 Event trophy — tradeable when the event ends' };
+  }
+  return { ok: true };
+};
+
 function helpers(db) {
   const getWallet = (uid) => db.get('SELECT * FROM wallets WHERE user_id=?', uid);
   const addCoins = (uid, n) => db.run('UPDATE wallets SET coins=coins+? WHERE user_id=?', n, uid);
@@ -69,6 +97,7 @@ function helpers(db) {
   // --- fish ---
   const fishJson = (row, now) => {
     const lineage = row.lineage ? JSON.parse(row.lineage) : { mother: null, father: null, hybrid: 0, generation: 0 };
+    const tr = fishTradeable(row, now);
     return {
       id: row.id, species_id: row.species_id, group: row.grp, variant: row.variant,
       name: C.SPECIES_NAMES[row.species_id] || row.species_id,
@@ -77,6 +106,8 @@ function helpers(db) {
       x: row.x, y: row.y, born_at: row.born_at,
       stage: C.growthStage(row.grp, !!lineage.hybrid, row.born_at, now),
       fed_at: row.fed_at, lineage,
+      origin: row.origin || 'shop', event_id: row.event_id || null,
+      tradeable: tr.ok, trade_lock: tr.ok ? null : tr.reason,
     };
   };
 
@@ -87,11 +118,12 @@ function helpers(db) {
     const gender = opts.gender || (speciesId === 'female_betta' ? 'female' : (Math.random() < 0.5 ? 'male' : 'female'));
     const lineage = opts.lineage || { mother: null, father: null, hybrid: 0, generation: 0 };
     const info = await db.run(
-      `INSERT INTO fish (user_id,species_id,grp,variant,gender,location,tank,x,y,born_at,fed_at,lineage)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO fish (user_id,species_id,grp,variant,gender,location,tank,x,y,born_at,fed_at,lineage,origin,event_id)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       uid, speciesId, grp, opts.variant || speciesId, gender,
       opts.location || 'tank', tank, pos.x, pos.y,
-      opts.born_at || now, opts.fed_at || now, JSON.stringify(lineage));
+      opts.born_at || now, opts.fed_at || now, JSON.stringify(lineage),
+      opts.origin || 'shop', opts.event_id || null);
     await db.run(`INSERT INTO collection (user_id,species_id,count) VALUES (?,?,1)
                 ON CONFLICT(user_id,species_id) DO UPDATE SET count=count+1`, uid, speciesId);
     await questProgressMax(uid, 'own_8_fish', await totalFishCount(uid), now);
@@ -108,6 +140,7 @@ function helpers(db) {
     const fish = await addFish(uid, variant, {
       variant, tank, location, born_at: now,
       lineage: { mother: egg.variant_b, father: egg.variant_a, hybrid: hybrid ? 1 : 0, generation: egg.generation },
+      origin: 'bred', event_id: egg.event_id || null,
     }, now);
     await db.run('DELETE FROM eggs WHERE id=? AND user_id=?', egg.id, uid);
     return fish;
@@ -155,6 +188,16 @@ module.exports = function gameRoutes(db) {
     const tanks = await H.getTanks(uid);
     const fish = (await db.all('SELECT * FROM fish WHERE user_id=? ORDER BY id', uid))
       .map((f) => H.fishJson(f, t));
+    // attach the player's own market listings (price + id) to listed fish
+    const myListings = await db.all(
+      'SELECT id AS listing_id, fish_id, price_diamonds FROM market_listings WHERE seller_id=?', uid);
+    if (myListings.length) {
+      const byFish = new Map(myListings.map((l) => [l.fish_id, l]));
+      for (const f of fish) {
+        const l = byFish.get(f.id);
+        if (l) { f.listing_id = l.listing_id; f.listing_price = l.price_diamonds; }
+      }
+    }
     const eggs = (await db.all('SELECT * FROM eggs WHERE user_id=? ORDER BY hatch_at', uid))
       .map((e) => ({
         id: e.id, group: e.grp, variant_a: e.variant_a, variant_b: e.variant_b,
@@ -226,6 +269,8 @@ module.exports = function gameRoutes(db) {
     const { fish_id } = req.body || {};
     const fish = await db.get('SELECT * FROM fish WHERE id=? AND user_id=?', fish_id, uid);
     if (!fish) return res.status(404).json({ ok: false, error: 'fish not found' });
+    if (fish.location === 'market')
+      return res.status(400).json({ ok: false, error: 'cancel the market listing first 💎' });
     const price = Math.max(10, Math.floor(C.SPECIES_PRICES[fish.species_id].coins * 0.4));
     await db.tx(async (txDb) => {
       const Ht = helpers(txDb);
@@ -293,6 +338,8 @@ module.exports = function gameRoutes(db) {
     const fish = await db.get(
       "SELECT id, tank, location FROM fish WHERE id=? AND user_id=?", fish_id, uid);
     if (!fish) return res.status(404).json({ ok: false, error: 'fish not found' });
+    if (fish.location === 'market')
+      return res.status(400).json({ ok: false, error: 'cancel the market listing first 💎' });
     if (fish.location === 'tank' && fish.tank === tier)
       return res.status(400).json({ ok: false, error: 'already in that tank' });
     const tanks = await H.getTanks(uid);
@@ -353,6 +400,9 @@ module.exports = function gameRoutes(db) {
     const male = await db.get('SELECT * FROM fish WHERE id=? AND user_id=?', maleId, uid);
     const female = await db.get('SELECT * FROM fish WHERE id=? AND user_id=?', femaleId, uid);
     if (!male || !female) return res.status(404).json({ ok: false, error: 'fish not found' });
+    if (male.location === 'market' || female.location === 'market') {
+      return res.status(400).json({ ok: false, error: 'cancel the market listing first 💎' });
+    }
     if (maleId === femaleId) return res.status(400).json({ ok: false, error: 'pick two different fish' });
     if (male.gender !== 'male' || female.gender !== 'female') {
       return res.status(400).json({ ok: false, error: 'breeding needs one male and one female' });
@@ -372,10 +422,10 @@ module.exports = function gameRoutes(db) {
       const Ht = helpers(txDb);
       await txDb.run('UPDATE wallets SET gems=gems-2 WHERE user_id=?', uid);
       const info = await txDb.run(
-        `INSERT INTO eggs (user_id,grp,variant_a,variant_b,hybrid,generation,hatch_at,created_at)
-         VALUES (?,?,?,?,?,?,?,?)`,
+        `INSERT INTO eggs (user_id,grp,variant_a,variant_b,hybrid,generation,hatch_at,created_at,event_id)
+         VALUES (?,?,?,?,?,?,?,?,?)`,
         uid, male.grp, male.species_id, female.species_id, hybrid ? 1 : 0,
-        generation, t + hatchHours * 3600, t);
+        generation, t + hatchHours * 3600, t, male.event_id || female.event_id || null);
       await Ht.questProgressAdd(uid, 'breed_1', 1, t);
       await Ht.addXp(uid, 5);
       return info.lastInsertRowid;
@@ -591,8 +641,6 @@ module.exports = function gameRoutes(db) {
   // ---------- weekly event: Autumn Crush (event_id "autumn1") ----------
   // Progress is stored per account on the server. Claim is atomic: the
   // event_rewards PK (user_id,event_id) makes double-claims impossible.
-  const EVENT_GOALS = { autumn1: 300000 };
-  const EVENT_FISH = { autumn1: 'autumn_fish' };
   const validEvent = (e) => typeof e === 'string' && EVENT_GOALS[e] != null;
 
   r.get('/event/progress', ah(async (req, res) => {
@@ -645,8 +693,117 @@ module.exports = function gameRoutes(db) {
       if (rw) return { ok: false, error: 'already claimed' };
       await txDb.run('INSERT INTO event_rewards(user_id,event_id,claimed_at) VALUES(?,?,?)', uid, event, t);
       // prize goes to inventory — the player places it in the tank themselves
-      const fish = await Ht.addFish(uid, EVENT_FISH[event], { location: 'inventory' }, t);
+      const fish = await Ht.addFish(uid, EVENT_FISH[event], {
+        location: 'inventory', origin: 'event', event_id: event,
+      }, t);
       return { ok: true, fish_id: fish.id, species_id: EVENT_FISH[event] };
+    });
+    if (!out.ok) return res.status(400).json(out);
+    res.json(out);
+  }));
+
+  // ---------- player marketplace (diamonds) ----------
+  // Tradeability: shop-bought commons are bound to the account; bred fish are
+  // tradeable; event fish (and their offspring) unlock only after the event ends.
+  const MARKET_FEE_PCT = 10;   // burned on every sale (diamond sink)
+  const MARKET_MAX_PRICE = 999999;
+
+  const marketFishJson = (l, t) => ({
+    listing_id: l.listing_id, price_diamonds: l.price_diamonds, listed_at: l.listed_at,
+    seller_id: l.seller_id, seller_name: l.seller_name,
+    fish: H.fishJson({
+      id: l.fish_id, species_id: l.species_id, grp: l.grp, variant: l.variant,
+      gender: l.gender, location: 'market', tank: null, x: null, y: null,
+      born_at: l.born_at, fed_at: null, lineage: l.lineage,
+      nickname: l.nickname, origin: l.origin, event_id: l.event_id,
+    }, t),
+  });
+
+  // browse active listings (newest first)
+  r.get('/market/listings', ah(async (req, res) => {
+    const t = now();
+    const rows = await db.all(
+      `SELECT l.id AS listing_id, l.price_diamonds, l.listed_at, l.seller_id,
+              u.name AS seller_name,
+              f.id AS fish_id, f.species_id, f.grp, f.variant, f.gender,
+              f.born_at, f.lineage, f.nickname, f.origin, f.event_id
+       FROM market_listings l
+       JOIN fish f ON f.id = l.fish_id
+       JOIN users u ON u.id = l.seller_id
+       ORDER BY l.listed_at DESC LIMIT 100`);
+    res.json({ ok: true, listings: rows.map((l) => marketFishJson(l, t)) });
+  }));
+
+  // list one of your fish for sale (diamonds)
+  r.post('/market/list', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const fishId = Number(req.body && req.body.fish_id);
+    const price = Math.floor(Number(req.body && req.body.price_diamonds));
+    if (!fishId || !Number.isFinite(price) || price < 1 || price > MARKET_MAX_PRICE) {
+      return res.status(400).json({ ok: false, error: 'invalid price (1-' + MARKET_MAX_PRICE + ' 💎)' });
+    }
+    const fish = await db.get('SELECT * FROM fish WHERE id=? AND user_id=?', fishId, uid);
+    if (!fish) return res.status(404).json({ ok: false, error: 'fish not found' });
+    if (fish.location === 'market') {
+      return res.status(400).json({ ok: false, error: 'already listed on the market' });
+    }
+    const tr = fishTradeable(fish, t);
+    if (!tr.ok) return res.status(400).json({ ok: false, error: tr.reason });
+    const out = await db.tx(async (txDb) => {
+      const f = await txDb.get('SELECT * FROM fish WHERE id=? AND user_id=?', fishId, uid);
+      if (!f || f.location === 'market') return { ok: false, error: 'fish no longer available' };
+      const tr2 = fishTradeable(f, t);
+      if (!tr2.ok) return { ok: false, error: tr2.reason };
+      await txDb.run("UPDATE fish SET location='market' WHERE id=?", fishId);
+      const info = await txDb.run(
+        'INSERT INTO market_listings (seller_id,fish_id,price_diamonds,listed_at) VALUES (?,?,?,?)',
+        uid, fishId, price, t);
+      return { ok: true, listing_id: info.lastInsertRowid };
+    });
+    if (!out.ok) return res.status(400).json(out);
+    res.json(out);
+  }));
+
+  // cancel your own listing — the fish comes back to your inventory
+  r.post('/market/cancel', ah(async (req, res) => {
+    const uid = req.user.id;
+    const listingId = Number(req.body && req.body.listing_id);
+    if (!listingId) return res.status(400).json({ ok: false, error: 'invalid listing' });
+    const out = await db.tx(async (txDb) => {
+      const l = await txDb.get('SELECT * FROM market_listings WHERE id=? AND seller_id=?', listingId, uid);
+      if (!l) return { ok: false, error: 'listing not found' };
+      await txDb.run('DELETE FROM market_listings WHERE id=?', listingId);
+      await txDb.run("UPDATE fish SET location='inventory' WHERE id=? AND user_id=?", l.fish_id, uid);
+      return { ok: true };
+    });
+    if (!out.ok) return res.status(400).json(out);
+    res.json(out);
+  }));
+
+  // buy a listing — diamonds move atomically, the fish goes to your inventory
+  r.post('/market/buy', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const listingId = Number(req.body && req.body.listing_id);
+    if (!listingId) return res.status(400).json({ ok: false, error: 'invalid listing' });
+    const out = await db.tx(async (txDb) => {
+      const l = await txDb.get('SELECT * FROM market_listings WHERE id=?', listingId);
+      if (!l) return { ok: false, error: 'listing is gone' };
+      if (l.seller_id === uid) return { ok: false, error: "you can't buy your own listing" };
+      const fish = await txDb.get('SELECT * FROM fish WHERE id=?', l.fish_id);
+      if (!fish || fish.user_id !== l.seller_id || fish.location !== 'market') {
+        return { ok: false, error: 'listing is no longer valid' };
+      }
+      const w = await txDb.get('SELECT gems FROM wallets WHERE user_id=?', uid);
+      if (!w || w.gems < l.price_diamonds) return { ok: false, error: 'not enough 💎' };
+      const fee = Math.floor(l.price_diamonds * MARKET_FEE_PCT / 100);
+      const sellerGets = l.price_diamonds - fee;
+      await txDb.run('UPDATE wallets SET gems=gems-? WHERE user_id=?', l.price_diamonds, uid);
+      await txDb.run('UPDATE wallets SET gems=gems+? WHERE user_id=?', sellerGets, l.seller_id);
+      await txDb.run("UPDATE fish SET user_id=?, location='inventory' WHERE id=?", uid, fish.id);
+      await txDb.run('DELETE FROM market_listings WHERE id=?', listingId);
+      const Ht = helpers(txDb);
+      await Ht.addXp(uid, 5);
+      return { ok: true, fish_id: fish.id, fee_diamonds: fee };
     });
     if (!out.ok) return res.status(400).json(out);
     res.json(out);

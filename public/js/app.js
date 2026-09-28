@@ -31,6 +31,18 @@ const App = (() => {
     $("auth-screen").hidden = false;
   }
 
+  let promoShown = false;
+  function showPromo() {
+    if (promoShown) return;
+    promoShown = true;
+    const ov = $("promo-overlay");
+    if (!ov) return;
+    ov.hidden = false;
+    $("promo-x").onclick = () => { ov.hidden = true; };
+    ov.onclick = (e) => { if (e.target === ov) ov.hidden = true; };
+    $("promo-img").onclick = () => { ov.hidden = true; UI.open("event"); };
+  }
+
   async function enterGame() {
     $("auth-screen").hidden = true;
     $("game").hidden = false;
@@ -40,6 +52,7 @@ const App = (() => {
     }
     await refresh();
     startPoll();
+    showPromo();
   }
 
   /* ---------- state ---------- */

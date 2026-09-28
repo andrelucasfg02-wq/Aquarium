@@ -629,6 +629,10 @@ const UI = (() => {
 
   /* ================= WEEKLY EVENT: AUTUMN CRUSH ================= */
   function renderEvent() {
+    // Nao reconstruir no meio da partida: App.refresh() (poll de 30s + volta pra aba)
+    // chama refreshCurrent(), que remontaria o jogo e mostraria a tela de
+    // "Continuar" do nada. Se o jogo ja esta montado, mantem como esta.
+    if (window.EventCrush && EventCrush.isMounted && EventCrush.isMounted()) return;
     const body = $("screen-body");
     body.innerHTML = `<div id="ev-root"></div>`;
     if (window.EventCrush) EventCrush.mount(body.querySelector("#ev-root"));

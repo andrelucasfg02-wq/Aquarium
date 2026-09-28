@@ -426,6 +426,6 @@ function unmount() {
   if (R) R.innerHTML = "";
   R = null; board = null; fx = null;
 }
-return { mount, unmount };
+return { mount, unmount, isMounted: () => !!R };
 })();
 window.EventCrush = EventCrush;

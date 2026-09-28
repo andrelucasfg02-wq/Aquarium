@@ -519,15 +519,81 @@ const UI = (() => {
 
   /* ================= MINIGAME ================= */
   const MG = { round: 0, times: [], shownAt: 0, timer: null, active: false };
+  /* ---------- daily shell game: find the pearl, win 10 diamonds ---------- */
+  async function renderShellGame(area) {
+    if (!area) return;
+    const st = await Api.shellStatus();
+    if (!st.ok) { area.innerHTML = `<div class="sub">${st.error || st.message || "Couldn't load 🐚"}</div>`; return; }
+    if (!st.canPlay) {
+      const ms = Math.max(0, (st.nextAt * 1000) - Date.now());
+      const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
+      area.innerHTML = `<div class="sub">⏳ Next game in <b>${h}h ${m}m</b> — good luck tomorrow! 🍀</div>`;
+      return;
+    }
+    area.innerHTML = `<button class="pill-btn blue" id="shell-start" style="width:100%;padding:12px">🐚 Play today's game</button>`;
+    $("shell-start").onclick = () => {
+      area.innerHTML = `
+        <div class="sub" style="text-align:center">Watch closely… 👀</div>
+        <div id="shell-row"></div>
+        <div class="shell-result" id="shell-msg"></div>`;
+      const row = $("shell-row"), msg = $("shell-msg");
+      row.innerHTML = [0, 1, 2].map((i) =>
+        `<button class="shell shuffling" data-i="${i}" disabled>🐚</button>`).join("");
+      const shells = [...row.querySelectorAll(".shell")];
+      AudioFX.pop();
+      // pure theater: the pearl's hiding spot is decided server-side on tap
+      setTimeout(() => {
+        shells.forEach((s) => { s.classList.remove("shuffling"); s.disabled = false; });
+        msg.textContent = "Tap a shell! 🐚";
+        AudioFX.pop();
+      }, 1500);
+      shells.forEach((s) => s.onclick = async () => {
+        const pick = Number(s.dataset.i);
+        shells.forEach((x) => { x.disabled = true; x.classList.remove("picked"); });
+        s.classList.add("picked");
+        msg.textContent = "Opening…";
+        AudioFX.munch();
+        const r = await Api.shellPlay(pick);
+        if (!r.ok) {
+          msg.textContent = r.error || r.message || "Couldn't play";
+          if (r.nextAt) setTimeout(() => renderShellGame(area), 1500);
+          return;
+        }
+        shells.forEach((x, i) => {
+          x.classList.remove("picked");
+          if (i === r.winning) {
+            x.textContent = "🦪"; x.classList.add("reveal");
+          } else { x.classList.add("dim"); }
+        });
+        if (r.win) {
+          AudioFX.coin();
+          msg.innerHTML = `🎉 You found the pearl! <b>+💎${r.gems}</b>`;
+          toast(`🎉 Pearl found! +💎${r.gems}`);
+        } else {
+          AudioFX.error();
+          msg.textContent = "The pearl was hiding in another shell… try tomorrow! 🍀";
+        }
+        if (window.App && App.refresh) await App.refresh();
+      });
+    };
+  }
+
   function renderMinigame() {
     const body = $("screen-body");
     MG.round = 0; MG.times = []; MG.active = false;
     body.innerHTML = `
+      <div class="shell-box">
+        <div class="shell-title">🐚 Daily Shell Game</div>
+        <div class="sub">Find the pearl and win <b>💎10</b>! · 30% luck · once every 24h</div>
+        <div id="shell-area" style="margin-top:8px"></div>
+      </div>
+      <div class="sub" style="margin:10px 0 8px;font-weight:800">🎮 Tap-the-Fish</div>
       <div class="sub" style="margin-bottom:8px">A fish pops up — tap it as fast as you can! 8 rounds ⚡</div>
       <div class="mg-hud"><span>Round <b id="mg-round">0</b>/8</span><span id="mg-last"></span></div>
       <div id="mg-stage"><img id="mg-fish" alt="🐟"></div>
       <div class="big-score" id="mg-result"></div>
       <button class="pill-btn pink" id="mg-start" style="width:100%;padding:13px">▶ Start</button>`;
+    renderShellGame($("shell-area"));
     const stage = $("mg-stage"), fish = $("mg-fish");
     const species = ["sakura_goldfish", "azure_tang", "ember_clownfish", "fullmoon_betta", "red_shrimp"];
 

@@ -554,5 +554,36 @@ module.exports = function gameRoutes(db) {
     res.json({ ok: true, coins });
   }));
 
+  // ---------- daily shell game: find the pearl, win 10 diamonds (30% luck) ----------
+  const SHELL_COOLDOWN = 86400, SHELL_WIN_CHANCE = 0.30, SHELL_PRIZE = 10;
+  r.get('/shell/status', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const row = await db.get('SELECT last_played_at FROM daily_shell WHERE user_id=?', uid);
+    const last = row && row.last_played_at ? row.last_played_at : 0;
+    const nextAt = last + SHELL_COOLDOWN;
+    res.json({ ok: true, canPlay: t >= nextAt, nextAt: t >= nextAt ? t : nextAt });
+  }));
+  r.post('/shell/play', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const pick = Math.floor(Number(req.body && req.body.pick));
+    if (pick !== 0 && pick !== 1 && pick !== 2)
+      return res.status(400).json({ ok: false, error: 'invalid pick' });
+    const out = await db.tx(async (txDb) => {
+      const row = await txDb.get('SELECT last_played_at FROM daily_shell WHERE user_id=?', uid);
+      const last = row && row.last_played_at ? row.last_played_at : 0;
+      if (t < last + SHELL_COOLDOWN)
+        return { ok: false, error: 'come back tomorrow 🐚', nextAt: last + SHELL_COOLDOWN };
+      // server-side roll: exactly 30% win chance, pearl hidden until reveal
+      const win = Math.random() < SHELL_WIN_CHANCE;
+      const others = [0, 1, 2].filter((i) => i !== pick);
+      const winning = win ? pick : others[Math.floor(Math.random() * others.length)];
+      await txDb.run('INSERT OR REPLACE INTO daily_shell(user_id,last_played_at) VALUES(?,?)', uid, t);
+      if (win) await txDb.run('UPDATE wallets SET gems=gems+? WHERE user_id=?', SHELL_PRIZE, uid);
+      return { ok: true, win, winning, gems: win ? SHELL_PRIZE : 0 };
+    });
+    if (!out.ok) return res.status(400).json(out);
+    res.json(out);
+  }));
+
   return r;
 };

@@ -50,6 +50,15 @@ const App = (() => {
     UI.updateHUD(state);
     tank.syncState(state);
     applySettings(state.settings, true);
+    // daily shell game badge on the minigame button
+    Api.shellStatus().then((s) => {
+      const b = document.getElementById("btn-minigame");
+      if (!b) return;
+      let dot = b.querySelector(".dot");
+      if (s.ok && s.canPlay) {
+        if (!dot) { dot = document.createElement("span"); dot.className = "dot"; b.appendChild(dot); }
+      } else if (dot) dot.remove();
+    });
     if (!decorCatalogLoaded) {
       // mark loaded only on success so a failed fetch retries on next refresh
       Api.decorCatalog().then((dc) => {

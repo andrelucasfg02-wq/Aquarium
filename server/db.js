@@ -47,6 +47,8 @@ const SCHEMA = `
       user_id INTEGER, species_id TEXT, count INTEGER, PRIMARY KEY(user_id,species_id));
     CREATE TABLE IF NOT EXISTS settings(
       user_id INTEGER PRIMARY KEY, music INTEGER, sfx INTEGER, quality TEXT);
+    CREATE TABLE IF NOT EXISTS daily_shell(
+      user_id INTEGER PRIMARY KEY, last_played_at INTEGER);
     CREATE INDEX IF NOT EXISTS idx_fish_user ON fish(user_id);
     CREATE INDEX IF NOT EXISTS idx_eggs_user ON eggs(user_id);
     CREATE INDEX IF NOT EXISTS idx_dirt_user ON dirt_spots(user_id);

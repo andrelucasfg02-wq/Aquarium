@@ -55,6 +55,8 @@ const Api = (() => {
     buyFood: (qty) => post("/api/shop/food/buy", { qty }),
     saveSettings: (music, sfx, quality) => post("/api/settings", { music, sfx, quality }),
     minigameFinish: (score) => post("/api/minigame/finish", { score }),
+    shellStatus: () => get("/api/shell/status"),
+    shellPlay: (pick) => post("/api/shell/play", { pick }),
     transferFish: (fish_id, tier) => post("/api/fish/transfer", { fish_id, tier }),
     renameFish: (fish_id, name) => post("/api/fish/rename", { fish_id, name }),
   };

@@ -232,5 +232,30 @@ select.sel{padding:10px;border-radius:12px;border:2px solid var(--blue);font-siz
 #mg-fish{position:absolute;width:84px;transform:translate(-50%,-50%);cursor:pointer;display:none}
 .mg-hud{display:flex;justify-content:space-between;font-weight:800;margin:8px 2px}
 .big-score{text-align:center;font-size:22px;margin:10px 0}
+
+/* daily shell game */
+.shell-box{background:var(--card);border-radius:var(--radius);padding:12px;
+  border:2px solid #fff;box-shadow:var(--shadow);margin-bottom:4px}
+.shell-title{font-weight:800;font-size:16px;margin-bottom:2px}
+#shell-row{display:flex;justify-content:center;gap:16px;margin:10px 0 4px;min-height:76px}
+.shell{font-size:58px;line-height:1;padding:4px;transition:transform .18s;
+  filter:drop-shadow(0 4px 6px rgba(0,0,0,.2))}
+.shell.shuffling{animation:shellshuffle .38s ease-in-out 4}
+.shell:disabled{cursor:default}
+.shell.picked{transform:translateY(-10px) scale(1.15)}
+.shell.dim{opacity:.45;filter:grayscale(.7)}
+.shell.reveal{animation:shellpop .35s ease-out}
+@keyframes shellshuffle{
+  0%{transform:translateX(0) rotate(0)}25%{transform:translateX(-16px) rotate(-14deg)}
+  75%{transform:translateX(16px) rotate(14deg)}100%{transform:translateX(0) rotate(0)}}
+@keyframes shellpop{0%{transform:scale(.6)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+.shell-result{text-align:center;font-weight:800;margin:6px 0;min-height:22px}
+
+/* minigame FAB notification dot (daily shell game available) */
+.fab{position:relative}
+.fab .dot{position:absolute;top:1px;right:1px;width:13px;height:13px;border-radius:50%;
+  background:#ff5b7f;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);
+  animation:dotpulse 1.2s ease-in-out infinite}
+@keyframes dotpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
 .empty{padding:26px 10px;text-align:center;color:var(--ink-soft);font-size:14px}
 @media (min-width:560px){ .grid2{grid-template-columns:repeat(3,1fr)} }

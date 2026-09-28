@@ -1,8 +1,10 @@
-/* audio.js — tiny offline WebAudio: soft ambient pad (music) + blip SFX. No assets. */
+/* audio.js — blip SFX (WebAudio) + tema do jogo em loop ("Amber in the Aquarium"). */
 "use strict";
 
 const AudioFX = (() => {
-  let ctx = null, musicNodes = [], sfxOn = true, musicOn = false, evTrack = null;
+  let ctx = null, sfxOn = true, musicOn = false;
+  let songEl = null, songKickArmed = false;
+  const GAME_SONG = "assets/amber-in-the-aquarium.mp3";
 
   function ensure() {
     if (!ctx) {
@@ -25,53 +27,47 @@ const AudioFX = (() => {
     o.start(); o.stop(c.currentTime + (dur || .12));
   }
 
-  // gentle looping pad: two detuned sines through a slow LFO, very quiet
-  function startMusic() {
-    const c = ensure(); if (!c || musicNodes.length) return;
-    const g = c.createGain(); g.gain.value = .028; g.connect(c.destination);
-    const notes = [220, 277.18, 329.63, 440];
-    notes.forEach((f, i) => {
-      const o = c.createOscillator(); o.type = "sine"; o.frequency.value = f;
-      const lfo = c.createOscillator(); lfo.frequency.value = .07 + i * .03;
-      const lg = c.createGain(); lg.gain.value = f * .004;
-      lfo.connect(lg); lg.connect(o.frequency);
-      o.connect(g); o.start(); lfo.start();
-      musicNodes.push(o, lfo);
-    });
-    musicNodes.push(g);
+  function songKick() {
+    songKickArmed = false;
+    document.removeEventListener("pointerdown", songKick);
+    startMusic();
   }
-  function stopMusic() {
-    musicNodes.forEach((n) => { try { n.stop(); } catch (e) {} try { n.disconnect(); } catch (e) {} });
-    musicNodes = [];
+  function armSongKick() {
+    if (songKickArmed) return;
+    songKickArmed = true;
+    document.addEventListener("pointerdown", songKick);
+  }
+  function disarmSongKick() {
+    songKickArmed = false;
+    document.removeEventListener("pointerdown", songKick);
   }
 
-  // Event song (ex: tema do Autumn Crush): pausa o pad ambiente enquanto toca.
-  // Toca independente da config de musica: e parte da experiencia do evento.
-  // Resolve com o <audio> se o autoplay foi bloqueado (quem chama tenta de novo
-  // no proximo gesto do usuario), ou null.
-  function setEventTrack(url) {
-    if (evTrack) { try { evTrack.pause(); } catch (e) {} evTrack = null; }
-    if (url) {
-      stopMusic();
-      evTrack = new Audio(url);
-      evTrack.loop = true;
-      evTrack.volume = 0.5;
-      evTrack.preload = "auto";
-      return evTrack.play().then(() => null).catch(() => evTrack);
+  // Tema do jogo em loop. Se o autoplay for bloqueado, arma para comecar
+  // no primeiro toque do usuario.
+  function startMusic() {
+    if (!musicOn) return;
+    if (songEl && !songEl.paused) return;
+    if (!songEl) {
+      songEl = new Audio(GAME_SONG);
+      songEl.loop = true;
+      songEl.volume = 0.5;
+      songEl.preload = "auto";
     }
-    if (musicOn) startMusic();
-    return Promise.resolve(null);
+    const p = songEl.play();
+    if (p && p.catch) p.catch(() => armSongKick());
+  }
+  function stopMusic() {
+    disarmSongKick();
+    if (songEl) { try { songEl.pause(); } catch (e) {} }
   }
 
   return {
-    unlock() { ensure(); }, // call on first user gesture
+    unlock() { ensure(); startMusic(); }, // call on first user gesture
     setSfx(on) { sfxOn = !!on; },
     setMusic(on) {
       musicOn = !!on;
-      if (on) { if (evTrack) evTrack.play().catch(() => {}); else startMusic(); }
-      else { stopMusic(); if (evTrack) { try { evTrack.pause(); } catch (e) {} } }
+      if (on) startMusic(); else stopMusic();
     },
-    setEventTrack,
     get musicOn() { return musicOn; },
     pop()   { blip(620, .09, "triangle", .10); },
     plop()  { blip(300, .12, "sine", .14); },

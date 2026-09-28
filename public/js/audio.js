@@ -2,7 +2,7 @@
 "use strict";
 
 const AudioFX = (() => {
-  let ctx = null, musicNodes = [], sfxOn = true, musicOn = false;
+  let ctx = null, musicNodes = [], sfxOn = true, musicOn = false, evTrack = null;
 
   function ensure() {
     if (!ctx) {
@@ -45,13 +45,32 @@ const AudioFX = (() => {
     musicNodes = [];
   }
 
+  // Event song (ex: tema do Autumn Crush): pausa o pad ambiente enquanto toca.
+  // Resolve com o <audio> se o autoplay foi bloqueado (quem chama tenta de novo
+  // no proximo gesto do usuario), ou null.
+  function setEventTrack(url) {
+    if (evTrack) { try { evTrack.pause(); } catch (e) {} evTrack = null; }
+    if (url && musicOn) {
+      stopMusic();
+      evTrack = new Audio(url);
+      evTrack.loop = true;
+      evTrack.volume = 0.5;
+      evTrack.preload = "auto";
+      return evTrack.play().then(() => null).catch(() => evTrack);
+    }
+    if (musicOn) startMusic();
+    return Promise.resolve(null);
+  }
+
   return {
     unlock() { ensure(); }, // call on first user gesture
     setSfx(on) { sfxOn = !!on; },
     setMusic(on) {
       musicOn = !!on;
-      if (on) startMusic(); else stopMusic();
+      if (on) { if (evTrack) evTrack.play().catch(() => {}); else startMusic(); }
+      else { stopMusic(); if (evTrack) { try { evTrack.pause(); } catch (e) {} } }
     },
+    setEventTrack,
     get musicOn() { return musicOn; },
     pop()   { blip(620, .09, "triangle", .10); },
     plop()  { blip(300, .12, "sine", .14); },

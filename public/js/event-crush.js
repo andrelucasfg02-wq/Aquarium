@@ -52,6 +52,21 @@ async function loadProgress() {
 function clearProgress() { /* o servidor guarda o recorde; o resgate e separado */ }
 function onHideSave() { saveProgress(); }
 
+// ---- EVENT MUSIC: Amber in the Aquarium em loop enquanto o evento esta aberto ----
+const EVENT_SONG = "assets/event/amber-in-the-aquarium.mp3";
+function startEventMusic() {
+  if (!window.AudioFX) return;
+  AudioFX.setEventTrack(EVENT_SONG).then((el) => {
+    if (el && R) { // autoplay bloqueado: comeca no primeiro toque na tela do evento
+      const kick = () => { el.play().catch(() => {}); R.removeEventListener("pointerdown", kick); };
+      R.addEventListener("pointerdown", kick);
+    }
+  });
+}
+function stopEventMusic() {
+  if (window.AudioFX) AudioFX.setEventTrack(null);
+}
+
 function checkLevel() {
   if (over) return;
   let leveled = false;
@@ -391,6 +406,7 @@ async function mount(root) {
   selected = null; grid = []; rocks = []; rocksPlaced = false; _lastSig = "";
   document.addEventListener("visibilitychange", onHideSave);
   window.addEventListener("pagehide", onHideSave);
+  startEventMusic();
   const _save = await loadProgress();
   const _has = !!(_save && _save.score > 0);
   R.querySelector("#ev-card").innerHTML = `
@@ -420,6 +436,7 @@ async function mount(root) {
 }
 
 function unmount() {
+  stopEventMusic();
   document.removeEventListener("visibilitychange", onHideSave);
   window.removeEventListener("pagehide", onHideSave);
   over = true; busy = false;

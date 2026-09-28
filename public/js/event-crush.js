@@ -402,8 +402,7 @@ async function mount(root) {
   <p>10 n&iacute;veis: <b>5k &rarr; 20k &rarr; 35k &rarr; 50k &rarr; 80k &rarr; 100k &rarr; 120k &rarr; 150k &rarr; 200k &rarr; 300k</b><br>
   e desbloqueie o <b>Peixe de Outono</b>!</p>
   ${_save && _save.claimed ? `<p style="font-size:13px">\uD83C\uDFC6 Voc&ecirc; j&aacute; garantiu o Peixe de Outono!</p>` : ``}
-  ${_has ? `<button class="btn" id="ev-continue-btn">Continuar &mdash; Nv ${_save.level + 1} (${fmt(_save.score)} pts)</button>` : ``}
-  <button class="btn" id="ev-start-btn">${_has ? "Recome&ccedil;ar do zero" : "Come&ccedil;ar"}</button>`;
+  ${_has ? `<button class="btn" id="ev-continue-btn">Continuar &mdash; Nv ${_save.level + 1} (${fmt(_save.score)} pts)</button>` : `<button class="btn" id="ev-start-btn">Come&ccedil;ar</button>`}`;
   updateHud();
   if (_has) R.querySelector("#ev-continue-btn").onclick = () => {
     score = _save.score; level = _save.level; moves = _save.moves;
@@ -412,7 +411,8 @@ async function mount(root) {
     if (level >= 4) { placeRocks(); rocksPlaced = true; }
     toast("Bem-vindo de volta! Nv " + (level + 1));
   };
-  R.querySelector("#ev-start-btn").onclick = () => {
+  const _startBtn = R.querySelector("#ev-start-btn");
+  if (_startBtn) _startBtn.onclick = () => {
     score = 0; level = 0; moves = 0; over = false;
     R.querySelector("#ev-overlay").classList.add("hidden");
     buildBoard(); updateHud();

@@ -51,8 +51,10 @@ const App = (() => {
     tank.syncState(state);
     applySettings(state.settings, true);
     if (!decorCatalogLoaded) {
-      decorCatalogLoaded = true;
-      Api.decorCatalog().then((dc) => { if (dc.ok) setDecoCatalog(dc.items); });
+      // mark loaded only on success so a failed fetch retries on next refresh
+      Api.decorCatalog().then((dc) => {
+        if (dc.ok) { decorCatalogLoaded = true; setDecoCatalog(dc.items); }
+      });
     }
     UI.refreshCurrent();
   }

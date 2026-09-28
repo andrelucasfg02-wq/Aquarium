@@ -99,9 +99,9 @@ class TankView {
       }
     }
     for (const id of [...this.fish.keys()]) if (!seen.has(id)) this.fish.delete(id);
-    // decor
-    this.decoFiles = {};
-    // (ui.js passes catalog lookup via setDecoCatalog)
+    // decor (decoFiles is static id->file catalog data; never cleared here —
+    // it is filled once via setDecoCatalog and must survive state syncs,
+    // otherwise decorations turn invisible after any refresh)
     this.placements = (state.placements || [])
       .filter((p) => p.tank === state.tanks.active)
       .map((p) => ({ ...p }));

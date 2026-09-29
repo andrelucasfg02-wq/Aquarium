@@ -77,5 +77,5 @@
     75% { top: 61%; } 100% { left: -170px; top: 65%; } }
 @keyframes popin { from { transform: scale(.05) rotate(-25deg); } }
 @keyframes patrol { from { transform: translate(-26px, 5px); } to { transform: translate(26px, -9px); } }
-#ev-root{position:relative;overflow:hidden;border-radius:18px;padding:10px 10px 16px;min-height:60dvh;}
+#ev-root{position:relative;overflow:hidden;border-radius:18px;padding:10px 10px 16px;min-height:60dvh;touch-action:manipulation;}
 #ev-root #ev-overlay{border-radius:18px;}

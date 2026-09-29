@@ -15,6 +15,9 @@ const App = (() => {
     // iOS Safari ignores viewport user-scalable=no — block pinch zoom explicitly
     document.addEventListener("gesturestart", (e) => e.preventDefault());
     document.addEventListener("gesturechange", (e) => e.preventDefault());
+    // block double-tap zoom (iOS fires it even with maximum-scale=1); CSS
+    // touch-action:manipulation is the primary guard, this is the fallback
+    document.addEventListener("dblclick", (e) => e.preventDefault(), { passive: false });
     Api.onAuthFail(showAuth);
     bindAuth();
     bindNav();

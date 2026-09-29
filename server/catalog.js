@@ -163,6 +163,9 @@ function fishLevel(grp, hybrid, bornAt, now) {
 const TANK_CAPACITY = { small: 12, medium: 22, large: 35 };
 const DECOR_SLOTS = { small: 10, medium: 20, large: 30 };
 const TANK_PRICES = { medium: 5000, large: 10000 };
+// extra decor slots per tank, bought with diamonds (10 each)
+const DECOR_EXTRA_SLOT_MAX = { small: 30, medium: 60, large: 100 };
+const DECOR_EXTRA_SLOT_COST = 10; // diamonds per extra slot
 
 // Glass bounds (fractions of artwork)
 const GLASS = {
@@ -236,7 +239,8 @@ module.exports = {
   HATCH_HOURS, GROWTH_DAYS, HYBRID_HATCH_HOURS, HYBRID_GROWTH_DAYS, growthStage,
   HUNGER_FULL_SECS, HUNGER_EMPTY_SECS, SICK_AFTER_SECS, MEDICINE_PRICE,
   hungerPct, fishMood, fishLevel,
-  TANK_CAPACITY, DECOR_SLOTS, TANK_PRICES, GLASS, clampDecor, randomPointInGlass,
+  TANK_CAPACITY, DECOR_SLOTS, TANK_PRICES, DECOR_EXTRA_SLOT_MAX, DECOR_EXTRA_SLOT_COST,
+  GLASS, clampDecor, randomPointInGlass,
   decorCatalog, decorItem,
   QUEST_DEFS, periodKey,
 };

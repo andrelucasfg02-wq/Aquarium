@@ -47,6 +47,7 @@ const Api = (() => {
     buyMedicine: (qty) => post("/api/shop/medicine/buy", { qty }),
     buyTank: (tier) => post("/api/tanks/buy", { tier }),
     switchTank: (tier) => post("/api/tanks/switch", { tier }),
+    buyExtraSlot: (tank) => post("/api/tanks/extra-slot", { tank }),
     breedingPartners: (fish_id) => get(`/api/breeding/partners?fish_id=${encodeURIComponent(fish_id)}`),
     breed: (male_id, female_id) => post("/api/breeding/breed", { male_id, female_id }),
     wipeDirt: (ids) => post("/api/dirt/wipe", { ids }),

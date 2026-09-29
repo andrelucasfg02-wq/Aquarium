@@ -242,6 +242,9 @@ module.exports = function gameRoutes(db) {
         tanks: {
           owned: ['small', 'medium', 'large'].filter((k) => tanks[k]),
           active: tanks.active,
+          extra: { small: tanks.small_extra || 0, medium: tanks.medium_extra || 0, large: tanks.large_extra || 0 },
+          extraMax: C.DECOR_EXTRA_SLOT_MAX,
+          extraCost: C.DECOR_EXTRA_SLOT_COST,
         },
         fish, eggs,
         dirt: { spots, green, last_cleaned_at: ds ? ds.last_cleaned_at : t },
@@ -444,6 +447,28 @@ module.exports = function gameRoutes(db) {
     res.json({ ok: true });
   }));
 
+  // ---------- tanks: buy an extra decor slot (diamonds) ----------
+  r.post('/tanks/extra-slot', ah(async (req, res) => {
+    const uid = req.user.id;
+    const { tank } = req.body || {};
+    if (!['small', 'medium', 'large'].includes(tank)) return res.status(400).json({ ok: false, error: 'invalid tank' });
+    const col = `${tank}_extra`;
+    const max = C.DECOR_EXTRA_SLOT_MAX[tank];
+    const cost = C.DECOR_EXTRA_SLOT_COST;
+    const tanks = await H.getTanks(uid);
+    if (!tanks[tank]) return res.status(400).json({ ok: false, error: 'tank not owned' });
+    if ((tanks[col] || 0) >= max) return res.status(400).json({ ok: false, error: 'max slots reached' });
+    const w = await H.getWallet(uid);
+    if (w.gems < cost) return res.status(400).json({ ok: false, error: 'not enough diamonds' });
+    const extra = await db.tx(async (txDb) => {
+      await txDb.run('UPDATE wallets SET gems=gems-? WHERE user_id=?', cost, uid);
+      await txDb.run(`UPDATE user_tanks SET ${col}=${col}+1 WHERE user_id=?`, uid);
+      const row = await txDb.get(`SELECT ${col} AS e FROM user_tanks WHERE user_id=?`, uid);
+      return row ? row.e : 0;
+    });
+    res.json({ ok: true, tank, extra });
+  }));
+
   // ---------- breeding ----------
   r.get('/breeding/partners', ah(async (req, res) => {
     const uid = req.user.id; const t = now();
@@ -574,7 +599,8 @@ module.exports = function gameRoutes(db) {
     const owned = await db.get('SELECT qty FROM decor_owned WHERE user_id=? AND deco_id=?', uid, deco_id);
     if (!owned || owned.qty <= 0) return res.status(400).json({ ok: false, error: 'not owned' });
     const placed = (await db.get('SELECT COUNT(*) c FROM decor_placements WHERE user_id=? AND tank=?', uid, tank)).c;
-    if (placed >= C.DECOR_SLOTS[tank]) return res.status(400).json({ ok: false, error: 'no free decor slots' });
+    const maxSlots = C.DECOR_SLOTS[tank] + (tanks[`${tank}_extra`] || 0);
+    if (placed >= maxSlots) return res.status(400).json({ ok: false, error: 'no free decor slots' });
 
     const p = C.clampDecor(tank, x, y);
     const id = await db.tx(async (txDb) => {

@@ -301,9 +301,10 @@ const UI = (() => {
     for (const [tier, T] of Object.entries(DATA.TANKS)) {
       const isOwned = owned.includes(tier), isActive = active === tier;
       const need = tier === "large" && !owned.includes("medium");
+      const extraT = (state.tanks.extra && state.tanks.extra[tier]) || 0;
       tanksHtml += `<div class="row-card"><div class="grow">
         <b style="text-transform:capitalize">${tier}</b>
-        <div class="sub">🐟 ${T.capacity} fish · 🪸 ${T.decorSlots} decor</div></div>
+        <div class="sub">🐟 ${T.capacity} fish · 🪸 ${T.decorSlots + extraT} decor</div></div>
         ${isActive ? `<span class="tag">active</span>`
           : isOwned ? `<button class="pill-btn blue" data-switch="${tier}">Use</button>`
           : `<button class="pill-btn" data-buytank="${tier}" ${need ? "disabled" : ""}>🪙 ${fmtCoins(T.price)}</button>`}
@@ -377,8 +378,17 @@ const UI = (() => {
     const q = (filter || "").toLowerCase();
     const list = items.filter((it) => !q || it.name.toLowerCase().includes(q));
 
+    const activeTank = state.tanks.active;
+    const baseSlots = DATA.TANKS[activeTank].decorSlots;
+    const extraSlots = (state.tanks.extra && state.tanks.extra[activeTank]) || 0;
+    const maxExtra = (state.tanks.extraMax && state.tanks.extraMax[activeTank]) || 0;
+    const slotCost = state.tanks.extraCost || 10;
+    const placedCount = state.placements.filter((p) => p.tank === activeTank).length;
+    const buySlotBtn = extraSlots < maxExtra
+      ? ` <button class="pill-btn pink" data-buyslot="${esc(activeTank)}">+1 slot 💎${slotCost}</button>`
+      : "";
     let html = `<input class="search" id="decor-search" placeholder="🔍 Search 93 decorations…" value="${esc(filter || "")}">
-      <h3>🪸 Decorations <span class="tag">${state.placements.filter((p) => p.tank === state.tanks.active).length}/${DATA.TANKS[state.tanks.active].decorSlots} placed</span></h3>
+      <h3>🪸 Decorations <span class="tag">${placedCount}/${baseSlots + extraSlots} placed</span>${buySlotBtn}</h3>
       <div class="deco-grid">`;
     for (const it of list) {
       const qty = ownedMap[it.id] || 0;
@@ -407,6 +417,17 @@ const UI = (() => {
     });
     body.querySelectorAll("[data-placedeco]").forEach((b) => b.onclick = () => {
       close(); App.beginPlace(b.dataset.placedeco);
+    });
+    body.querySelectorAll("[data-buyslot]").forEach((b) => b.onclick = async () => {
+      const tank = b.dataset.buyslot;
+      if (!confirm(`Buy +1 decoration slot for the ${tank} tank? 💎${slotCost}`)) return;
+      const r = await Api.buyExtraSlot(tank);
+      if (r.ok) { AudioFX.coin(); toast("Extra slot unlocked! 🪸"); }
+      else {
+        AudioFX.error();
+        toast(r.error === "not enough diamonds" ? "Not enough diamonds 💎" : (r.error || "Couldn't buy slot"));
+      }
+      await App.refresh(); renderDecorShop($("decor-search") ? $("decor-search").value : "");
     });
   }
 

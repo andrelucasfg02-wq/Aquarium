@@ -21,7 +21,10 @@ const SCHEMA = `
       food INTEGER, xp INTEGER, level INTEGER, medicine INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE IF NOT EXISTS user_tanks(
       user_id INTEGER PRIMARY KEY, small INTEGER, medium INTEGER,
-      large INTEGER, active TEXT);
+      large INTEGER, active TEXT,
+      small_extra INTEGER NOT NULL DEFAULT 0,
+      medium_extra INTEGER NOT NULL DEFAULT 0,
+      large_extra INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE IF NOT EXISTS fish(
       id INTEGER PRIMARY KEY, user_id INTEGER, species_id TEXT, grp TEXT,
       variant TEXT, gender TEXT, location TEXT, tank TEXT,
@@ -150,17 +153,26 @@ async function openDb() {
     // fish care: sickness tracking
     if (!cols.rows.some((c) => c.name === 'sick_at')) {
       await client.execute('ALTER TABLE fish ADD COLUMN sick_at INTEGER');
+      // grace start (one-time, for fish created before sickness existed):
+      // fish unfed for 20h+ wake up hungry (not instantly sick)
+      const _t = Math.floor(Date.now() / 1000);
+      await client.execute({
+        sql: 'UPDATE fish SET fed_at=? WHERE fed_at IS NOT NULL AND fed_at < ?',
+        args: [_t - 20 * 3600, _t - 20 * 3600],
+      });
     }
     const wcols = await client.execute('PRAGMA table_info(wallets)');
     if (!wcols.rows.some((c) => c.name === 'medicine')) {
       await client.execute('ALTER TABLE wallets ADD COLUMN medicine INTEGER NOT NULL DEFAULT 0');
     }
-    // grace start: fish unfed for 20h+ wake up hungry (not instantly sick)
-    const _t = Math.floor(Date.now() / 1000);
-    await client.execute({
-      sql: 'UPDATE fish SET fed_at=? WHERE fed_at IS NOT NULL AND fed_at < ?',
-      args: [_t - 20 * 3600, _t - 20 * 3600],
-    });
+    // decor slots: extra slots bought per tank with diamonds
+    const tcols = await client.execute('PRAGMA table_info(user_tanks)');
+    for (const col of ['small_extra', 'medium_extra', 'large_extra']) {
+      if (!tcols.rows.some((c) => c.name === col)) {
+        await client.execute(`ALTER TABLE user_tanks ADD COLUMN ${col} INTEGER NOT NULL DEFAULT 0`);
+      }
+    }
+    // grace start is a one-time migration: see the sick_at block above.
     // backfill origin for fish created before the marketplace:
     // event fish first, then bred (has parents in lineage) vs shop-bought.
     await client.execute(

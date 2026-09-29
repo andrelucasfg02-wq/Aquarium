@@ -75,6 +75,12 @@ const SPECIES_PRICES = {
   maple_dusk_betta: { coins: null, gems: null }, maple_storm_betta: { coins: null, gems: null },
   maple_lilac_betta: { coins: null, gems: null }, maple_petal_betta: { coins: null, gems: null },
   maple_tide_betta: { coins: null, gems: null }, maple_coral_betta: { coins: null, gems: null },
+  // goldfish hybrids: bred-only, never sold in the shop
+  twilight_goldfish: { coins: null, gems: null }, sunset_goldfish: { coins: null, gems: null },
+  tidepool_goldfish: { coins: null, gems: null }, duskfin_goldfish: { coins: null, gems: null },
+  blaze_goldfish: { coins: null, gems: null }, orchid_goldfish: { coins: null, gems: null },
+  cinder_goldfish: { coins: null, gems: null }, gilded_goldfish: { coins: null, gems: null },
+  nebula_goldfish: { coins: null, gems: null }, ember_night_goldfish: { coins: null, gems: null },
 };
 
 const SPECIES_RARITY = {
@@ -104,13 +110,15 @@ function fishCatalog() {
   const items = [];
   for (const [group, list] of Object.entries(GROUPS)) {
     for (const species_id of list) {
+      const p = SPECIES_PRICES[species_id] || {};
       items.push({
         species_id,
         name: SPECIES_NAMES[species_id] || species_id,
         group,
         rarity: SPECIES_RARITY[species_id] || 'common',
-        price_coins: SPECIES_PRICES[species_id].coins,
-        price_gems: SPECIES_PRICES[species_id].gems,
+        grow_level: growLevel(species_id),
+        price_coins: p.coins,
+        price_gems: p.gems,
         desc: `${SPECIES_NAMES[species_id] || species_id} — ${group.replace('_', ' ')}.`,
       });
     }
@@ -124,12 +132,30 @@ const GROWTH_DAYS = { goldfish: 1, betta: 2, bottom_fish: 3, shrimp: 1, snail: 1
 const HYBRID_HATCH_HOURS = 24;
 const HYBRID_GROWTH_DAYS = 3;
 
-function growthStage(grp, hybrid, bornAt, now) {
-  const daysPerStage = hybrid ? HYBRID_GROWTH_DAYS : (GROWTH_DAYS[grp] || 1);
-  const ageDays = (now - bornAt) / 86400;
-  if (ageDays < daysPerStage) return 'baby';
-  if (ageDays < daysPerStage * 2) return 'juvenile';
-  return 'adult';
+// ---- growth: the level at which each critter becomes a grown adult ----
+// Small critters grow fast, rare/legendary ones take longer.
+const GROW_LEVEL = {
+  red_shrimp: 4, blue_shrimp: 4, yellow_shrimp: 4, snail: 4,
+  bottom_fish: 5,
+  sakura_goldfish: 6, azure_tang: 6, ember_clownfish: 6,
+  lemon_drop_goldfish: 6, midnight_moor: 6,
+  twilight_goldfish: 7, sunset_goldfish: 7, tidepool_goldfish: 7, duskfin_goldfish: 7,
+  blaze_goldfish: 7, orchid_goldfish: 7, cinder_goldfish: 7, gilded_goldfish: 7,
+  nebula_goldfish: 7, ember_night_goldfish: 7,
+  fullmoon_betta: 7, crowntail_betta: 7, veiltail_betta: 7,
+  female_betta: 7, plakat_betta: 7,
+  maple_rose_betta: 8, maple_ember_betta: 8, maple_dusk_betta: 8, maple_storm_betta: 8,
+  maple_lilac_betta: 8, maple_petal_betta: 8, maple_tide_betta: 8, maple_coral_betta: 8,
+  autumn_fish: 10, // Maple Betta — the rarest takes the full journey
+};
+function growLevel(speciesId) { return GROW_LEVEL[speciesId] || 10; }
+
+// stage is driven by the fish's level vs its own grow level
+function growthStage(speciesId, level) {
+  const grow = growLevel(speciesId);
+  if (level >= grow) return 'adult';
+  if (level >= Math.max(2, Math.ceil(grow / 2))) return 'juvenile';
+  return 'baby';
 }
 
 // ---- fish care: hunger, mood, sickness, levels ----
@@ -237,6 +263,7 @@ module.exports = {
   GROUPS, MAPLE_CROSSES, HYBRID_MIXES, SPECIES_NAMES, SPECIES_PRICES, SPECIES_RARITY,
   speciesGroup, fishCatalog,
   HATCH_HOURS, GROWTH_DAYS, HYBRID_HATCH_HOURS, HYBRID_GROWTH_DAYS, growthStage,
+  GROW_LEVEL, growLevel,
   HUNGER_FULL_SECS, HUNGER_EMPTY_SECS, SICK_AFTER_SECS, MEDICINE_PRICE,
   hungerPct, fishMood, fishLevel,
   TANK_CAPACITY, DECOR_SLOTS, TANK_PRICES, DECOR_EXTRA_SLOT_MAX, DECOR_EXTRA_SLOT_COST,

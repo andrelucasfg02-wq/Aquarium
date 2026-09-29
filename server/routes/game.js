@@ -100,14 +100,16 @@ function helpers(db) {
     const tr = fishTradeable(row, now);
     const hunger = C.hungerPct(row.fed_at, now);
     const sick = !!row.sick_at;
+    const level = C.fishLevel(row.grp, !!lineage.hybrid, row.born_at, now);
     return {
       id: row.id, species_id: row.species_id, group: row.grp, variant: row.variant,
       name: C.SPECIES_NAMES[row.species_id] || row.species_id,
       nickname: row.nickname || null,
       gender: row.gender, location: row.location, tank: row.tank,
       x: row.x, y: row.y, born_at: row.born_at,
-      stage: C.growthStage(row.grp, !!lineage.hybrid, row.born_at, now),
-      level: C.fishLevel(row.grp, !!lineage.hybrid, row.born_at, now),
+      level,
+      stage: C.growthStage(row.species_id, level),
+      grow_level: C.growLevel(row.species_id),
       hunger, sick, mood: C.fishMood(sick, hunger),
       fed_at: row.fed_at, lineage,
       origin: row.origin || 'shop', event_id: row.event_id || null,

@@ -64,7 +64,8 @@ const UI = (() => {
     const moodIcon = mood === "sick" ? "🤒" : mood === "hungry" ? "😟" : "😊";
     const moodLabel = mood === "sick" ? "Sick" : mood === "hungry" ? "Hungry" : "Happy";
     const lvl = fish.level || 1;
-    const stageLabel = lvl <= 4 ? "Baby" : lvl <= 9 ? "Teen" : "Adult";
+    const stageLabel = fish.stage === "baby" ? "Baby" : fish.stage === "juvenile" ? "Teen" : "Adult";
+    const growAt = fish.grow_level || 10;
     const overlay = document.createElement("div");
     overlay.id = "fish-menu-overlay";
     overlay.innerHTML = `
@@ -80,6 +81,7 @@ const UI = (() => {
             <b>${hunger}%</b></div>
           <div class="stat-row"><span>${moodIcon} Mood</span><b>${moodLabel}</b></div>
           <div class="stat-row"><span>⭐ Level</span><b>Lv ${lvl} · ${stageLabel}</b></div>
+          ${fish.stage !== "adult" ? `<div class="stat-row"><span>🌱 Grows up at</span><b>Lv ${growAt}</b></div>` : ""}
         </div>
         ${listed ? `
         <div class="fm-note">\uD83D\uDC8E Listed on the market for <b>${fish.listing_price} \uD83D\uDC8E</b></div>
@@ -379,7 +381,7 @@ const UI = (() => {
       const sp = DATA.SPECIES[it.species_id] || {};
       html += `<div class="card">${fishImg(it.species_id)}
         <div class="nm">${esc(it.name)}</div>
-        <div class="sub">${esc(it.group)}${it.species_id === "female_betta" ? " · ♀ always" : ""}</div>
+        <div class="sub">${esc(it.group)}${it.species_id === "female_betta" ? " · ♀ always" : ""} · 🌱 grows at Lv ${it.grow_level || 10}</div>
         <div class="price">${priceLabel(it)}</div>
         <button class="pill-btn pink" data-buyfish="${esc(it.species_id)}">Buy</button>
       </div>`;

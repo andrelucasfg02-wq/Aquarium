@@ -21,7 +21,7 @@
     position: absolute; width: 12.5%; aspect-ratio: 1/1;
     background-repeat: no-repeat; background-position: center; background-size: 76% 76%;
     transition: transform .22s ease, opacity .18s ease, background-size .15s ease, filter .15s ease;
-    cursor: pointer; will-change: transform;
+    cursor: pointer;
     filter: drop-shadow(0 3px 4px rgba(0,0,0,.4));
   }#ev-root .spr { background-size: contain; background-repeat: no-repeat; background-position: center; }#ev-root .tok.sel { background-size: 90% 90%;
     filter: drop-shadow(0 0 12px #ffe28a) drop-shadow(0 3px 4px rgba(0,0,0,.4)); }#ev-root .spr-leaf { background-image: url("../assets/event/leaf.png"); }#ev-root .spr-nut { background-image: url("../assets/event/nut.png"); }#ev-root .spr-branch { background-image: url("../assets/event/branch.png"); }#ev-root .spr-pearl { background-image: url("../assets/event/pearl.png"); }#ev-root .spr-shell { background-image: url("../assets/event/shell.png"); }#ev-root .spr-tadpole { background-image: url("../assets/event/tadpole.png"); }#ev-root .spr-prize { background-image: url("../assets/event/fish1.png"); }#ev-root .spr-fish1 { background-image: url("../assets/event/fish1.png"); }#ev-root .spr-fish2 { background-image: url("../assets/event/fish2.png"); }#ev-root .spr-fish3 { background-image: url("../assets/event/fish3.png"); }#ev-root .spr-rock { background-image: url("../assets/event/rock.png"); }#ev-root .tok.pop { transform: scale(0) !important; opacity: 0; }#ev-board.shake { animation: shake .4s; }#ev-fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }#ev-root .boom {

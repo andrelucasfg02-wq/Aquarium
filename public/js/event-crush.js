@@ -156,22 +156,47 @@ function onTap(e) {
 
 async function trySwap(a, b) {
   busy = true;
-  const ar = +a.dataset.r, ac = +a.dataset.c, br = +b.dataset.r, bc = +b.dataset.c;
-  swapCells(ar, ac, br, bc);
-  await wait(240);
-  const m = findMatches();
-  if (!m.groups.length) { swapCells(ar, ac, br, bc); await wait(240); busy = false; return; }
-  moves++;
-  await resolveBoard();
-  busy = false;
-  checkLevel();
-  if (!over && !anyMove()) { shuffleBoard(); }
+  try {
+    const ar = +a.dataset.r, ac = +a.dataset.c, br = +b.dataset.r, bc = +b.dataset.c;
+    swapCells(ar, ac, br, bc);
+    await wait(240);
+    const m = findMatches();
+    if (!m.groups.length) { swapCells(ar, ac, br, bc); await wait(240); return; }
+    moves++;
+    await resolveBoard();
+    checkLevel();
+    if (!over && !anyMove()) { shuffleBoard(); }
+  } catch (err) {
+    try { rebuildTokens(); } catch (e) { /* never freeze the board */ }
+  } finally {
+    busy = false; // guarantees taps keep working even if a frame desyncs
+  }
 }
 
 function swapCells(ar, ac, br, bc) {
   const t = grid[ar][ac]; grid[ar][ac] = grid[br][bc]; grid[br][bc] = t;
   const ea = elAt(ar, ac), eb = elAt(br, bc);
-  placeTok(ea, br, bc); placeTok(eb, ar, ac);
+  if (ea) placeTok(ea, br, bc);
+  if (eb) placeTok(eb, ar, ac);
+}
+
+// Rebuild the token DOM from grid+rocks after an unrecoverable desync,
+// so one bad frame can never freeze the board for good.
+function rebuildTokens() {
+  board.querySelectorAll(".tok").forEach(e => e.remove());
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    if (rocks[r][c]) {
+      const d = document.createElement("div");
+      d.className = "tok rock spr-rock";
+      placeTok(d, r, c);
+      board.appendChild(d);
+    } else if (grid[r][c] !== -1) {
+      const el = makeTok(r, c, grid[r][c]);
+      placeTok(el, r, c);
+      el.addEventListener("pointerdown", onTap);
+      board.appendChild(el);
+    }
+  }
 }
 
 function findMatches() {
@@ -321,7 +346,7 @@ async function resolveBoard() {
             if (grid[rr][c] !== -1) {
               if (write !== rr) {
                 grid[write][c] = grid[rr][c]; grid[rr][c] = -1;
-                const el = elAt(rr, c); placeTok(el, write, c);
+                const el = elAt(rr, c); if (el) placeTok(el, write, c);
               }
               write--;
             }
@@ -332,13 +357,20 @@ async function resolveBoard() {
             grid[rr][c] = t;
             const el = makeTok(rr, c, t);
             el.style.transition = "none";
-            placeTok(el, rr - fresh, c);
+            // The logical cell is final NOW (dataset); only the paint starts
+            // above the board. Previously dataset stayed stale until the rAF
+            // below fired — under jank elAt() then grabbed the WRONG token,
+            // desyncing grid/DOM and freezing the board (busy stuck true).
+            el.dataset.r = rr; el.dataset.c = c;
+            el.style.transform = `translate(${c * 100}%, ${(rr - fresh) * 100}%)`;
             el.addEventListener("pointerdown", onTap);
             board.appendChild(el);
             requestAnimationFrame(() => requestAnimationFrame(() => {
+              if (!el.isConnected) return; // cleared by a later cascade meanwhile
+              if (+el.dataset.r !== rr || +el.dataset.c !== c) return; // moved meanwhile
               el.style.transition = "";
               el.classList.add("falling");
-              placeTok(el, rr, c);
+              el.style.transform = `translate(${c * 100}%, ${rr * 100}%)`;
             }));
           }
           segEnd = r - 1;

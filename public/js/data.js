@@ -20,7 +20,7 @@ const DATA = {
     ember_clownfish:       { group:"goldfish", name:"Ember Clownfish",   folder:"orange", price:800 },
     lemon_drop_goldfish:   { group:"goldfish", name:"Lemon Drop Goldfish",folder:"yellow",price:800 },
     midnight_moor:         { group:"goldfish", name:"Midnight Moor",     folder:"black",  price:800 },
-    autumn_fish:            { group:"betta", name:"Maple Betta",      folder:"autumn_fish" },
+    autumn_fish:            { group:"betta", name:"Maple Betta" },
     fullmoon_betta:        { group:"betta", name:"Full Moon Betta",  price:1000 },
     crowntail_betta:       { group:"betta", name:"Crown-tail Betta", price:1000 },
     veiltail_betta:        { group:"betta", name:"Veil Tail Betta",  price:1400, priceGems:8 },
@@ -50,11 +50,13 @@ const DATA = {
 };
 
 /** Frame roles: 0 idle, 1-4 swim, 5 eat (only while eating), 6 sleep, 7 rear/turn */
+// Bump SPRITE_V whenever shipped art changes so phones don't keep stale cached PNGs.
+const SPRITE_V = 3;
 function spriteURL(speciesId, frame) {
   const s = DATA.SPECIES[speciesId];
   if (!s) return "";
-  if (s.folder) return `assets/sprites/${s.folder}/frame${frame}.png`;
-  return `assets/new_critters/${speciesId}_0${frame + 1}.png`; // _01.._08 → frames 0..7
+  if (s.folder) return `assets/sprites/${s.folder}/frame${frame}.png?v=${SPRITE_V}`;
+  return `assets/new_critters/${speciesId}_0${frame + 1}.png?v=${SPRITE_V}`; // _01.._08 → frames 0..7
 }
 function speciesName(id) { return (DATA.SPECIES[id] || {}).name || id; }
 function speciesGroup(id) { return (DATA.SPECIES[id] || {}).group || "goldfish"; }

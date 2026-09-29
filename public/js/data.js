@@ -17,7 +17,7 @@ const DATA = {
   SPECIES: {
     sakura_goldfish:      { group:"goldfish", name:"Sakura Goldfish",   folder:"pink",   price:800 },
     azure_tang:            { group:"goldfish", name:"Azure Tang",        folder:"blue",   price:800 },
-    ember_clownfish:       { group:"goldfish", name:"Ember Clownfish",   folder:"orange", price:800 },
+    ember_clownfish:       { group:"goldfish", name:"Ember Goldfish",   folder:"orange", price:800 },
     lemon_drop_goldfish:   { group:"goldfish", name:"Lemon Drop Goldfish",folder:"yellow",price:800 },
     midnight_moor:         { group:"goldfish", name:"Midnight Moor",     folder:"black",  price:800 },
     autumn_fish:            { group:"betta", name:"Maple Betta" },
@@ -62,7 +62,7 @@ const DATA = {
 
 /** Frame roles: 0 idle, 1-4 swim, 5 eat (only while eating), 6 sleep, 7 rear/turn */
 // Bump SPRITE_V whenever shipped art changes so phones don't keep stale cached PNGs.
-const SPRITE_V = 5;
+const SPRITE_V = 6;
 function spriteURL(speciesId, frame) {
   const s = DATA.SPECIES[speciesId];
   if (!s) return "";

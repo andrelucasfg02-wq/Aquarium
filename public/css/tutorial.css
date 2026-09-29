@@ -1,0 +1,33 @@
+/* tutorial.css — first-run coach-mark tour */
+#tut-overlay { position: fixed; inset: 0; z-index: 1500; }
+#tut-dim { position: absolute; inset: 0; background: rgba(8, 18, 38, .62); }
+#tut-spot {
+  position: absolute; border: 3px solid #ffd97a; border-radius: 18px;
+  box-shadow: 0 0 22px rgba(255, 217, 122, .75), inset 0 0 18px rgba(255, 217, 122, .25);
+  pointer-events: none; transition: all .25s ease;
+  animation: tut-pulse 1.6s ease-in-out infinite;
+}
+@keyframes tut-pulse {
+  0%, 100% { box-shadow: 0 0 14px rgba(255,217,122,.55), inset 0 0 14px rgba(255,217,122,.18); }
+  50% { box-shadow: 0 0 30px rgba(255,217,122,.95), inset 0 0 22px rgba(255,217,122,.3); }
+}
+#tut-card {
+  position: absolute; width: min(92vw, 380px);
+  background: linear-gradient(160deg, #fffaf0, #ffe9c9);
+  border-radius: 18px; padding: 20px 18px 16px;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, .55);
+  color: #4a2f1d; text-align: center;
+  border: 2px solid rgba(255, 200, 120, .8);
+}
+#tut-icon { font-size: 40px; line-height: 1; margin-bottom: 6px; }
+#tut-card h3 { margin: 0 0 8px; font-size: 20px; color: #3a2412; }
+#tut-card p { margin: 0 0 12px; font-size: 14.5px; line-height: 1.5; color: #6b4a2e; }
+#tut-dots { font-size: 11px; letter-spacing: 3px; color: #c99a5b; margin-bottom: 12px; }
+#tut-btns { display: flex; gap: 10px; justify-content: center; }
+.tut-btn {
+  border: none; border-radius: 999px; padding: 11px 26px;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.tut-btn.primary { background: linear-gradient(135deg, #ff9d4d, #f2691e); color: #fff; box-shadow: 0 4px 14px rgba(242,105,30,.45); }
+.tut-btn.ghost { background: transparent; color: #a07c4f; }
+.tut-btn:active { transform: scale(.96); }

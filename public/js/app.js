@@ -57,7 +57,9 @@ const App = (() => {
     }
     await refresh();
     startPoll();
-    showPromo();
+    // first-run tutorial takes precedence over the promo this once
+    const tutStarted = (typeof Tutorial !== "undefined") && Tutorial.maybeAutoStart();
+    if (!tutStarted) showPromo();
   }
 
   /* ---------- state ---------- */

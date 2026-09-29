@@ -781,6 +781,7 @@ const UI = (() => {
       </select>
       <h3>👤 Account</h3>
       <div class="row-card"><div class="grow"><b>${esc(state.user.name)}</b><div class="sub">${esc(state.user.email)}</div></div></div>
+      <button class="pill-btn" id="btn-tutorial" style="width:100%;padding:13px;background:linear-gradient(135deg,#7fb8e8,#4a7fc9);margin-bottom:10px">🎓 Replay tutorial</button>
       <button class="pill-btn" id="btn-logout" style="width:100%;padding:13px;background:linear-gradient(135deg,#e08a9b,#c05a7a)">🚪 Log out</button>
       <div class="empty">Chibi Aquarium · hand-drawn-style 2D sprite art 🐠<br>No accounts are shared · your tank is yours alone</div>
     `;
@@ -799,6 +800,9 @@ const UI = (() => {
     $("btn-logout").onclick = async () => {
       await Api.logout();
       location.reload();
+    };
+    $("btn-tutorial").onclick = () => {
+      if (typeof Tutorial !== "undefined") Tutorial.start();
     };
   }
 

@@ -657,10 +657,13 @@ module.exports = function gameRoutes(db) {
     const uid = req.user.id; const t = now();
     const { event, score, level, moves } = req.body || {};
     if (!validEvent(event)) return res.status(400).json({ ok: false, error: 'unknown event' });
-    const s = Math.floor(Number(score)), l = Math.floor(Number(level)), m = Math.floor(Number(moves));
+    let s = Math.floor(Number(score)); const l = Math.floor(Number(level)), m = Math.floor(Number(moves));
     if (!Number.isFinite(s) || !Number.isFinite(l) || !Number.isFinite(m) || s < 0 || l < 0 || m < 0)
       return res.status(400).json({ ok: false, error: 'invalid progress' });
-    if (l > 9 || s > EVENT_GOALS[event]) return res.status(400).json({ ok: false, error: 'invalid progress' });
+    if (l > 9) return res.status(400).json({ ok: false, error: 'invalid progress' });
+    // Overshooting the goal is normal — a single move scores in chunks, so nobody
+    // lands exactly on it. Clamp to the goal instead of rejecting the save.
+    s = Math.min(s, EVENT_GOALS[event]);
     const prev = await db.get('SELECT score, moves, updated_at FROM event_progress WHERE user_id=? AND event_id=?', uid, event);
     if (prev && s > prev.score) {
       // anti-cheat: the game saves after every move, so a single save can only add what

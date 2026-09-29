@@ -20,7 +20,7 @@ const DATA = {
     ember_clownfish:       { group:"goldfish", name:"Ember Clownfish",   folder:"orange", price:800 },
     lemon_drop_goldfish:   { group:"goldfish", name:"Lemon Drop Goldfish",folder:"yellow",price:800 },
     midnight_moor:         { group:"goldfish", name:"Midnight Moor",     folder:"black",  price:800 },
-    autumn_fish:            { group:"goldfish", name:"Autumn Fish",      folder:"autumn_fish" },
+    autumn_fish:            { group:"goldfish", name:"Maple Betta",      folder:"autumn_fish" },
     fullmoon_betta:        { group:"betta", name:"Full Moon Betta",  price:1000 },
     crowntail_betta:       { group:"betta", name:"Crown-tail Betta", price:1000 },
     veiltail_betta:        { group:"betta", name:"Veil Tail Betta",  price:1400, priceGems:8 },

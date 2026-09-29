@@ -20,7 +20,7 @@ function updateHud() {
   $level.textContent = "Nv " + (level + 1);
   $fill.style.width = Math.min(100, (score - base) / (target - base) * 100) + "%";
   $plabel.innerHTML = level === LEVELS.length - 1
-    ? `N&iacute;vel ${LEVELS.length} &mdash; alcance <b>${fmt(target)}</b> e ganhe o <b>Peixe de Outono</b>!`
+    ? `N&iacute;vel ${LEVELS.length} &mdash; alcance <b>${fmt(target)}</b> e ganhe o <b>Maple Betta</b>!`
     : `N&iacute;vel ${level + 1} &mdash; alcance <b>${fmt(target)}</b> pontos!`;
 }
 
@@ -33,14 +33,19 @@ function toast(msg) {
 }
 
 // ---- SAVE: progresso por conta, no servidor ----
+// Returns a promise: true = server accepted the save, false = failed.
+// The claim endpoint reads the SERVER score, so endGame must await this
+// before declaring victory — otherwise the claim can run before the save lands.
 const EVENT_ID = "autumn1";
 let _lastSig = "";
-function saveProgress() {
-  if (over || typeof Api === "undefined") return;
+function saveProgress(force) {
+  if ((!force && over) || typeof Api === "undefined") return Promise.resolve(false);
   const sig = [score, level, moves].join("|");
-  if (sig === _lastSig) return;
+  if (sig === _lastSig) return Promise.resolve(true);
   _lastSig = sig;
-  Api.eventSave(EVENT_ID, score, level, moves).catch(() => {});
+  return Api.eventSave(EVENT_ID, score, level, moves)
+    .then((r) => !!(r && r.ok))
+    .catch(() => false);
 }
 async function loadProgress() {
   try {
@@ -346,15 +351,38 @@ async function resolveBoard() {
 
 async function endGame(win) {
   over = true;
-  saveProgress();
   const card = R.querySelector("#ev-card");
+  const overlay = R.querySelector("#ev-overlay");
+  overlay.classList.remove("hidden");
+  // The server is the source of truth for the claim: confirm the final score
+  // landed there before declaring victory (the save is async).
+  card.innerHTML = `
+    <h2>Sincronizando...</h2>
+    <p style="font-size:13px">Confirmando seus pontos...</p>`;
+  _lastSig = ""; // force the final save through (the over-guard would skip it)
+  const saved = await saveProgress(true);
+  let sp = null;
+  try { sp = await loadProgress(); } catch (e) {}
+  const goal = LEVELS[LEVELS.length - 1];
+  if (!saved || !sp || sp.score < goal) {
+    card.innerHTML = `
+      <h2>Quase l&aacute;!</h2>
+      <p>N&atilde;o consegui confirmar seus pontos no servidor.<br>
+      <span style="font-size:13px">Verifique sua conex&atilde;o e toque para tentar de novo.</span></p>
+      <button class="btn" id="ev-retry-btn">Tentar de novo</button>`;
+    R.querySelector("#ev-retry-btn").onclick = () => endGame(true);
+    return;
+  }
+  const alreadyClaimed = !!sp.claimed;
   card.innerHTML = `
     <h2>Peixe Desbloqueado!</h2>
     <div id="ev-big-fish" class="spr spr-fish1"></div>
-    <p><b>Peixe de Outono</b> &eacute; seu!<br>Voc&ecirc; fez <b>${fmt(score)}</b> pontos em ${moves} jogadas!</p>
-    <button class="btn" id="ev-catch-btn">Guardar no invent&aacute;rio</button>
-    <p id="ev-claim-msg" style="font-size:13px;min-height:18px"></p>`;
-  R.querySelector("#ev-overlay").classList.remove("hidden");
+    <p><b>Maple Betta</b> &eacute; seu!<br>Voc&ecirc; fez <b>${fmt(score)}</b> pontos em ${moves} jogadas!</p>
+    ${alreadyClaimed
+      ? `<p style="font-size:13px">\uD83C\uDFC6 Voc&ecirc; j&aacute; garantiu o Maple Betta!</p>`
+      : `<button class="btn" id="ev-catch-btn">Guardar no invent&aacute;rio</button>
+         <p id="ev-claim-msg" style="font-size:13px;min-height:18px"></p>`}`;
+  if (alreadyClaimed) return;
   R.querySelector("#ev-catch-btn").onclick = async () => {
     const btn = R.querySelector("#ev-catch-btn");
     const msg = R.querySelector("#ev-claim-msg");
@@ -362,14 +390,14 @@ async function endGame(win) {
     try {
       const r = await Api.eventClaim(EVENT_ID);
       if (r && r.ok) {
-        msg.textContent = "Peixe de Outono na sua coleção! 🐟";
+        msg.textContent = "Maple Betta na sua coleção! 🐟";
         btn.textContent = "Ver na coleção";
         btn.disabled = false;
         if (window.App) App.refresh();
         btn.onclick = () => { if (typeof UI !== "undefined") { UI.close(); UI.open("collection"); } };
       } else {
         msg.textContent = (r && r.error === "already claimed")
-          ? "Você já tem o Peixe de Outono! 🐟"
+          ? "Você já tem o Maple Betta! 🐟"
           : ("Não foi possível guardar: " + ((r && r.error) || "tente de novo"));
         btn.disabled = false; btn.textContent = "Guardar no inventário";
       }
@@ -400,8 +428,8 @@ async function mount(root) {
   <span class="ico spr spr-tadpole"></span> <b>Girino</b> = <b>enxame</b> que limpa pe&ccedil;as aleat&oacute;rias!<br>
   <span class="ico spr spr-rock"></span> Do <b>Nv 5</b> em diante: <b>pedras</b> bloqueiam o caminho &mdash; s&oacute; a <b>p&eacute;rola</b> quebra!</p>
   <p>10 n&iacute;veis: <b>5k &rarr; 20k &rarr; 35k &rarr; 50k &rarr; 80k &rarr; 100k &rarr; 120k &rarr; 150k &rarr; 200k &rarr; 300k</b><br>
-  e desbloqueie o <b>Peixe de Outono</b>!</p>
-  ${_save && _save.claimed ? `<p style="font-size:13px">\uD83C\uDFC6 Voc&ecirc; j&aacute; garantiu o Peixe de Outono!</p>` : ``}
+  e desbloqueie o <b>Maple Betta</b>!</p>
+  ${_save && _save.claimed ? `<p style="font-size:13px">\uD83C\uDFC6 Voc&ecirc; j&aacute; garantiu o Maple Betta!</p>` : ``}
   ${_has ? `<button class="btn" id="ev-continue-btn">Continuar &mdash; Nv ${_save.level + 1} (${fmt(_save.score)} pts)</button>` : `<button class="btn" id="ev-start-btn">Come&ccedil;ar</button>`}`;
   updateHud();
   if (_has) R.querySelector("#ev-continue-btn").onclick = () => {

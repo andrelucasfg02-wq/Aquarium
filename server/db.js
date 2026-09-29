@@ -18,7 +18,7 @@ const SCHEMA = `
       created_at INTEGER, expires_at INTEGER);
     CREATE TABLE IF NOT EXISTS wallets(
       user_id INTEGER PRIMARY KEY, coins INTEGER, gems INTEGER,
-      food INTEGER, xp INTEGER, level INTEGER);
+      food INTEGER, xp INTEGER, level INTEGER, medicine INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE IF NOT EXISTS user_tanks(
       user_id INTEGER PRIMARY KEY, small INTEGER, medium INTEGER,
       large INTEGER, active TEXT);
@@ -26,7 +26,7 @@ const SCHEMA = `
       id INTEGER PRIMARY KEY, user_id INTEGER, species_id TEXT, grp TEXT,
       variant TEXT, gender TEXT, location TEXT, tank TEXT,
       x REAL, y REAL, born_at INTEGER, fed_at INTEGER, lineage TEXT,
-      nickname TEXT, origin TEXT, event_id TEXT);
+      nickname TEXT, origin TEXT, event_id TEXT, sick_at INTEGER);
     CREATE TABLE IF NOT EXISTS eggs(
       id INTEGER PRIMARY KEY, user_id INTEGER, grp TEXT,
       variant_a TEXT, variant_b TEXT, hybrid INTEGER,
@@ -147,6 +147,20 @@ async function openDb() {
     if (!cols.rows.some((c) => c.name === 'event_id')) {
       await client.execute('ALTER TABLE fish ADD COLUMN event_id TEXT');
     }
+    // fish care: sickness tracking
+    if (!cols.rows.some((c) => c.name === 'sick_at')) {
+      await client.execute('ALTER TABLE fish ADD COLUMN sick_at INTEGER');
+    }
+    const wcols = await client.execute('PRAGMA table_info(wallets)');
+    if (!wcols.rows.some((c) => c.name === 'medicine')) {
+      await client.execute('ALTER TABLE wallets ADD COLUMN medicine INTEGER NOT NULL DEFAULT 0');
+    }
+    // grace start: fish unfed for 20h+ wake up hungry (not instantly sick)
+    const _t = Math.floor(Date.now() / 1000);
+    await client.execute({
+      sql: 'UPDATE fish SET fed_at=? WHERE fed_at IS NOT NULL AND fed_at < ?',
+      args: [_t - 20 * 3600, _t - 20 * 3600],
+    });
     // backfill origin for fish created before the marketplace:
     // event fish first, then bred (has parents in lineage) vs shop-bought.
     await client.execute(

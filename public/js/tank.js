@@ -207,6 +207,10 @@ class TankView {
     e.animT += dt;
     e.emoteCd -= dt;
     if (e.faceT > 0) e.faceT -= dt;
+    // sick fish keep emoting 🤒 until treated
+    if (e.data && e.data.sick && e.emoteCd <= 0) {
+      this.addEmote(e.px, e.py - .03, "🤒", 2.2); e.emoteCd = 2.4;
+    }
 
     const dx = e.tx - e.px, dy = e.ty - e.py;
     const dist = Math.hypot(dx, dy);

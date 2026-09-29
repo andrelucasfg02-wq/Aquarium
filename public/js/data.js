@@ -54,6 +54,7 @@ const DATA = {
   GROUP_SPEED:  { goldfish: .055, betta: .05, shrimp: .05, snail: .008, bottom_fish: .035 }, // fractions/sec
   STAGE_SCALE: { baby: .4, juvenile: .7, adult: 1 },
   FOOD_PRICE: 10,
+  MEDICINE_PRICE: 250,
   FILTER_PRICE: 100,
   BREED_GEMS: 2,
   RENAME_GEMS: 3,

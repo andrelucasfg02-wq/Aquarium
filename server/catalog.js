@@ -132,6 +132,33 @@ function growthStage(grp, hybrid, bornAt, now) {
   return 'adult';
 }
 
+// ---- fish care: hunger, mood, sickness, levels ----
+const HUNGER_FULL_SECS = 6 * 3600;   // hunger stays 100% for 6h after feeding
+const HUNGER_EMPTY_SECS = 24 * 3600;  // hunger hits 0% 24h after feeding
+const SICK_AFTER_SECS = 36 * 3600;   // fish gets sick 36h after last feeding
+const MEDICINE_PRICE = 250;          // coins per medicine
+
+function hungerPct(fedAt, now) {
+  if (!fedAt) return 100;
+  const age = now - fedAt;
+  if (age <= HUNGER_FULL_SECS) return 100;
+  if (age >= HUNGER_EMPTY_SECS) return 0;
+  return Math.round(100 * (1 - (age - HUNGER_FULL_SECS) / (HUNGER_EMPTY_SECS - HUNGER_FULL_SECS)));
+}
+
+function fishMood(sick, hunger) {
+  if (sick) return 'sick';
+  if (hunger < 30) return 'hungry';
+  return 'happy';
+}
+
+// level 1-10 from age: 1-4 baby, 5-9 teen, 10 adult
+function fishLevel(grp, hybrid, bornAt, now) {
+  const daysPerStage = hybrid ? HYBRID_GROWTH_DAYS : (GROWTH_DAYS[grp] || 1);
+  const ageDays = Math.max(0, (now - bornAt) / 86400);
+  return 1 + Math.floor(9 * Math.min(1, ageDays / (2 * daysPerStage)));
+}
+
 // ---- tanks ----
 const TANK_CAPACITY = { small: 12, medium: 22, large: 35 };
 const DECOR_SLOTS = { small: 10, medium: 20, large: 30 };
@@ -207,6 +234,8 @@ module.exports = {
   GROUPS, MAPLE_CROSSES, HYBRID_MIXES, SPECIES_NAMES, SPECIES_PRICES, SPECIES_RARITY,
   speciesGroup, fishCatalog,
   HATCH_HOURS, GROWTH_DAYS, HYBRID_HATCH_HOURS, HYBRID_GROWTH_DAYS, growthStage,
+  HUNGER_FULL_SECS, HUNGER_EMPTY_SECS, SICK_AFTER_SECS, MEDICINE_PRICE,
+  hungerPct, fishMood, fishLevel,
   TANK_CAPACITY, DECOR_SLOTS, TANK_PRICES, GLASS, clampDecor, randomPointInGlass,
   decorCatalog, decorItem,
   QUEST_DEFS, periodKey,

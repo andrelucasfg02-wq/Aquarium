@@ -54,10 +54,17 @@ const UI = (() => {
     });
   }
 
-  /* ---------- fish tap menu: Pet / Transfer / Breed ---------- */
+  /* ---------- fish tap menu: status, feed, treat, pet / transfer / breed ---------- */
   function openFishMenu(fish) {
     closeFishMenu();
     const listed = fish.location === "market";
+    const hunger = Math.max(0, Math.min(100, fish.hunger == null ? 100 : fish.hunger));
+    const hColor = hunger >= 50 ? "#6fbf8f" : hunger >= 25 ? "#f2a54e" : "#e05d5d";
+    const mood = fish.mood || "happy";
+    const moodIcon = mood === "sick" ? "🤒" : mood === "hungry" ? "😟" : "😊";
+    const moodLabel = mood === "sick" ? "Sick" : mood === "hungry" ? "Hungry" : "Happy";
+    const lvl = fish.level || 1;
+    const stageLabel = lvl <= 4 ? "Baby" : lvl <= 9 ? "Teen" : "Adult";
     const overlay = document.createElement("div");
     overlay.id = "fish-menu-overlay";
     overlay.innerHTML = `
@@ -67,11 +74,22 @@ const UI = (() => {
           <div class="sub">${fish.gender === "male" ? "♂" : "♀"} ${esc(speciesName(fish.species_id))}</div></div>
           <button class="hud-btn" id="fish-menu-x">\u2715</button>
         </div>
+        <div class="fish-stats">
+          <div class="stat-row"><span>🍗 Hunger</span>
+            <div class="hbar"><i style="width:${hunger}%;background:${hColor}"></i></div>
+            <b>${hunger}%</b></div>
+          <div class="stat-row"><span>${moodIcon} Mood</span><b>${moodLabel}</b></div>
+          <div class="stat-row"><span>⭐ Level</span><b>Lv ${lvl} · ${stageLabel}</b></div>
+        </div>
         ${listed ? `
         <div class="fm-note">\uD83D\uDC8E Listed on the market for <b>${fish.listing_price} \uD83D\uDC8E</b></div>
         <div class="fish-menu-btns">
           <button class="pill-btn" id="fm-mkcancel">\u274C Cancel listing</button>
         </div>` : `
+        <div class="fish-menu-btns">
+          <button class="pill-btn pink" id="fm-feed">🍤 Feed</button>
+          ${fish.sick ? `<button class="pill-btn gold" id="fm-treat">💊 Treat</button>` : ""}
+        </div>
         <div class="fish-menu-btns">
           <button class="pill-btn pink" id="fm-pet">\uD83D\uDC95 Pet</button>
           <button class="pill-btn blue" id="fm-transfer">${fish.location === "inventory" ? "\uD83C\uDFE0 Place in tank" : "\uD83D\uDD00 Transfer"}</button>
@@ -108,6 +126,30 @@ const UI = (() => {
         closeFishMenu(); await App.refresh(); refreshScreen();
       };
     } else {
+      const reopen = async () => {
+        closeFishMenu(); await App.refresh(); refreshScreen();
+        const nf = (state.fish || []).find((x) => x.id === fish.id);
+        if (nf) openFishMenu(nf);
+      };
+      $("fm-feed").onclick = async () => {
+        const r = await Api.feedOne(fish.id);
+        if (r.ok) { AudioFX.munch(); toast("Yummy! 🍤"); }
+        else { AudioFX.error(); toast(r.error === "no food" ? "No food left — tap the 🍤 up top!" : (r.error || "Couldn't feed")); }
+        await reopen();
+      };
+      const treatBtn = $("fm-treat");
+      if (treatBtn) treatBtn.onclick = async () => {
+        let r = await Api.treatFish(fish.id);
+        if (!r.ok && r.error === "no medicine") {
+          if (!confirm(`No medicine! Buy 1 for 🪙${fmtCoins(DATA.MEDICINE_PRICE)}?`)) return;
+          const b = await Api.buyMedicine(1);
+          if (!b.ok) { AudioFX.error(); toast(b.error || "Couldn't buy medicine"); return; }
+          r = await Api.treatFish(fish.id);
+        }
+        if (r.ok) { AudioFX.coin(); toast("All better! 💊✨"); }
+        else { AudioFX.error(); toast(r.error || "Couldn't treat"); }
+        await reopen();
+      };
       $("fm-pet").onclick = async () => { closeFishMenu(); await App.petFish(fish.id); };
       $("fm-breed").onclick = () => { closeFishMenu(); openBreedingWith(fish); };
       $("fm-transfer").onclick = () => {
@@ -281,8 +323,23 @@ const UI = (() => {
         <button class="pill-btn pink" data-buyfish="${esc(it.species_id)}">Buy</button>
       </div>`;
     }
-    html += `</div><div class="empty">Sell fish from the Inventory tab 💰</div>`;
+    html += `</div>
+      <h3>💊 Supplies</h3>
+      <div class="row-card"><div class="grow"><b>Medicine</b>
+        <div class="sub">Cures a sick fish 🤒 · you own <b>${state.wallets.medicine || 0}</b></div></div>
+        <button class="pill-btn gold" data-buymed="1">🪙 ${fmtCoins(DATA.MEDICINE_PRICE)}</button>
+      </div>
+      <div class="empty">Sell fish from the Inventory tab 💰</div>`;
     body.innerHTML = html;
+
+    body.querySelectorAll("[data-buymed]").forEach((b) => b.onclick = async () => {
+      b.disabled = true;
+      const r = await Api.buyMedicine(+b.dataset.buymed);
+      if (r.ok) { AudioFX.coin(); toast(`+${b.dataset.buymed} medicine 💊`); }
+      else { AudioFX.error(); toast(r.error || "Couldn't buy"); }
+      await App.refresh();
+      renderFishShop();
+    });
 
     body.querySelectorAll("[data-buyfish]").forEach((b) => b.onclick = async () => {
       b.disabled = true;

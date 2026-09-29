@@ -174,6 +174,14 @@ input{font-family:inherit}
 .fish-menu-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
 .fish-menu-btns .pill-btn{flex:1;padding:8px 6px;font-size:12px}
 
+/* fish status panel (hunger / mood / level) */
+.fish-stats{background:#fff;border:2px solid #f3e8ff;border-radius:14px;padding:8px 10px;margin:2px 0 4px;display:flex;flex-direction:column;gap:6px}
+.stat-row{display:flex;align-items:center;gap:8px;font-size:13px}
+.stat-row>span{color:var(--ink-soft);font-weight:700;white-space:nowrap}
+.stat-row>b{margin-left:auto;white-space:nowrap}
+.hbar{flex:1;height:10px;background:#eee3f7;border-radius:999px;overflow:hidden}
+.hbar>i{display:block;height:100%;border-radius:999px;transition:width .3s}
+
 /* cards & lists */
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .card{

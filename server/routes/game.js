@@ -98,6 +98,8 @@ function helpers(db) {
   const fishJson = (row, now) => {
     const lineage = row.lineage ? JSON.parse(row.lineage) : { mother: null, father: null, hybrid: 0, generation: 0 };
     const tr = fishTradeable(row, now);
+    const hunger = C.hungerPct(row.fed_at, now);
+    const sick = !!row.sick_at;
     return {
       id: row.id, species_id: row.species_id, group: row.grp, variant: row.variant,
       name: C.SPECIES_NAMES[row.species_id] || row.species_id,
@@ -105,6 +107,8 @@ function helpers(db) {
       gender: row.gender, location: row.location, tank: row.tank,
       x: row.x, y: row.y, born_at: row.born_at,
       stage: C.growthStage(row.grp, !!lineage.hybrid, row.born_at, now),
+      level: C.fishLevel(row.grp, !!lineage.hybrid, row.born_at, now),
+      hunger, sick, mood: C.fishMood(sick, hunger),
       fed_at: row.fed_at, lineage,
       origin: row.origin || 'shop', event_id: row.event_id || null,
       tradeable: tr.ok, trade_lock: tr.ok ? null : tr.reason,
@@ -198,8 +202,11 @@ module.exports = function gameRoutes(db) {
   r.get('/state', ah(async (req, res) => {
     const uid = req.user.id; const t = now();
     const { green } = await H.maintain(uid, t);
+    // lazy sickness: unfed for SICK_AFTER_SECS -> sick
+    await db.run('UPDATE fish SET sick_at=? WHERE user_id=? AND sick_at IS NULL AND fed_at IS NOT NULL AND ? - fed_at > ?',
+      t, uid, t, C.SICK_AFTER_SECS);
     const user = await db.get(
-      `SELECT u.id,u.name,u.email,w.level,w.xp,w.coins,w.gems,w.food
+      `SELECT u.id,u.name,u.email,w.level,w.xp,w.coins,w.gems,w.food,w.medicine
        FROM users u JOIN wallets w ON w.user_id=u.id WHERE u.id=?`, uid);
     const tanks = await H.getTanks(uid);
     const fish = (await db.all('SELECT * FROM fish WHERE user_id=? ORDER BY id', uid))
@@ -231,7 +238,7 @@ module.exports = function gameRoutes(db) {
       ok: true,
       state: {
         user,
-        wallets: { coins: user.coins, gems: user.gems, food: user.food, xp: user.xp, level: user.level },
+        wallets: { coins: user.coins, gems: user.gems, food: user.food, xp: user.xp, level: user.level, medicine: user.medicine || 0 },
         tanks: {
           owned: ['small', 'medium', 'large'].filter((k) => tanks[k]),
           active: tanks.active,
@@ -313,14 +320,55 @@ module.exports = function gameRoutes(db) {
     res.json({ ok: true, pellets: n });
   }));
 
-  r.post('/fish/tap', ah(async (req, res) => {
+  r.post('/fish/feed-one', ah(async (req, res) => {
     const uid = req.user.id; const t = now();
     const { fish_id } = req.body || {};
     const fish = await db.get('SELECT id FROM fish WHERE id=? AND user_id=?', fish_id, uid);
     if (!fish) return res.status(404).json({ ok: false, error: 'fish not found' });
+    const w = await H.getWallet(uid);
+    if (w.food < 1) return res.status(400).json({ ok: false, error: 'no food' });
+    await db.tx(async (txDb) => {
+      await txDb.run('UPDATE wallets SET food=food-1 WHERE user_id=?', uid);
+      await txDb.run('UPDATE fish SET fed_at=? WHERE id=?', t, fish_id);
+    });
+    res.json({ ok: true });
+  }));
+
+  r.post('/shop/medicine/buy', ah(async (req, res) => {
+    const uid = req.user.id;
+    const qty = Math.max(1, Math.min(99, Math.floor(Number((req.body || {}).qty) || 1)));
+    const cost = qty * C.MEDICINE_PRICE;
+    const w = await H.getWallet(uid);
+    if (w.coins < cost) return res.status(400).json({ ok: false, error: 'not enough coins' });
+    await db.tx(async (txDb) => {
+      await txDb.run('UPDATE wallets SET coins=coins-?, medicine=medicine+? WHERE user_id=?', cost, qty, uid);
+    });
+    res.json({ ok: true, medicine: (w.medicine || 0) + qty });
+  }));
+
+  r.post('/fish/treat', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const { fish_id } = req.body || {};
+    const fish = await db.get('SELECT id,sick_at FROM fish WHERE id=? AND user_id=?', fish_id, uid);
+    if (!fish) return res.status(404).json({ ok: false, error: 'fish not found' });
+    if (!fish.sick_at) return res.status(400).json({ ok: false, error: 'not sick' });
+    const w = await H.getWallet(uid);
+    if ((w.medicine || 0) < 1) return res.status(400).json({ ok: false, error: 'no medicine' });
+    await db.tx(async (txDb) => {
+      await txDb.run('UPDATE wallets SET medicine=medicine-1 WHERE user_id=?', uid);
+      await txDb.run('UPDATE fish SET sick_at=NULL, fed_at=? WHERE id=?', t, fish_id);
+    });
+    res.json({ ok: true });
+  }));
+
+  r.post('/fish/tap', ah(async (req, res) => {
+    const uid = req.user.id;
+    const { fish_id } = req.body || {};
+    const fish = await db.get('SELECT id FROM fish WHERE id=? AND user_id=?', fish_id, uid);
+    if (!fish) return res.status(404).json({ ok: false, error: 'fish not found' });
+    // petting is affection only (XP) — it no longer feeds; use Feed for hunger
     await db.tx(async (txDb) => {
       const Ht = helpers(txDb);
-      await txDb.run('UPDATE fish SET fed_at=? WHERE id=? AND user_id=?', t, fish_id, uid);
       await Ht.addXp(uid, 1);
     });
     res.json({ ok: true });

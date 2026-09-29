@@ -50,11 +50,13 @@ const SCHEMA = `
     CREATE TABLE IF NOT EXISTS daily_shell(
       user_id INTEGER PRIMARY KEY, last_played_at INTEGER);
     CREATE TABLE IF NOT EXISTS event_progress(
-      user_id INTEGER, event_id TEXT, score INTEGER, level INTEGER, moves INTEGER,
-      updated_at INTEGER, PRIMARY KEY(user_id,event_id));
+      user_id INTEGER, event_id TEXT, run INTEGER NOT NULL DEFAULT 1,
+      score INTEGER, level INTEGER, moves INTEGER,
+      updated_at INTEGER, PRIMARY KEY(user_id,event_id,run));
     CREATE TABLE IF NOT EXISTS event_rewards(
-      user_id INTEGER, event_id TEXT, claimed_at INTEGER,
-      PRIMARY KEY(user_id,event_id));
+      user_id INTEGER, event_id TEXT, run INTEGER NOT NULL DEFAULT 1,
+      claimed_at INTEGER,
+      PRIMARY KEY(user_id,event_id,run));
     CREATE TABLE IF NOT EXISTS market_listings(
       id INTEGER PRIMARY KEY, seller_id INTEGER, fish_id INTEGER UNIQUE,
       price_diamonds INTEGER, listed_at INTEGER);
@@ -157,6 +159,28 @@ async function openDb() {
     const eggCols = await client.execute('PRAGMA table_info(eggs)');
     if (!eggCols.rows.some((c) => c.name === 'event_id')) {
       await client.execute('ALTER TABLE eggs ADD COLUMN event_id TEXT');
+    }
+    // event re-runs: each event can grant up to EVENT_MAX_RUNS prizes, one per
+    // run. Progress and rewards are tracked per (user_id,event_id,run).
+    const evpCols = await client.execute('PRAGMA table_info(event_progress)');
+    if (!evpCols.rows.some((c) => c.name === 'run')) {
+      await client.execute(`CREATE TABLE IF NOT EXISTS event_progress_new(
+        user_id INTEGER, event_id TEXT, run INTEGER NOT NULL DEFAULT 1,
+        score INTEGER, level INTEGER, moves INTEGER, updated_at INTEGER,
+        PRIMARY KEY(user_id,event_id,run))`);
+      await client.execute(`INSERT OR IGNORE INTO event_progress_new
+        (user_id,event_id,run,score,level,moves,updated_at)
+        SELECT user_id,event_id,1,score,level,moves,updated_at FROM event_progress`);
+      await client.execute('DROP TABLE event_progress');
+      await client.execute('ALTER TABLE event_progress_new RENAME TO event_progress');
+      await client.execute(`CREATE TABLE IF NOT EXISTS event_rewards_new(
+        user_id INTEGER, event_id TEXT, run INTEGER NOT NULL DEFAULT 1,
+        claimed_at INTEGER, PRIMARY KEY(user_id,event_id,run))`);
+      await client.execute(`INSERT OR IGNORE INTO event_rewards_new
+        (user_id,event_id,run,claimed_at)
+        SELECT user_id,event_id,1,claimed_at FROM event_rewards`);
+      await client.execute('DROP TABLE event_rewards');
+      await client.execute('ALTER TABLE event_rewards_new RENAME TO event_rewards');
     }
     // Maple Betta moved from the goldfish group to the betta group (it breeds with bettas)
     await client.execute("UPDATE fish SET grp='betta' WHERE species_id='autumn_fish' AND grp='goldfish'");

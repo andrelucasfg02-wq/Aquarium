@@ -349,6 +349,13 @@ async function resolveBoard() {
   }
 }
 
+function startFreshRun() {
+  score = 0; level = 0; moves = 0; over = false; busy = false;
+  selected = null; grid = []; rocks = []; rocksPlaced = false; _lastSig = "";
+  R.querySelector("#ev-overlay").classList.add("hidden");
+  buildBoard(); updateHud();
+}
+
 async function endGame(win) {
   over = true;
   const card = R.querySelector("#ev-card");
@@ -395,6 +402,24 @@ async function endGame(win) {
         btn.disabled = false;
         if (window.App) App.refresh();
         btn.onclick = () => { if (typeof UI !== "undefined") { UI.close(); UI.open("collection"); } };
+        // second (and last) run available? offer a fresh playthrough from zero
+        try {
+          const sp2 = await loadProgress();
+          const _runs2 = (sp2 && sp2.runs_claimed) || 0;
+          const _max2 = (sp2 && sp2.max_runs) || 1;
+          if (sp2 && _runs2 < _max2) {
+            const again = document.createElement("button");
+            again.className = "btn"; again.style.marginTop = "8px";
+            again.innerHTML = "\uD83C\uDF42 Jogar de novo \u2014 \u00faltima chance!";
+            again.onclick = () => { startFreshRun(); toast("\u00daltima chance \u2014 boa sorte! \uD83C\uDF42"); };
+            msg.after(again);
+          } else if (sp2) {
+            const done = document.createElement("p");
+            done.style.fontSize = "13px";
+            done.innerHTML = "\uD83C\uDF89 Voc\u00ea garantiu os 2 Maple Bettas do evento!";
+            msg.after(done);
+          }
+        } catch (e) {}
       } else {
         msg.textContent = (r && r.error === "already claimed")
           ? "Você já tem o Maple Betta! 🐟"
@@ -421,6 +446,10 @@ async function mount(root) {
   window.addEventListener("pagehide", onHideSave);
   const _save = await loadProgress();
   const _has = !!(_save && _save.score > 0);
+  const _runs = (_save && _save.runs_claimed) || 0;
+  const _max = (_save && _save.max_runs) || 1;
+  const _done = _runs >= _max;            // both Maple Bettas claimed
+  const _second = !_done && _runs > 0;     // on the second (last) run
   R.querySelector("#ev-card").innerHTML = `
   <h2><span class="ico big spr spr-leaf"></span> Autumn Crush</h2>
   <p>Troque pe&ccedil;as vizinhas para fazer <b>3 ou mais iguais</b>.<br>
@@ -429,8 +458,10 @@ async function mount(root) {
   <span class="ico spr spr-rock"></span> Do <b>Nv 5</b> em diante: <b>pedras</b> bloqueiam o caminho &mdash; s&oacute; a <b>p&eacute;rola</b> quebra!</p>
   <p>10 n&iacute;veis: <b>5k &rarr; 20k &rarr; 35k &rarr; 50k &rarr; 80k &rarr; 100k &rarr; 120k &rarr; 150k &rarr; 200k &rarr; 300k</b><br>
   e desbloqueie o <b>Maple Betta</b>!</p>
-  ${_save && _save.claimed ? `<p style="font-size:13px">\uD83C\uDFC6 Voc&ecirc; j&aacute; garantiu o Maple Betta!</p>` : ``}
-  ${_has ? `<button class="btn" id="ev-continue-btn">Continuar &mdash; Nv ${_save.level + 1} (${fmt(_save.score)} pts)</button>` : `<button class="btn" id="ev-start-btn">Come&ccedil;ar</button>`}`;
+  ${_done ? `<p style="font-size:13px">\uD83C\uDF89 Voc&ecirc; garantiu os <b>2 Maple Bettas</b> do evento!<br>Evento conclu&iacute;do.</p>`
+    : _second && !_has ? `<p style="font-size:13px">\uD83C\uDF42 <b>Segunda e &uacute;ltima chance!</b><br>Comece do zero e ganhe mais um Maple Betta.</p>`
+    : _second ? `<p style="font-size:13px">\uD83C\uDF42 <b>&Uacute;ltima chance</b> &mdash; boa sorte!</p>` : ``}
+  ${_done ? `` : _has ? `<button class="btn" id="ev-continue-btn">Continuar &mdash; Nv ${_save.level + 1} (${fmt(_save.score)} pts)</button>` : `<button class="btn" id="ev-start-btn">${_second ? "Come\u00e7ar de novo" : "Come\u00e7ar"}</button>`}`;
   updateHud();
   if (_has) R.querySelector("#ev-continue-btn").onclick = () => {
     score = _save.score; level = _save.level; moves = _save.moves;
@@ -440,11 +471,7 @@ async function mount(root) {
     toast("Bem-vindo de volta! Nv " + (level + 1));
   };
   const _startBtn = R.querySelector("#ev-start-btn");
-  if (_startBtn) _startBtn.onclick = () => {
-    score = 0; level = 0; moves = 0; over = false;
-    R.querySelector("#ev-overlay").classList.add("hidden");
-    buildBoard(); updateHud();
-  };
+  if (_startBtn) _startBtn.onclick = () => { startFreshRun(); };
 }
 
 function unmount() {

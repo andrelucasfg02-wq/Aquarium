@@ -109,6 +109,17 @@ Clamp center: `cx ∈ [left+w/2, right−w/2]`, `cy ∈ [top+h/2, bottom−h/2]`
 using item's rendered half-size (frontend knows PNG size; server clamps with
 a 0.03 margin when size unknown).
 
+## Weekly event (Autumn Crush)
+- `GET /api/event/progress?event=autumn1` → `{ok, score, level, moves, claimed,
+  goal, runs_claimed, max_runs, current_run}` — progress/score belong to the
+  current run; `claimed` is true only when the current run's prize was claimed.
+- `POST /api/event/progress` `{event, score, level, moves}` → `{ok}` — saves into
+  the current run (clamped to goal, anti-cheat caps); rejected once all runs are done.
+- `POST /api/event/claim` `{event}` → `{ok, fish_id, species_id, run, runs_claimed,
+  max_runs}` — grants one Maple Betta per run, up to `max_runs` (2) per player.
+  Progress and rewards are stored per `(user_id, event_id, run)`; each new run
+  starts from zero.
+
 ## Quests / inventory / settings / minigame
 - `GET /api/quests` → in state. `POST /api/quests/claim` `{quest_id}` → `{ok, coins, gems}`.
   Seed per user: 6 quests — 3 daily (feed fish 3× → 100 coins; wipe 5 dirt → 80 coins;

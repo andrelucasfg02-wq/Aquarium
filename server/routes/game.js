@@ -651,17 +651,28 @@ module.exports = function gameRoutes(db) {
 
   // ---------- weekly event: Autumn Crush (event_id "autumn1") ----------
   // Progress is stored per account on the server. Claim is atomic: the
-  // event_rewards PK (user_id,event_id) makes double-claims impossible.
+  // event_rewards PK (user_id,event_id,run) makes double-claims impossible.
+  // Each player gets up to EVENT_MAX_RUNS full playthroughs (score resets to
+  // zero each run), i.e. up to 2 Maple Bettas from this event.
+  const EVENT_MAX_RUNS = { autumn1: 2 };
   const validEvent = (e) => typeof e === 'string' && EVENT_GOALS[e] != null;
+  const maxRuns = (event) => EVENT_MAX_RUNS[event] || 1;
+  const runsClaimed = async (d, uid, event) =>
+    (await d.get('SELECT COUNT(*) AS n FROM event_rewards WHERE user_id=? AND event_id=?', uid, event)).n || 0;
 
   r.get('/event/progress', ah(async (req, res) => {
     const uid = req.user.id;
     const event = String(req.query.event || '');
     if (!validEvent(event)) return res.status(400).json({ ok: false, error: 'unknown event' });
-    const p = await db.get('SELECT score,level,moves FROM event_progress WHERE user_id=? AND event_id=?', uid, event);
-    const rw = await db.get('SELECT claimed_at FROM event_rewards WHERE user_id=? AND event_id=?', uid, event);
+    const claimed = await runsClaimed(db, uid, event);
+    const mr = maxRuns(event);
+    const finished = claimed >= mr;
+    const run = finished ? mr : claimed + 1;
+    const p = await db.get('SELECT score,level,moves FROM event_progress WHERE user_id=? AND event_id=? AND run=?', uid, event, run);
+    const rw = await db.get('SELECT claimed_at FROM event_rewards WHERE user_id=? AND event_id=? AND run=?', uid, event, run);
     res.json({ ok: true, score: p ? p.score : 0, level: p ? p.level : 0, moves: p ? p.moves : 0,
-               claimed: !!rw, goal: EVENT_GOALS[event] });
+               claimed: !!rw, goal: EVENT_GOALS[event],
+               runs_claimed: claimed, max_runs: mr, current_run: run });
   }));
 
   r.post('/event/progress', ah(async (req, res) => {
@@ -672,10 +683,14 @@ module.exports = function gameRoutes(db) {
     if (!Number.isFinite(s) || !Number.isFinite(l) || !Number.isFinite(m) || s < 0 || l < 0 || m < 0)
       return res.status(400).json({ ok: false, error: 'invalid progress' });
     if (l > 9) return res.status(400).json({ ok: false, error: 'invalid progress' });
+    const claimed = await runsClaimed(db, uid, event);
+    const mr = maxRuns(event);
+    if (claimed >= mr) return res.status(400).json({ ok: false, error: 'event finished' });
+    const run = claimed + 1;
     // Overshooting the goal is normal — a single move scores in chunks, so nobody
     // lands exactly on it. Clamp to the goal instead of rejecting the save.
     s = Math.min(s, EVENT_GOALS[event]);
-    const prev = await db.get('SELECT score, moves, updated_at FROM event_progress WHERE user_id=? AND event_id=?', uid, event);
+    const prev = await db.get('SELECT score, moves, updated_at FROM event_progress WHERE user_id=? AND event_id=? AND run=?', uid, event, run);
     if (prev && s > prev.score) {
       // anti-cheat: the game saves after every move, so a single save can only add what
       // one move can plausibly produce. Generous caps so legit play is never affected.
@@ -685,12 +700,12 @@ module.exports = function gameRoutes(db) {
         return res.status(400).json({ ok: false, error: 'suspicious progress' });
     }
     // only forward progress is kept: a replayed/lower score never overwrites a better one
-    await db.run(`INSERT INTO event_progress(user_id,event_id,score,level,moves,updated_at)
-                  VALUES(?,?,?,?,?,?)
-                  ON CONFLICT(user_id,event_id) DO UPDATE SET
+    await db.run(`INSERT INTO event_progress(user_id,event_id,run,score,level,moves,updated_at)
+                  VALUES(?,?,?,?,?,?,?)
+                  ON CONFLICT(user_id,event_id,run) DO UPDATE SET
                     score=MAX(score,excluded.score), level=MAX(level,excluded.level),
                     moves=MAX(moves,excluded.moves), updated_at=excluded.updated_at`,
-                  uid, event, s, l, m, t);
+                  uid, event, run, s, l, m, t);
     res.json({ ok: true });
   }));
 
@@ -700,17 +715,19 @@ module.exports = function gameRoutes(db) {
     if (!validEvent(event)) return res.status(400).json({ ok: false, error: 'unknown event' });
     const out = await db.tx(async (txDb) => {
       const Ht = helpers(txDb);
-      const p = await txDb.get('SELECT score FROM event_progress WHERE user_id=? AND event_id=?', uid, event);
+      const claimed = await runsClaimed(txDb, uid, event);
+      const mr = maxRuns(event);
+      if (claimed >= mr) return { ok: false, error: 'already claimed' };
+      const run = claimed + 1;
+      const p = await txDb.get('SELECT score FROM event_progress WHERE user_id=? AND event_id=? AND run=?', uid, event, run);
       if (!p || p.score < EVENT_GOALS[event])
         return { ok: false, error: 'goal not reached yet' };
-      const rw = await txDb.get('SELECT claimed_at FROM event_rewards WHERE user_id=? AND event_id=?', uid, event);
-      if (rw) return { ok: false, error: 'already claimed' };
-      await txDb.run('INSERT INTO event_rewards(user_id,event_id,claimed_at) VALUES(?,?,?)', uid, event, t);
+      await txDb.run('INSERT INTO event_rewards(user_id,event_id,run,claimed_at) VALUES(?,?,?,?)', uid, event, run, t);
       // prize goes to inventory — the player places it in the tank themselves
       const fish = await Ht.addFish(uid, EVENT_FISH[event], {
         location: 'inventory', origin: 'event', event_id: event,
       }, t);
-      return { ok: true, fish_id: fish.id, species_id: EVENT_FISH[event] };
+      return { ok: true, fish_id: fish.id, species_id: EVENT_FISH[event], run, runs_claimed: run, max_runs: mr };
     });
     if (!out.ok) return res.status(400).json(out);
     res.json(out);

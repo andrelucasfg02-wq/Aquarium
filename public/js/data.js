@@ -4,8 +4,8 @@
 const DATA = {
   TANKS: {
     small:  { file: "assets/tanks/tank_small.jpg",  w: 1125, h: 1125, price: 0,     capacity: 12, decorSlots: 10, fishScale: 1 },
-    medium: { file: "assets/tanks/tank_medium.jpg",  w: 1125, h: 634,  price: 5000,  capacity: 22, decorSlots: 20, fishScale: .85 },
-    large:  { file: "assets/tanks/tank_large.jpg",   w: 1125, h: 750,  price: 10000, capacity: 35, decorSlots: 30, fishScale: .7 },
+    medium: { file: "assets/tanks/tank_medium.jpg",  w: 1125, h: 634,  price: 5000,  capacity: 22, decorSlots: 20, fishScale: .75 },
+    large:  { file: "assets/tanks/tank_large.jpg",   w: 1125, h: 750,  price: 10000, capacity: 35, decorSlots: 30, fishScale: .6 },
   },
   // measured glass rectangles, fractions of artwork (per API_CONTRACT.md §Glass)
   GLASS: {

@@ -296,11 +296,16 @@ const App = (() => {
       if (f) UI.openFishMenu(f);
     });
 
-    tank.on("coinTap", async (fishId) => {
-      const r = await Api.collectCoins(fishId);
-      if (r.ok) { AudioFX.coin(); UI.toast(`+${r.collected} 🪙${r.collected_gems ? ` +${r.collected_gems} 💎` : ""}`); }
-      else { AudioFX.error(); UI.toast(r.error || "Couldn't collect"); }
-      await refresh();
+    tank.on("coinTap", (fishId) => {
+      // instant feedback already played in tank.js; bank the coins in the
+      // background so rapid taps on many fish each resolve independently
+      Api.collectCoins(fishId).then(async (r) => {
+        if (!r.ok && r.error !== "nothing to collect") {
+          AudioFX.error(); UI.toast(r.error || "Couldn't collect");
+        }
+        const s = await Api.state();
+        if (s.ok) { state = s.state; UI.updateHUD(state); tank.syncState(state); }
+      });
     });
 
     tank.on("wiped", async (ids) => {

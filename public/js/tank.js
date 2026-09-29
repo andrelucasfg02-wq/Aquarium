@@ -455,7 +455,8 @@ Object.assign(TankView.prototype, {
   drawFish(e, v, T) {
     const f = e.data;
     const stage = f.stage || "adult";
-    const scale = DATA.STAGE_SCALE[stage] || 1;
+    let scale = DATA.STAGE_SCALE[stage] || 1;
+    if (stage === "adult" && e.group === "goldfish") scale *= 0.85; // adult goldfish run a bit smaller
     const base = (DATA.GROUP_BASE_PX[e.group] || 130) * scale * (T.fishScale || 1);
     const frame = (e.faceT > 0) ? 0 : e.frame;
     const im = loadImg(spriteURL(f.species_id, frame));
@@ -651,8 +652,16 @@ Object.assign(TankView.prototype, {
       if (d < bd) { bd = d; best = e; }
     }
     if (best) {
-      // coin-ready fish: tap collects instead of opening the menu
+      // coin-ready fish: tap collects instead of opening the menu.
+      // Feedback is instant (sound + floating "+N 🪙" + badge clears now);
+      // the server banks the coins in the background (see app.js coinTap).
       if (best.data && best.data.coin_pending > 0) {
+        const amt = best.data.coin_pending;
+        const gems = best.data.gem_pending || 0;
+        AudioFX.coin();
+        this.addEmote(best.px, best.py - .04, `+${amt} 🪙${gems ? ` +${gems} 💎` : ""}`, 1.6);
+        best.data.coin_pending = 0;
+        best.data.gem_pending = 0;
         this.emit("coinTap", best.data.id);
         return;
       }

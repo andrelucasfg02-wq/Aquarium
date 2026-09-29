@@ -712,7 +712,8 @@ const UI = (() => {
     const r = await Api.marketListings();
     if (!r.ok) { body.innerHTML = `<div class="empty">Couldn't load the market 😢</div>`; return; }
     const me = state.user && state.user.id;
-    let html = `<div class="sub" style="margin-bottom:8px">Player-to-player market · prices in 💎 diamonds · 10% fee on every sale</div>`;
+    let html = `<div class="sub" style="margin-bottom:8px">Player-to-player market · prices in 💎 diamonds · 10% fee on every sale</div>
+    <button class="pill-btn gold" id="mk-add" style="margin-bottom:8px">➕ Adicionar peixe</button>`;
     if (!r.listings.length) {
       html += `<div class="empty">No fish listed yet.<br>List yours from the Collection 💎</div>`;
     }
@@ -736,6 +737,7 @@ const UI = (() => {
         </div></div>`;
     }
     body.innerHTML = html;
+    $("mk-add").onclick = renderMarketAdd;
     body.querySelectorAll("[data-mkbuy]").forEach((b) => b.onclick = async () => {
       const id = Number(b.dataset.mkbuy);
       if (!confirm("Buy this fish with diamonds? 💎")) return;
@@ -748,6 +750,45 @@ const UI = (() => {
       const r2 = await Api.marketCancel(Number(b.dataset.mkcancel));
       if (r2.ok) { toast("Listing cancelled — fish is back in your inventory 🎒"); await App.refresh(); renderMarket(); }
       else toast(r2.error || "Cancel failed");
+    });
+  }
+
+  /* ---------- market: add fish (event + hybrid only) ---------- */
+  function renderMarketAdd() {
+    const body = $("screen-body");
+    const cands = (state.fish || []).filter((f) =>
+      f.tradeable && f.location !== "market" &&
+      (f.origin === "event" || (f.lineage && f.lineage.hybrid)));
+    let html = `<button class="pill-btn" id="mk-back">← Back to market</button>
+      <div class="fm-note" style="margin:8px 0">⚠️ Apenas peixes de eventos e híbridos podem ser vendidos entre usuários.</div>`;
+    if (!cands.length) {
+      html += `<div class="empty">🐟 vc ainda não possui nenhum peixe tradable</div>`;
+    }
+    for (const f of cands) {
+      const tags = [];
+      if (f.origin === "event") tags.push("🏆 event");
+      if (f.lineage && f.lineage.hybrid) tags.push("✨ hybrid");
+      html += `<div class="row-card">${fishImg(f.species_id, 0)}<div class="grow">
+        <b>${esc(f.nickname || f.name)}</b>
+        <span class="tag">${f.gender === "male" ? "♂" : "♀"}</span>${tags.map((t) => ` <span class="tag">${t}</span>`).join("")}
+        <div class="sub">${esc(speciesName(f.species_id))}</div></div>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+          <input id="mkp-${f.id}" type="number" min="1" max="999999" placeholder="💎"
+            style="width:90px;padding:10px;border-radius:12px;border:2px solid var(--pink-d)" />
+          <button class="pill-btn gold" data-mkadd="${f.id}">List</button>
+        </div></div>`;
+    }
+    body.innerHTML = html;
+    $("mk-back").onclick = renderMarket;
+    body.querySelectorAll("[data-mkadd]").forEach((b) => b.onclick = async () => {
+      const id = Number(b.dataset.mkadd);
+      const price = Math.floor(Number($(`mkp-${id}`).value));
+      if (!price || price < 1 || price > 999999) { toast("Enter a price from 1 to 999999 💎"); return; }
+      if (!confirm(`List this fish for ${price} 💎? (10% fee on sale)`)) return;
+      b.disabled = true;
+      const r = await Api.marketList(id, price);
+      if (r.ok) { AudioFX.coin(); toast("Listed on the fish market 💎"); await App.refresh(); renderMarketAdd(); }
+      else { AudioFX.error(); toast(r.error || "Couldn't list"); b.disabled = false; }
     });
   }
 

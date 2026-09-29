@@ -229,10 +229,6 @@ class TankView {
     if (e.data && e.data.sick && e.emoteCd <= 0) {
       this.addEmote(e.px, e.py - .03, "🤒", 2.2); e.emoteCd = 2.4;
     }
-    // coin-ready fish show 💰 until collected (shares emoteCd, alternates with 🤒)
-    if (e.data && e.data.coin_pending > 0 && e.emoteCd <= 0) {
-      this.addEmote(e.px, e.py - .03, "💰", 2.2); e.emoteCd = 2.4;
-    }
 
     const dx = e.tx - e.px, dy = e.ty - e.py;
     const dist = Math.hypot(dx, dy);
@@ -493,6 +489,26 @@ Object.assign(TankView.prototype, {
     }
     this.ctx.drawImage(im, -w / 2, -h / 2, w, h);
     this.ctx.restore();
+
+    // persistent coin badge: fish with coins ready keep a 🪙 above them until collected
+    if (f.coin_pending > 0) {
+      const bob = Math.sin((e.animT || 0) * 3) * 4;
+      const cs = Math.max(16, .032 * T.w * v.s);
+      const ctx2 = this.ctx;
+      ctx2.save();
+      ctx2.font = `${cs}px serif`;
+      ctx2.textAlign = "center";
+      ctx2.textBaseline = "middle";
+      // soft golden halo so it pops against any background
+      ctx2.globalAlpha = .35 + .15 * Math.sin((e.animT || 0) * 3);
+      ctx2.fillStyle = "#ffd75e";
+      ctx2.beginPath();
+      ctx2.arc(x, y - h / 2 - cs * .7 + bob, cs * .62, 0, 7);
+      ctx2.fill();
+      ctx2.globalAlpha = 1;
+      ctx2.fillText("🪙", x, y - h / 2 - cs * .7 + bob);
+      ctx2.restore();
+    }
 
     // edit-selection ring never applies to fish
   },

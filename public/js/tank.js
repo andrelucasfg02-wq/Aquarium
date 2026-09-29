@@ -33,6 +33,9 @@ class TankView {
     this.wipeIds = new Set();
     this.selectedPlacement = null;
     this.dragging = null;
+    this.camX = 0; this.camY = 0;   // camera pan (css px) — swipe to look around
+    this._panId = null; this._panning = false;
+    this._panSX = 0; this._panSY = 0; this._panCX = 0; this._panCY = 0;
     this.quality = "high";
     this.handlers = {};
     this.lastT = 0;
@@ -58,17 +61,32 @@ class TankView {
     this.cssW = w; this.cssH = h; this.dpr = dpr;
     this.cv.width = Math.floor(w * dpr);
     this.cv.height = Math.floor(h * dpr);
+    this.camX = 0; this.camY = 0; // recentre camera on resize / rotation
   }
 
   setTank(tier) {
     this.tier = tier;
+    this.camX = 0; this.camY = 0;
     const T = DATA.TANKS[tier];
     this.bg = loadImg(T.file);
   }
 
   view() {
     const T = DATA.TANKS[this.tier];
-    return coverView(this.cssW, this.cssH, T.w, T.h);
+    const v = coverView(this.cssW, this.cssH, T.w, T.h);
+    v.ox += this.camX; v.oy += this.camY;
+    return v;
+  }
+  /* max pan (css px) that still keeps the artwork covering the screen */
+  panLimits() {
+    const T = DATA.TANKS[this.tier];
+    const v = coverView(this.cssW, this.cssH, T.w, T.h);
+    return { x: Math.max(0, -v.ox), y: Math.max(0, -v.oy) };
+  }
+  setCam(x, y) {
+    const L = this.panLimits();
+    this.camX = Math.min(L.x, Math.max(-L.x, x));
+    this.camY = Math.min(L.y, Math.max(-L.y, y));
   }
   toScreen(fx, fy) {
     const T = DATA.TANKS[this.tier];
@@ -504,8 +522,14 @@ Object.assign(TankView.prototype, {
 
     el.addEventListener("pointerdown", (ev) => {
       AudioFX.unlock();
+      if (ev.isPrimary === false) return; // ignore second finger
       const [x, y] = pos(ev);
       downAt = performance.now(); downPos = [x, y]; moved = false;
+      // camera pan: press-and-drag in normal mode (not sponge/edit/placing)
+      this._panId = ev.pointerId;
+      this._panSX = x; this._panSY = y;
+      this._panCX = this.camX; this._panCY = this.camY;
+      this._panning = !this.mode && !this.placeDecoId;
       if (this.mode === "sponge") {
         this.sponge.x = x; this.sponge.y = y; this.sponge.down = true;
         this.wipeCheck(x, y);
@@ -521,6 +545,9 @@ Object.assign(TankView.prototype, {
     el.addEventListener("pointermove", (ev) => {
       const [x, y] = pos(ev);
       if (downPos && Math.hypot(x - downPos[0], y - downPos[1]) > 8) moved = true;
+      if (this._panning && ev.pointerId === this._panId) {
+        this.setCam(this._panCX + (x - this._panSX), this._panCY + (y - this._panSY));
+      }
       if (this.mode === "sponge") {
         this.sponge.x = x; this.sponge.y = y;
         if (this.sponge.down) this.wipeCheck(x, y);
@@ -550,9 +577,10 @@ Object.assign(TankView.prototype, {
         this.tapAt(x, y);
       }
       downPos = null;
+      this._panId = null; this._panning = false;
     };
     el.addEventListener("pointerup", up);
-    el.addEventListener("pointercancel", () => { this.sponge.down = false; this.dragging = null; downPos = null; });
+    el.addEventListener("pointercancel", () => { this.sponge.down = false; this.dragging = null; downPos = null; this._panId = null; this._panning = false; });
   },
 
   hitPlacement(x, y) {

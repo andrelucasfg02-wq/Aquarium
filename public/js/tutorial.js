@@ -7,43 +7,43 @@ const Tutorial = (() => {
 
   const STEPS = [
     {
-      icon: "👋", title: "Welcome!",
-      text: "This is your aquarium — your fish live here, grow up, and make coins for you.",
+      icon: "👋", title: "tut.s1.title",
+      text: "tut.s1.text",
       target: null,
     },
     {
-      icon: "🐟", title: "Tap a fish",
-      text: "Tap any fish to open its menu: feed it, pet it, check its mood, level and coin timer.",
+      icon: "🐟", title: "tut.s2.title",
+      text: "tut.s2.text",
       target: "#tank",
     },
     {
-      icon: "💰", title: "Collect coins",
-      text: "Fish make coins over time. When you see 💰 floating over a fish, tap it to collect!",
+      icon: "💰", title: "tut.s3.title",
+      text: "tut.s3.text",
       target: "#tank",
     },
     {
-      icon: "🍽️", title: "Feed your fish",
-      text: "Hungry fish get sick! Tap 🍽️ to feed everyone at once. Buy more food in 🎒 Inventory.",
+      icon: "🍽️", title: "tut.s4.title",
+      text: "tut.s4.text",
       target: "#btn-feed",
     },
     {
-      icon: "🧽", title: "Keep it clean",
-      text: "Dirt spots appear every hour. Tap 🧽, then drag the sponge over them to wipe them away.",
+      icon: "🧽", title: "tut.s5.title",
+      text: "tut.s5.text",
       target: "#btn-clean",
     },
     {
-      icon: "🛍️", title: "Grow your tank",
-      text: "Buy new fish in the 🐟 Fish Shop below, breed them with 🥚, and decorate with 🪸!",
+      icon: "🛍️", title: "tut.s6.title",
+      text: "tut.s6.text",
       target: '.nav-tab[data-screen="fishshop"]',
     },
     {
-      icon: "🎉", title: "You're ready!",
-      text: "That's the basics — have fun! You can replay this tour anytime from ⚙️ Settings.",
+      icon: "🎉", title: "tut.s7.title",
+      text: "tut.s7.text",
       target: null,
     },
   ];
 
-  let overlay = null, spot = null, card = null, dots = null, nextBtn = null;
+  let overlay = null, spot = null, card = null, dots = null, nextBtn = null, skipBtn = null;
   let idx = 0;
 
   function done() {
@@ -62,15 +62,16 @@ const Tutorial = (() => {
       '<div id="tut-card">' +
         '<div id="tut-icon"></div><h3 id="tut-title"></h3><p id="tut-text"></p>' +
         '<div id="tut-dots"></div>' +
-        '<div id="tut-btns"><button id="tut-skip" class="tut-btn ghost">Skip</button>' +
-        '<button id="tut-next" class="tut-btn primary">Next →</button></div>' +
+        '<div id="tut-btns"><button id="tut-skip" class="tut-btn ghost"></button>' +
+        '<button id="tut-next" class="tut-btn primary"></button></div>' +
       "</div>";
     document.body.appendChild(overlay);
     spot = overlay.querySelector("#tut-spot");
     card = overlay.querySelector("#tut-card");
     dots = overlay.querySelector("#tut-dots");
     nextBtn = overlay.querySelector("#tut-next");
-    overlay.querySelector("#tut-skip").addEventListener("click", finish);
+    skipBtn = overlay.querySelector("#tut-skip");
+    skipBtn.addEventListener("click", finish);
     nextBtn.addEventListener("click", () => {
       if (idx >= STEPS.length - 1) finish();
       else { idx++; render(); }
@@ -81,10 +82,11 @@ const Tutorial = (() => {
   function render() {
     const st = STEPS[idx];
     overlay.querySelector("#tut-icon").textContent = st.icon;
-    overlay.querySelector("#tut-title").textContent = st.title;
-    overlay.querySelector("#tut-text").textContent = st.text;
+    overlay.querySelector("#tut-title").textContent = t("tut.s" + (idx + 1) + ".title");
+    overlay.querySelector("#tut-text").textContent = t("tut.s" + (idx + 1) + ".text");
     dots.textContent = STEPS.map((_, i) => (i === idx ? "●" : "○")).join(" ");
-    nextBtn.textContent = idx >= STEPS.length - 1 ? "Done ✓" : "Next →";
+    skipBtn.textContent = t("tut.skip");
+    nextBtn.textContent = idx >= STEPS.length - 1 ? t("tut.done") : t("tut.next");
     place();
   }
 
@@ -128,7 +130,7 @@ const Tutorial = (() => {
     if (overlay) {
       window.removeEventListener("resize", place);
       overlay.remove();
-      overlay = null; spot = null; card = null; dots = null; nextBtn = null;
+      overlay = null; spot = null; card = null; dots = null; nextBtn = null; skipBtn = null;
     }
     idx = 0;
   }

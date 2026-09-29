@@ -447,7 +447,7 @@ Object.assign(TankView.prototype, {
       ctx.font = "15px sans-serif"; ctx.textAlign = "center";
       ctx.fillStyle = "#fff";
       ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = 3;
-      const msg = "Tap the tank to place · ✕ cancels";
+      const msg = t("tank.place_hint");
       ctx.strokeText(msg, cssW / 2, 86); ctx.fillText(msg, cssW / 2, 86);
     }
   },

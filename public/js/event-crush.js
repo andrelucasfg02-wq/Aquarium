@@ -17,11 +17,11 @@ function updateHud() {
   const target = LEVELS[level], base = level === 0 ? 0 : LEVELS[level - 1];
   $score.textContent = fmt(score);
   $target.textContent = fmt(target);
-  $level.textContent = "Nv " + (level + 1);
+  $level.textContent = t("event.level", { n: level + 1 });
   $fill.style.width = Math.min(100, (score - base) / (target - base) * 100) + "%";
   $plabel.innerHTML = level === LEVELS.length - 1
-    ? `N&iacute;vel ${LEVELS.length} &mdash; alcance <b>${fmt(target)}</b> e ganhe o <b>Maple Betta</b>!`
-    : `N&iacute;vel ${level + 1} &mdash; alcance <b>${fmt(target)}</b> pontos!`;
+    ? t("event.level_last", { n: LEVELS.length, target: fmt(target) })
+    : t("event.level_goal", { n: level + 1, target: fmt(target) });
 }
 
 function toast(msg) {
@@ -63,11 +63,11 @@ function checkLevel() {
   while (level < LEVELS.length - 1 && score >= LEVELS[level]) { level++; leveled = true; }
   updateHud();
   saveProgress();
-  if (leveled) toast("Nível " + (level + 1) + "!");
+  if (leveled) toast(t("event.level_up", { n: level + 1 }));
   if (level >= 4 && !rocksPlaced) {
     rocksPlaced = true;
     placeRocks();
-    setTimeout(() => toast("Pedras no caminho! Só a pérola quebra!"), 1300);
+    setTimeout(() => toast(t("event.rocks")), 1300);
   }
   if (score >= LEVELS[LEVELS.length - 1]) endGame(true);
 }
@@ -396,8 +396,8 @@ async function endGame(win) {
   // The server is the source of truth for the claim: confirm the final score
   // landed there before declaring victory (the save is async).
   card.innerHTML = `
-    <h2>Sincronizando...</h2>
-    <p style="font-size:13px">Confirmando seus pontos...</p>`;
+    <h2>${t("event.syncing")}</h2>
+    <p style="font-size:13px">${t("event.confirming")}</p>`;
   _lastSig = ""; // force the final save through (the over-guard would skip it)
   const saved = await saveProgress(true);
   let sp = null;
@@ -405,32 +405,32 @@ async function endGame(win) {
   const goal = LEVELS[LEVELS.length - 1];
   if (!saved || !sp || sp.score < goal) {
     card.innerHTML = `
-      <h2>Quase l&aacute;!</h2>
-      <p>N&atilde;o consegui confirmar seus pontos no servidor.<br>
-      <span style="font-size:13px">Verifique sua conex&atilde;o e toque para tentar de novo.</span></p>
-      <button class="btn" id="ev-retry-btn">Tentar de novo</button>`;
+      <h2>${t("event.almost_there")}</h2>
+      <p>${t("event.no_confirm")}<br>
+      <span style="font-size:13px">${t("event.check_conn")}</span></p>
+      <button class="btn" id="ev-retry-btn">${t("event.retry")}</button>`;
     R.querySelector("#ev-retry-btn").onclick = () => endGame(true);
     return;
   }
   const alreadyClaimed = !!sp.claimed;
   card.innerHTML = `
-    <h2>Peixe Desbloqueado!</h2>
+    <h2>${t("event.fish_unlocked")}</h2>
     <div id="ev-big-fish" class="spr spr-fish1"></div>
-    <p><b>Maple Betta</b> &eacute; seu!<br>Voc&ecirc; fez <b>${fmt(score)}</b> pontos em ${moves} jogadas!</p>
+    <p>${t("event.you_made", { score: fmt(score), moves })}</p>
     ${alreadyClaimed
-      ? `<p style="font-size:13px">\uD83C\uDFC6 Voc&ecirc; j&aacute; garantiu o Maple Betta!</p>`
-      : `<button class="btn" id="ev-catch-btn">Guardar no invent&aacute;rio</button>
+      ? `<p style="font-size:13px">${t("event.already_have")}</p>`
+      : `<button class="btn" id="ev-catch-btn">${t("event.save_inv")}</button>
          <p id="ev-claim-msg" style="font-size:13px;min-height:18px"></p>`}`;
   if (alreadyClaimed) return;
   R.querySelector("#ev-catch-btn").onclick = async () => {
     const btn = R.querySelector("#ev-catch-btn");
     const msg = R.querySelector("#ev-claim-msg");
-    btn.disabled = true; btn.textContent = "Guardando...";
+    btn.disabled = true; btn.textContent = t("event.saving");
     try {
       const r = await Api.eventClaim(EVENT_ID);
       if (r && r.ok) {
-        msg.textContent = "Maple Betta na sua coleção! 🐟";
-        btn.textContent = "Ver na coleção";
+        msg.textContent = t("event.claimed_ok");
+        btn.textContent = t("event.view_collection");
         btn.disabled = false;
         if (window.App) App.refresh();
         btn.onclick = () => { if (typeof UI !== "undefined") { UI.close(); UI.open("collection"); } };
@@ -442,36 +442,37 @@ async function endGame(win) {
           if (sp2 && _runs2 < _max2) {
             const again = document.createElement("button");
             again.className = "btn"; again.style.marginTop = "8px";
-            again.innerHTML = "\uD83C\uDF42 Jogar de novo \u2014 \u00faltima chance!";
-            again.onclick = () => { startFreshRun(); toast("\u00daltima chance \u2014 boa sorte! \uD83C\uDF42"); };
+            again.innerHTML = t("event.play_again");
+            again.onclick = () => { startFreshRun(); toast(t("event.last_chance")); };
             msg.after(again);
           } else if (sp2) {
             const done = document.createElement("p");
             done.style.fontSize = "13px";
-            done.innerHTML = "\uD83C\uDF89 Voc\u00ea garantiu os 2 Maple Bettas do evento!";
+            done.innerHTML = t("event.completed_2");
             msg.after(done);
           }
         } catch (e) {}
       } else {
         msg.textContent = (r && r.error === "already claimed")
-          ? "Você já tem o Maple Betta! 🐟"
-          : ("Não foi possível guardar: " + ((r && r.error) || "tente de novo"));
-        btn.disabled = false; btn.textContent = "Guardar no inventário";
+          ? t("event.have_it")
+          : t("event.claim_fail", { err: (r && r.error) || t("event.try_again_short") });
+        btn.disabled = false; btn.textContent = t("event.save_inv");
       }
     } catch (e) {
-      msg.textContent = "Sem conexão — tente de novo 🛜";
-      btn.disabled = false; btn.textContent = "Guardar no inventário";
+      msg.textContent = t("event.offline");
+      btn.disabled = false; btn.textContent = t("event.save_inv");
     }
   };
 }
 
 async function mount(root) {
   R = root;
-  R.innerHTML = '<div id="ev-fish-layer"><div class="swim f1 spr-fish1"></div><div class="swim f2 spr-fish2"></div><div class="swim f3 spr-fish3"></div></div>\n<h1><img class="ico big" src="assets/event/leaf.png" alt="folha"> Autumn Crush</h1>\n<div class="sub">Evento de Outono &middot; Semana 1</div>\n<div id="ev-hud">\n  <div class="chip"><img class="ico" src="assets/event/pearl.png" alt="pontos"> <span id="ev-score">0</span></div>\n  <div class="chip"><img class="ico" src="assets/event/fish1.png" alt="meta"> <span id="ev-target">5.000</span></div>\n  <div class="chip"><img class="ico" src="assets/event/leaf.png" alt="nivel"> <span id="ev-level">Nv 1</span></div>\n</div>\n<div id="ev-progress-wrap"><div id="ev-progress-label"></div><div id="ev-progress-bar"><div id="ev-progress-fill"></div></div></div>\n<div id="ev-board"><div id="ev-fx"></div></div>\n<div id="ev-legend">\n  <div class="leg"><img class="ico" src="assets/event/pearl.png" alt="perola"> = explos&atilde;o grande</div>\n  <div class="leg"><img class="ico" src="assets/event/tadpole.png" alt="girino"> = enxame limpa pe&ccedil;as</div>\n  <div class="leg"><span class="ico spr spr-rock" style="display:inline-block"></span> = s&oacute; a p&eacute;rola quebra (Nv 5+)</div>\n  <div class="leg">Toque 2 pe&ccedil;as vizinhas para trocar</div>\n</div>\n<div id="ev-toast"></div>\n<div id="ev-overlay"><div class="card" id="ev-card"></div></div>';
+  R.innerHTML = '<div id="ev-fish-layer"><div class="swim f1 spr-fish1"></div><div class="swim f2 spr-fish2"></div><div class="swim f3 spr-fish3"></div></div>\n<h1><img class="ico big" src="assets/event/leaf.png" alt="leaf" data-i18n-alt="event.alt_leaf"> Autumn Crush</h1>\n<div class="sub" data-i18n="event.subtitle">Autumn event &middot; Week 1</div>\n<div id="ev-hud">\n  <div class="chip"><img class="ico" src="assets/event/pearl.png" alt="points" data-i18n-alt="event.alt_points"> <span id="ev-score">0</span></div>\n  <div class="chip"><img class="ico" src="assets/event/fish1.png" alt="goal" data-i18n-alt="event.alt_goal"> <span id="ev-target">5.000</span></div>\n  <div class="chip"><img class="ico" src="assets/event/leaf.png" alt="level" data-i18n-alt="event.alt_level"> <span id="ev-level">Lv 1</span></div>\n</div>\n<div id="ev-progress-wrap"><div id="ev-progress-label"></div><div id="ev-progress-bar"><div id="ev-progress-fill"></div></div></div>\n<div id="ev-board"><div id="ev-fx"></div></div>\n<div id="ev-legend">\n  <div class="leg"><img class="ico" src="assets/event/pearl.png" alt="pearl" data-i18n-alt="event.alt_pearl"> <span data-i18n="event.leg_boom">= big explosion</span></div>\n  <div class="leg"><img class="ico" src="assets/event/tadpole.png" alt="tadpole" data-i18n-alt="event.alt_tadpole"> <span data-i18n="event.leg_swarm">= swarm clears pieces</span></div>\n  <div class="leg"><span class="ico spr spr-rock" style="display:inline-block"></span> <span data-i18n="event.leg_rock">= only the pearl breaks it (Lv 5+)</span></div>\n  <div class="leg" data-i18n="event.leg_how">Tap 2 neighboring pieces to swap</div>\n</div>\n<div id="ev-toast"></div>\n<div id="ev-overlay"><div class="card" id="ev-card"></div></div>';
   board = R.querySelector("#ev-board"); fx = R.querySelector("#ev-fx");
   $score = R.querySelector("#ev-score"); $level = R.querySelector("#ev-level");
   $target = R.querySelector("#ev-target"); $plabel = R.querySelector("#ev-progress-label");
   $fill = R.querySelector("#ev-progress-fill");
+  if (typeof I18N !== "undefined") I18N.applyI18n(R);
   score = 0; level = 0; moves = 0; busy = false; over = false;
   selected = null; grid = []; rocks = []; rocksPlaced = false; _lastSig = "";
   document.addEventListener("visibilitychange", onHideSave);
@@ -484,23 +485,23 @@ async function mount(root) {
   const _second = !_done && _runs > 0;     // on the second (last) run
   R.querySelector("#ev-card").innerHTML = `
   <h2><span class="ico big spr spr-leaf"></span> Autumn Crush</h2>
-  <p>Troque pe&ccedil;as vizinhas para fazer <b>3 ou mais iguais</b>.<br>
-  <span class="ico spr spr-pearl"></span> <b>P&eacute;rola</b> = <b>explos&atilde;o grande</b>!<br>
-  <span class="ico spr spr-tadpole"></span> <b>Girino</b> = <b>enxame</b> que limpa pe&ccedil;as aleat&oacute;rias!<br>
-  <span class="ico spr spr-rock"></span> Do <b>Nv 5</b> em diante: <b>pedras</b> bloqueiam o caminho &mdash; s&oacute; a <b>p&eacute;rola</b> quebra!</p>
-  <p>10 n&iacute;veis: <b>5k &rarr; 20k &rarr; 35k &rarr; 50k &rarr; 80k &rarr; 100k &rarr; 120k &rarr; 150k &rarr; 200k &rarr; 300k</b><br>
-  e desbloqueie o <b>Maple Betta</b>!</p>
-  ${_done ? `<p style="font-size:13px">\uD83C\uDF89 Voc&ecirc; garantiu os <b>2 Maple Bettas</b> do evento!<br>Evento conclu&iacute;do.</p>`
-    : _second && !_has ? `<p style="font-size:13px">\uD83C\uDF42 <b>Segunda e &uacute;ltima chance!</b><br>Comece do zero e ganhe mais um Maple Betta.</p>`
-    : _second ? `<p style="font-size:13px">\uD83C\uDF42 <b>&Uacute;ltima chance</b> &mdash; boa sorte!</p>` : ``}
-  ${_done ? `` : _has ? `<button class="btn" id="ev-continue-btn">Continuar</button>` : `<button class="btn" id="ev-start-btn">${_second ? "Come\u00e7ar de novo" : "Come\u00e7ar"}</button>`}`;
+  <p>${t("event.intro_1")}<br>
+  <span class="ico spr spr-pearl"></span> ${t("event.intro_pearl")}<br>
+  <span class="ico spr spr-tadpole"></span> ${t("event.intro_tadpole")}<br>
+  <span class="ico spr spr-rock"></span> ${t("event.intro_rocks")}</p>
+  <p>${t("event.levels")}<br>
+  ${t("event.unlock_line")}</p>
+  ${_done ? `<p style="font-size:13px">${t("event.done_card")}</p>`
+    : _second && !_has ? `<p style="font-size:13px">${t("event.second_chance")}</p>`
+    : _second ? `<p style="font-size:13px">${t("event.last_chance_card")}</p>` : ``}
+  ${_done ? `` : _has ? `<button class="btn" id="ev-continue-btn">${t("event.continue")}</button>` : `<button class="btn" id="ev-start-btn">${_second ? t("event.start_over") : t("event.start")}</button>`}`;
   updateHud();
   if (_has) R.querySelector("#ev-continue-btn").onclick = () => {
     score = _save.score; level = _save.level; moves = _save.moves;
     R.querySelector("#ev-overlay").classList.add("hidden");
     buildBoard(); updateHud();
     if (level >= 4) { placeRocks(); rocksPlaced = true; }
-    toast("Bem-vindo de volta! Nv " + (level + 1));
+    toast(t("event.welcome_back", { n: level + 1 }));
   };
   const _startBtn = R.querySelector("#ev-start-btn");
   if (_startBtn) _startBtn.onclick = () => { startFreshRun(); };

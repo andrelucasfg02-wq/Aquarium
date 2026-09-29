@@ -12,6 +12,8 @@ const App = (() => {
 
   /* ---------- boot ---------- */
   async function boot() {
+    // translate static HTML (auth screen etc.) before first paint
+    if (typeof I18N !== "undefined") I18N.applyI18n();
     // iOS Safari ignores viewport user-scalable=no — block pinch zoom explicitly
     document.addEventListener("gesturestart", (e) => e.preventDefault());
     document.addEventListener("gesturechange", (e) => e.preventDefault());
@@ -66,7 +68,7 @@ const App = (() => {
   async function refresh() {
     const r = await Api.state();
     if (!r.ok) {
-      if (r.error !== "auth") UI.toast(r.message || r.error || "Couldn't load");
+      if (r.error !== "auth") UI.toast(r.message || r.error || t("app.err_load"));
       return;
     }
     state = r.state;
@@ -116,7 +118,7 @@ const App = (() => {
     AudioFX.setSfx(s.sfx !== false);
     AudioFX.setMusic(!!s.music);
     if (tank) tank.setQuality(s.quality || "high");
-    if (!silent) UI.toast("Settings saved ✓");
+    if (!silent) UI.toast(t("app.settings_saved"));
   }
 
   /* ---------- auth forms ---------- */
@@ -140,7 +142,7 @@ const App = (() => {
         const show = inp.type === "password";
         inp.type = show ? "text" : "password";
         btn.textContent = show ? "🙈" : "👁️";
-        btn.setAttribute("aria-label", show ? "Hide password" : "Show password");
+        btn.setAttribute("aria-label", show ? t("auth.hide_pass") : t("auth.show_pass"));
       };
     });
     $("link-forgot").onclick = (e) => { e.preventDefault(); showTab("forgot"); };
@@ -151,15 +153,15 @@ const App = (() => {
       const err = $("login-error"); err.hidden = true;
       const r = await Api.login($("login-email").value.trim(), $("login-password").value);
       if (r.ok) { AudioFX.unlock(); enterGame(); }
-      else { err.textContent = r.error || r.message || "Login failed"; err.hidden = false; AudioFX.error(); }
+      else { err.textContent = r.error || r.message || t("auth.err.login"); err.hidden = false; AudioFX.error(); }
     };
     $("form-register").onsubmit = async (e) => {
       e.preventDefault();
       const err = $("reg-error"); err.hidden = true;
       const r = await Api.register(
         $("reg-name").value.trim(), $("reg-email").value.trim(), $("reg-password").value);
-      if (r.ok) { AudioFX.unlock(); UI.toast("Welcome to your aquarium! 🐠"); enterGame(); }
-      else { err.textContent = r.error || r.message || "Registration failed"; err.hidden = false; AudioFX.error(); }
+      if (r.ok) { AudioFX.unlock(); UI.toast(t("app.welcome")); enterGame(); }
+      else { err.textContent = r.error || r.message || t("auth.err.register"); err.hidden = false; AudioFX.error(); }
     };
     $("form-forgot").onsubmit = async (e) => {
       e.preventDefault();
@@ -167,22 +169,22 @@ const App = (() => {
       err.hidden = true; ok.hidden = true;
       const r = await Api.passwordForgot($("forgot-email").value.trim());
       if (r.ok) {
-        ok.textContent = "If that email is registered, a reset link is on its way 📧 (check spam too)";
+        ok.textContent = t("auth.forgot_sent2");
         ok.hidden = false;
-      } else { err.textContent = r.error || "Couldn't send the email"; err.hidden = false; }
+      } else { err.textContent = r.error || t("auth.err.send"); err.hidden = false; }
     };
     $("form-reset").onsubmit = async (e) => {
       e.preventDefault();
       const err = $("reset-error"), okm = $("reset-ok");
       err.hidden = true; okm.hidden = true;
       const p1 = $("reset-password").value, p2 = $("reset-password2").value;
-      if (p1 !== p2) { err.textContent = "Passwords don't match"; err.hidden = false; return; }
+      if (p1 !== p2) { err.textContent = t("auth.err.match"); err.hidden = false; return; }
       const r = await Api.passwordReset(resetToken, p1);
       if (r.ok) {
-        okm.textContent = "Password changed! You can log in now 🐠"; okm.hidden = false;
+        okm.textContent = t("auth.reset_ok"); okm.hidden = false;
         history.replaceState(null, "", location.pathname); // drop the token from the URL
         setTimeout(() => showTab("login"), 1800);
-      } else { err.textContent = r.error || "Reset failed"; err.hidden = false; AudioFX.error(); }
+      } else { err.textContent = r.error || t("auth.err.reset"); err.hidden = false; AudioFX.error(); }
     };
     // opened from a reset email? show the new-password form
     resetToken = new URLSearchParams(location.search).get("reset");
@@ -236,17 +238,17 @@ const App = (() => {
       cancelPlace();
       if (!state) return;
       if ((state.wallets.food || 0) <= 0) {
-        UI.toast("No food left! Buy more in 🎒 Inventory 🍤");
+        UI.toast(t("app.no_food"));
         AudioFX.error();
         return;
       }
       const r = await Api.feed();
       if (r.ok) {
         tank.feedBurst(r.pellets || 1);
-        UI.toast("Yum yum! 🍽️🐠");
+        UI.toast(t("app.yum"));
       } else {
         AudioFX.error();
-        UI.toast(r.error === "no food" ? "No food left! Buy more in 🎒 Inventory 🍤" : (r.error || r.message || "Couldn't feed"));
+        UI.toast(r.error === "no food" ? "No food left! Buy more in 🎒 Inventory 🍤" : (r.error || r.message || t("app.err_feed")));
       }
       await refresh();
     };
@@ -262,8 +264,8 @@ const App = (() => {
     $("btn-filter").onclick = async () => {
       if (!confirm(`Filter the water for 🪙${DATA.FILTER_PRICE}? 🫧`)) return;
       const r = await Api.filterDirt();
-      if (r.ok) { tank.bubbleBurst(); UI.toast("Water crystal clear! 🫧✨"); AudioFX.coin(); }
-      else { AudioFX.error(); UI.toast(r.error || r.message || "Couldn't filter"); }
+      if (r.ok) { tank.bubbleBurst(); UI.toast(t("app.water_clear")); AudioFX.coin(); }
+      else { AudioFX.error(); UI.toast(r.error || r.message || t("app.err_filter")); }
       await refresh();
     };
 
@@ -278,15 +280,15 @@ const App = (() => {
       $("btn-remove-deco").disabled = true;
       $("btn-edit").classList.toggle("on", !on);
       $("edit-bar").hidden = on;
-      if (!on) UI.toast("Edit mode: drag decorations ✏️");
+      if (!on) UI.toast(t("app.edit_mode"));
     };
     $("btn-edit-done").onclick = () => $("btn-edit").onclick();
     $("btn-remove-deco").onclick = async () => {
       const sel = tank.selectedPlacement;
       if (!sel) return;
       const r = await Api.removeDecor(sel.id);
-      if (r.ok) { UI.toast("Back to inventory 🎒"); AudioFX.pop(); }
-      else UI.toast(r.error || "Couldn't remove");
+      if (r.ok) { UI.toast(t("app.back_inv")); AudioFX.pop(); }
+      else UI.toast(r.error || t("app.err_remove"));
       tank.selectedPlacement = null;
       $("btn-remove-deco").disabled = true;
       await refresh();
@@ -314,7 +316,7 @@ const App = (() => {
       // background so rapid taps on many fish each resolve independently
       Api.collectCoins(fishId).then(async (r) => {
         if (!r.ok && r.error !== "nothing to collect") {
-          AudioFX.error(); UI.toast(r.error || "Couldn't collect");
+          AudioFX.error(); UI.toast(r.error || t("app.err_collect"));
         }
         const s = await Api.state();
         if (s.ok) { state = s.state; UI.updateHUD(state); tank.syncState(state); }
@@ -323,7 +325,7 @@ const App = (() => {
 
     tank.on("wiped", async (ids) => {
       const r = await Api.wipeDirt(ids);
-      if (!r.ok && r.error !== "auth") UI.toast(r.error || r.message || "Couldn't wipe");
+      if (!r.ok && r.error !== "auth") UI.toast(r.error || r.message || t("app.err_wipe"));
       await refresh();
     });
 
@@ -333,7 +335,7 @@ const App = (() => {
       tank.selectedPlacement = null;
       $("btn-remove-deco").disabled = true;
       const r = await Api.moveDecor(id, x, y);
-      if (!r.ok) { UI.toast(r.error || "Couldn't move"); await refresh(); }
+      if (!r.ok) { UI.toast(r.error || t("app.err_move")); await refresh(); }
     });
 
     tank.on("decoSelect", (p) => {
@@ -349,12 +351,12 @@ const App = (() => {
       AudioFX.pop();
       const r = await Api.placeDecor(deco_id, state.tanks.active, cx, cy);
       tank.placements = tank.placements.filter((p) => p !== tmp);
-      if (r.ok) UI.toast("Placed! 🪸");
+      if (r.ok) UI.toast(t("app.placed"));
       else if (r.error === "no free decor slots") {
         AudioFX.error();
         UI.showTankFullPopup({ deco_id, x: cx, y: cy });
       }
-      else { AudioFX.error(); UI.toast(r.error || r.message || "Couldn't place"); }
+      else { AudioFX.error(); UI.toast(r.error || r.message || t("app.err_place")); }
       await refresh();
     });
   }
@@ -368,7 +370,7 @@ const App = (() => {
     $("btn-edit").classList.remove("on");
     $("edit-bar").hidden = true;
     tank.placeDecoId = deco_id;
-    UI.toast("Tap the tank to place it 🪸");
+    UI.toast(t("app.tap_place"));
   }
 
   function cancelPlace() {

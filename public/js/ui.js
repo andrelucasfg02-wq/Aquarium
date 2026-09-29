@@ -22,21 +22,22 @@ const UI = (() => {
   function updateHUD(st) {
     state = st;
     const w = st.wallets, u = st.user;
-    $("hud-player").textContent = `😊 ${u.name || "Player"}`;
+    $("hud-player").textContent = `😊 ${u.name || t("hud.player")}`;
     $("hud-level").textContent = `⭐ ${w.level || 1}`;
     $("hud-coins").textContent = `🪙 ${fmtCoins(w.coins)}`;
     $("hud-gems").textContent = `💎 ${fmtCoins(w.gems)}`;
     $("hud-food").textContent = `🍤 ${fmtCoins(w.food)}`;
     const hf = $("hud-food");
-    if (hf && !hf._foodBound) { hf._foodBound = true; hf.title = "Tap to buy food 🍤"; hf.onclick = openFoodPop; }
+    if (hf && !hf._foodBound) { hf._foodBound = true; hf.title = t("hud.buy_food"); hf.onclick = openFoodPop; }
     const filt = $("btn-filter");
-    if (st.dirt.green) { filt.classList.remove("hidden"); filt.textContent = `🫧 Filtrar (${DATA.FILTER_PRICE})`; }
+    if (st.dirt.green) { filt.classList.remove("hidden"); filt.textContent = t("hud.filter_price", { price: DATA.FILTER_PRICE }); }
     else filt.classList.add("hidden");
     renderTankTabs();
   }
 
   /* ---------- tank quick-switch tabs (home screen) ---------- */
-  const TANK_LABELS = { small: "🥣 Small", medium: "🪣 Medium", large: "🌊 Large" };
+  function tankName(k) { const key = "tank." + k; const v = t(key); return v === key ? (k || "") : v; }
+  const TANK_LABELS = { small: "🥣 " + t("tank.small"), medium: "🪣 " + t("tank.medium"), large: "🌊 " + t("tank.large") };
   function renderTankTabs() {
     const bar = $("tank-tabs");
     if (!bar || !state || !state.tanks) return;
@@ -49,8 +50,8 @@ const UI = (() => {
     bar.querySelectorAll("[data-tanktab]").forEach((b) => b.onclick = async () => {
       if (b.dataset.tanktab === state.tanks.active) return;
       const r = await Api.switchTank(b.dataset.tanktab);
-      if (r.ok) { toast("Switched tank 🏠"); await App.refresh(); }
-      else { AudioFX.error(); toast(r.error || "Couldn't switch"); }
+      if (r.ok) { toast(t("toast.switched_tank")); await App.refresh(); }
+      else { AudioFX.error(); toast(r.error || t("toast.couldnt_switch")); }
     });
   }
 
@@ -62,9 +63,9 @@ const UI = (() => {
     const hColor = hunger >= 50 ? "#6fbf8f" : hunger >= 25 ? "#f2a54e" : "#e05d5d";
     const mood = fish.mood || "happy";
     const moodIcon = mood === "sick" ? "🤒" : mood === "hungry" ? "😟" : "😊";
-    const moodLabel = mood === "sick" ? "Sick" : mood === "hungry" ? "Hungry" : "Happy";
+    const moodLabel = mood === "sick" ? t("fishmenu.sick") : mood === "hungry" ? t("fishmenu.hungry") : t("fishmenu.happy");
     const lvl = fish.level || 1;
-    const stageLabel = fish.stage === "baby" ? "Baby" : fish.stage === "juvenile" ? "Teen" : "Adult";
+    const stageLabel = fish.stage === "baby" ? t("fishmenu.baby") : fish.stage === "juvenile" ? t("fishmenu.teen") : t("fishmenu.adult");
     const growAt = fish.grow_level || 10;
     // coin farming reward text (diamonds for event fish)
     const gemAmt = fish.gem_pending || fish.gem_amount || 0;
@@ -79,48 +80,48 @@ const UI = (() => {
           <button class="hud-btn" id="fish-menu-x">\u2715</button>
         </div>
         <div class="fish-stats">
-          <div class="stat-row"><span>🍗 Hunger</span>
+          <div class="stat-row"><span>🍗 ${t("fishmenu.hunger")}</span>
             <div class="hbar"><i style="width:${hunger}%;background:${hColor}"></i></div>
             <b>${hunger}%</b></div>
-          <div class="stat-row"><span>${moodIcon} Mood</span><b>${moodLabel}</b></div>
-          <div class="stat-row"><span>⭐ Level</span><b>Lv ${lvl} · ${stageLabel}</b></div>
-          ${fish.stage !== "adult" ? `<div class="stat-row"><span>🌱 Grows up at</span><b>Lv ${growAt}</b></div>` : ""}
+          <div class="stat-row"><span>${moodIcon} ${t("fishmenu.mood")}</span><b>${moodLabel}</b></div>
+          <div class="stat-row"><span>⭐ ${t("fishmenu.level")}</span><b>${t("fishmenu.level_val", { lvl, stage: stageLabel })}</b></div>
+          ${fish.stage !== "adult" ? `<div class="stat-row"><span>🌱 ${t("fishmenu.grows_at")}</span><b>${t("fishmenu.grows_val", { lvl: growAt })}</b></div>` : ""}
           ${fish.location === "tank" ? (fish.coin_pending > 0
-            ? `<div class="stat-row"><span>🪙 Coins</span><b>${rewardTxt} — Ready! 💰</b></div>`
-            : `<div class="stat-row"><span>🪙 Coins</span><b id="fm-coin-cd">${rewardTxt} in ${fmtCd(fish.coin_in || 0)}</b></div>`) : ""}
+            ? `<div class="stat-row"><span>🪙 ${t("fishmenu.coins")}</span><b>${t("fishmenu.coins_ready", { reward: rewardTxt })}</b></div>`
+            : `<div class="stat-row"><span>🪙 ${t("fishmenu.coins")}</span><b id="fm-coin-cd">${t("fishmenu.coins_in", { reward: rewardTxt, time: fmtCd(fish.coin_in || 0) })}</b></div>`) : ""}
         </div>
         ${listed ? `
-        <div class="fm-note">\uD83D\uDC8E Listed on the market for <b>${fish.listing_price} \uD83D\uDC8E</b></div>
+        <div class="fm-note">${t("fishmenu.listed_for", { price: fish.listing_price })}</div>
         <div class="fish-menu-btns">
-          <button class="pill-btn" id="fm-mkcancel">\u274C Cancel listing</button>
+          <button class="pill-btn" id="fm-mkcancel">\u274C ${t("fishmenu.cancel_listing")}</button>
         </div>` : `
         <div class="fish-menu-btns">
-          <button class="pill-btn pink" id="fm-feed">🍤 Feed</button>
-          ${fish.sick ? `<button class="pill-btn gold" id="fm-treat">💊 Treat</button>` : ""}
+          <button class="pill-btn pink" id="fm-feed">🍤 ${t("fishmenu.feed")}</button>
+          ${fish.sick ? `<button class="pill-btn gold" id="fm-treat">💊 ${t("fishmenu.treat")}</button>` : ""}
         </div>
         <div class="fish-menu-btns">
-          <button class="pill-btn pink" id="fm-pet">\uD83D\uDC95 Pet</button>
-          <button class="pill-btn blue" id="fm-transfer">${fish.location === "inventory" ? "\uD83C\uDFE0 Place in tank" : "\uD83D\uDD00 Transfer"}</button>
-          <button class="pill-btn" id="fm-breed">\uD83E\uDD5A Breed</button>
+          <button class="pill-btn pink" id="fm-pet">\uD83D\uDC95 ${t("fishmenu.pet")}</button>
+          <button class="pill-btn blue" id="fm-transfer">${fish.location === "inventory" ? "\uD83C\uDFE0 " + t("fishmenu.place_in_tank") : "\uD83D\uDD00 " + t("fishmenu.transfer")}</button>
+          <button class="pill-btn" id="fm-breed">\uD83E\uDD5A ${t("fishmenu.breed")}</button>
         </div>
         ${fish.tradeable ? `
         <div class="fish-menu-btns">
-          <button class="pill-btn gold" id="fm-mksell">\uD83D\uDC8E Sell on market</button>
+          <button class="pill-btn gold" id="fm-mksell">\uD83D\uDC8E ${t("fishmenu.sell_on_market")}</button>
         </div>
         <div id="fm-mkrow" class="fish-menu-btns" hidden>
-          <input id="fm-mkprice" type="number" min="1" max="999999" placeholder="Price in \uD83D\uDC8E"
+          <input id="fm-mkprice" type="number" min="1" max="999999" placeholder="${t("fishmenu.price_ph")}"
             style="flex:2;padding:10px;border-radius:12px;border:2px solid var(--pink-d)" />
-          <button class="pill-btn gold" id="fm-mkok">List \uD83D\uDC8E</button>
+          <button class="pill-btn gold" id="fm-mkok">${t("fishmenu.list_btn")}</button>
         </div>` : `
-        <div class="fm-note sub">${esc(fish.trade_lock || "\uD83C\uDF92 Shop fish are bound to your account")}</div>`}`}
+        <div class="fm-note sub">${esc(fish.trade_lock || t("fishmenu.trade_lock"))}</div>`}`}
         <div class="fish-menu-btns">
-          <button class="pill-btn gold" id="fm-rename">\u2710\uFE0F Name (\uD83D\uDC8E${DATA.RENAME_GEMS})</button>
+          <button class="pill-btn gold" id="fm-rename">${t("fishmenu.rename", { gems: DATA.RENAME_GEMS })}</button>
         </div>
         <div id="fm-transfer-row" class="fish-menu-btns" hidden></div>
         <div id="fm-rename-row" class="fish-menu-btns" hidden>
-          <input id="fm-rename-input" maxlength="20" placeholder="Pet name..."
+          <input id="fm-rename-input" maxlength="20" placeholder="${t("fishmenu.petname_ph")}"
             style="flex:2;padding:10px;border-radius:12px;border:2px solid var(--pink-d)" />
-          <button class="pill-btn gold" id="fm-rename-ok">OK \uD83D\uDC8E${DATA.RENAME_GEMS}</button>
+          <button class="pill-btn gold" id="fm-rename-ok">${t("fishmenu.rename_ok", { gems: DATA.RENAME_GEMS })}</button>
         </div>
       </div>`;
     overlay.onclick = (e) => { if (e.target === overlay) closeFishMenu(); };
@@ -135,17 +136,17 @@ const UI = (() => {
         if (!el) { clearInterval(coinCdTimer); coinCdTimer = null; return; }
         if (left <= 0) {
           clearInterval(coinCdTimer); coinCdTimer = null;
-          el.textContent = `${rewardTxt} — Ready! 💰`;
+          el.textContent = t("fishmenu.coins_ready", { reward: rewardTxt });
         } else {
-          el.textContent = `${rewardTxt} in ${fmtCd(left)}`;
+          el.textContent = t("fishmenu.coins_in", { reward: rewardTxt, time: fmtCd(left) });
         }
       }, 1000);
     }
     if (listed) {
       $("fm-mkcancel").onclick = async () => {
         const r = await Api.marketCancel(fish.listing_id);
-        if (r.ok) { AudioFX.coin(); toast("Listing cancelled \u2014 fish is back in your inventory \uD83C\uDF92"); }
-        else { AudioFX.error(); toast(r.error || "Couldn't cancel"); }
+        if (r.ok) { AudioFX.coin(); toast(t("toast.listing_cancelled")); }
+        else { AudioFX.error(); toast(r.error || t("toast.couldnt_cancel")); }
         closeFishMenu(); await App.refresh(); refreshScreen();
       };
     } else {
@@ -156,21 +157,21 @@ const UI = (() => {
       };
       $("fm-feed").onclick = async () => {
         const r = await Api.feedOne(fish.id);
-        if (r.ok) { AudioFX.munch(); toast("Yummy! 🍤"); }
-        else { AudioFX.error(); toast(r.error === "no food" ? "No food left — tap the 🍤 up top!" : (r.error || "Couldn't feed")); }
+        if (r.ok) { AudioFX.munch(); toast(t("toast.yummy")); }
+        else { AudioFX.error(); toast(r.error === "no food" ? t("toast.no_food") : (r.error || t("toast.couldnt_feed"))); }
         await reopen();
       };
       const treatBtn = $("fm-treat");
       if (treatBtn) treatBtn.onclick = async () => {
         let r = await Api.treatFish(fish.id);
         if (!r.ok && r.error === "no medicine") {
-          if (!confirm(`No medicine! Buy 1 for 🪙${fmtCoins(DATA.MEDICINE_PRICE)}?`)) return;
+          if (!confirm(t("fishmenu.no_medicine", { price: fmtCoins(DATA.MEDICINE_PRICE) }))) return;
           const b = await Api.buyMedicine(1);
-          if (!b.ok) { AudioFX.error(); toast(b.error || "Couldn't buy medicine"); return; }
+          if (!b.ok) { AudioFX.error(); toast(b.error || t("toast.couldnt_buy_medicine")); return; }
           r = await Api.treatFish(fish.id);
         }
-        if (r.ok) { AudioFX.coin(); toast("All better! 💊✨"); }
-        else { AudioFX.error(); toast(r.error || "Couldn't treat"); }
+        if (r.ok) { AudioFX.coin(); toast(t("toast.all_better")); }
+        else { AudioFX.error(); toast(r.error || t("toast.couldnt_treat")); }
         await reopen();
       };
       $("fm-pet").onclick = async () => { closeFishMenu(); await App.petFish(fish.id); };
@@ -179,15 +180,15 @@ const UI = (() => {
         const row = $("fm-transfer-row");
         const inInv = fish.location === "inventory";
         const owned = (state.tanks.owned || []).filter((t) => inInv || t !== fish.tank);
-        if (!owned.length) { toast(inInv ? "No tank owned yet \uD83C\uDFE0" : "No other tank owned yet \uD83C\uDFE0"); return; }
+        if (!owned.length) { toast(inInv ? t("toast.no_tank_yet") : t("toast.no_other_tank")); return; }
         row.hidden = false;
         row.innerHTML = owned.map((t) =>
           `<button class="pill-btn blue" data-fmto="${t}">\u2192 ${TANK_LABELS[t] || t}</button>`).join("");
         row.querySelectorAll("[data-fmto]").forEach((b) => b.onclick = async () => {
           b.disabled = true;
           const r = await Api.transferFish(fish.id, b.dataset.fmto);
-          if (r.ok) { AudioFX.coin(); toast(inInv ? `Placed in the ${b.dataset.fmto} tank \uD83C\uDFE0\uD83D\uDC20` : `Moved to the ${b.dataset.fmto} tank \uD83D\uDD00\uD83D\uDC20`); }
-          else { AudioFX.error(); toast(r.error || "Couldn't transfer"); }
+          if (r.ok) { AudioFX.coin(); toast(inInv ? t("toast.placed", { tank: tankName(b.dataset.fmto) }) : t("toast.moved", { tank: tankName(b.dataset.fmto) })); }
+          else { AudioFX.error(); toast(r.error || t("toast.couldnt_transfer")); }
           closeFishMenu();
           await App.refresh(); refreshScreen();
         });
@@ -196,11 +197,11 @@ const UI = (() => {
         $("fm-mksell").onclick = () => { const row = $("fm-mkrow"); row.hidden = !row.hidden; };
         $("fm-mkok").onclick = async () => {
           const price = Math.floor(Number($("fm-mkprice").value));
-          if (!price || price < 1 || price > 999999) { toast("Enter a price from 1 to 999999 \uD83D\uDC8E"); return; }
-          if (!confirm(`List this fish for ${price} \uD83D\uDC8E? (10% fee on sale)`)) return;
+          if (!price || price < 1 || price > 999999) { toast(t("toast.enter_price")); return; }
+          if (!confirm(t("fishmenu.confirm_list", { price }))) return;
           const r = await Api.marketList(fish.id, price);
-          if (r.ok) { AudioFX.coin(); toast("Listed on the fish market \uD83D\uDC8E"); closeFishMenu(); await App.refresh(); refreshScreen(); }
-          else { AudioFX.error(); toast(r.error || "Couldn't list"); }
+          if (r.ok) { AudioFX.coin(); toast(t("toast.listed")); closeFishMenu(); await App.refresh(); refreshScreen(); }
+          else { AudioFX.error(); toast(r.error || t("toast.couldnt_list")); }
         };
       }
     }
@@ -213,14 +214,14 @@ const UI = (() => {
     };
     $("fm-rename-ok").onclick = async () => {
       const name = $("fm-rename-input").value.trim();
-      if (!name) { toast("Type a name first \u2710\uFE0F"); return; }
+      if (!name) { toast(t("toast.type_name")); return; }
       const r = await Api.renameFish(fish.id, name);
       if (r.ok) {
-        AudioFX.coin(); toast(`"${r.nickname}" \u2014 what a cute name! \uD83D\uDC8E`);
+        AudioFX.coin(); toast(t("toast.cute_name", { name: r.nickname }));
         closeFishMenu(); await App.refresh(); refreshScreen();
       } else {
         AudioFX.error();
-        toast(r.error === "not enough gems" ? "Not enough diamonds \uD83D\uDC8E" : (r.error || "Couldn't rename"));
+        toast(r.error === "not enough gems" ? t("toast.no_diamonds") : (r.error || t("toast.couldnt_rename")));
       }
     };
   }
@@ -242,7 +243,7 @@ const UI = (() => {
     overlay.id = "food-pop-overlay";
     overlay.innerHTML = `
       <div class="food-pop">
-        <div style="text-align:center;font-weight:800;margin-bottom:10px">🍤 Buy food <span class="sub">🪙${fmtCoins(price)} each</span></div>
+        <div style="text-align:center;font-weight:800;margin-bottom:10px">${t("foodpop.title")} <span class="sub">${t("foodpop.each", { price: fmtCoins(price) })}</span></div>
         <div class="fish-menu-btns">
           ${[1, 5, 10].map((q) => `<button class="pill-btn pink" data-foodq="${q}">+${q}<br>🪙${fmtCoins(price * q)}</button>`).join("")}
         </div>
@@ -252,8 +253,8 @@ const UI = (() => {
     overlay.querySelectorAll("[data-foodq]").forEach((b) => b.onclick = async () => {
       b.disabled = true;
       const r = await Api.buyFood(+b.dataset.foodq);
-      if (r.ok) { AudioFX.coin(); toast(`+${b.dataset.foodq} food 🍤`); }
-      else { AudioFX.error(); toast(r.error || "Couldn't buy food"); }
+      if (r.ok) { AudioFX.coin(); toast(t("toast.food_bought", { qty: b.dataset.foodq })); }
+      else { AudioFX.error(); toast(r.error || t("toast.couldnt_buy_food")); }
       closeFoodPop();
       await App.refresh();
     });
@@ -277,13 +278,13 @@ const UI = (() => {
     overlay.className = "food-pop-overlay";
     overlay.innerHTML = `
       <div class="food-pop">
-        <div style="text-align:center;font-weight:800;margin-bottom:4px">🪸 Tank is full!</div>
-        <div class="sub" style="text-align:center;margin-bottom:10px">All decoration slots are used.<br>Need more room?</div>
+        <div style="text-align:center;font-weight:800;margin-bottom:4px">${t("tankfull.title")}</div>
+        <div class="sub" style="text-align:center;margin-bottom:10px">${t("tankfull.desc")}</div>
         <div class="fish-menu-btns">
           ${canBuySlot
-            ? `<button class="pill-btn pink" id="tf-slot">+1 slot 💎${slotCost}</button>`
-            : `<div class="sub" style="text-align:center;width:100%">You can't add more slots to this tank 🚫</div>`}
-          ${nextBuy ? `<button class="pill-btn blue" id="tf-tank">Get the ${nextBuy} tank 🪙${fmtCoins(nextPrice)}</button>` : ""}
+            ? `<button class="pill-btn pink" id="tf-slot">${t("deco.slot_btn", { cost: slotCost })}</button>`
+            : `<div class="sub" style="text-align:center;width:100%">${t("tankfull.no_more")}</div>`}
+          ${nextBuy ? `<button class="pill-btn blue" id="tf-tank">${t("tankfull.get_tank", { tank: tankName(nextBuy), price: fmtCoins(nextPrice) })}</button>` : ""}
         </div>
       </div>`;
     overlay.onclick = (e) => { if (e.target === overlay) closeTankFullPopup(); };
@@ -293,27 +294,27 @@ const UI = (() => {
       const r = await Api.buyExtraSlot(active);
       if (!r.ok) {
         AudioFX.error();
-        toast(r.error === "not enough diamonds" ? "Not enough diamonds 💎" : (r.error || "Couldn't buy slot"));
+        toast(r.error === "not enough diamonds" ? t("toast.no_diamonds") : (r.error || t("toast.couldnt_buy_slot")));
         return;
       }
       AudioFX.coin();
       // retry the placement now that there's a free slot
       const rp = await Api.placeDecor(deco_id, active, x, y);
-      if (rp.ok) toast("Extra slot unlocked and placed! 🪸");
-      else toast("Extra slot unlocked! Place it from the decor shop 🪸");
+      if (rp.ok) toast(t("toast.slot_placed"));
+      else toast(t("toast.slot_unlocked"));
       closeTankFullPopup();
       await App.refresh();
     };
     if (nextBuy) $("tf-tank").onclick = async () => {
-      if (!confirm(`Buy the ${nextBuy} tank for 🪙${fmtCoins(nextPrice)}?`)) return;
+      if (!confirm(t("tankfull.confirm_tank", { tank: tankName(nextBuy), price: fmtCoins(nextPrice) }))) return;
       const r = await Api.buyTank(nextBuy);
       if (!r.ok) {
         AudioFX.error();
-        toast(r.error === "not enough coins" ? "Not enough coins 🪙" : (r.error || "Couldn't buy tank"));
+        toast(r.error === "not enough coins" ? t("toast.no_coins") : (r.error || t("toast.couldnt_buy_tank")));
         return;
       }
       AudioFX.coin();
-      toast(`New ${nextBuy} tank! Switch to it from 🐠 Fishes 🎉`);
+      toast(t("toast.new_tank", { tank: tankName(nextBuy) }));
       closeTankFullPopup();
       await App.refresh();
     };
@@ -353,10 +354,10 @@ const UI = (() => {
     if (!silent && window.App) App.onScreenClosed();
   }
   const TITLES = {
-    fishshop: "🐟 Fish Shop", decor: "🪸 Decoration Shop", breeding: "🥚 Breeding",
-    collection: "📖 Collection", inventory: "🎒 Inventory", quests: "🎯 Quests",
-    settings: "⚙️ Settings", minigame: "🎮 Tap-the-Fish", event: "🍂 Autumn Event",
-    market: "💎 Fish Market",
+    fishshop: "🐟 " + t("nav.shop"), decor: "🪸 " + t("deco.shop_title"), breeding: "🥚 " + t("breed.title"),
+    collection: "📖 " + t("nav.collection"), inventory: "🎒 " + t("nav.inventory"), quests: "🎯 " + t("nav.quests"),
+    settings: "⚙️ " + t("settings.title"), minigame: "🎮 " + t("mg.title"), event: "🍂 " + t("event.title"),
+    market: "💎 " + t("market.title"),
   };
 
   /* ---------- helpers ---------- */
@@ -368,7 +369,7 @@ const UI = (() => {
     return (state.fish || []).filter((f) => f.tank === active && (!f.location || f.location === "tank"));
   }
   function priceLabel(item) {
-    if (item.price_gems) return `💎${item.price_gems} <span class="sub">or</span> 🪙${fmtCoins(item.price_coins)}`;
+    if (item.price_gems) return `💎${item.price_gems} <span class="sub">${t("shop.or")}</span> 🪙${fmtCoins(item.price_coins)}`;
     return `🪙 ${fmtCoins(item.price_coins)}`;
   }
 
@@ -376,7 +377,7 @@ const UI = (() => {
   async function renderFishShop() {
     const body = $("screen-body");
     if (!fishCatalog) {
-      body.innerHTML = `<div class="empty">Loading… 🫧</div>`;
+      body.innerHTML = `<div class="empty">${t("common.loading")}</div>`;
       const r = await Api.fishCatalog();
       if (r.ok) fishCatalog = r.items;
     }
@@ -388,47 +389,47 @@ const UI = (() => {
     const tf = tankFish();
     const owned = state.tanks.owned, active = state.tanks.active;
 
-    let tanksHtml = `<h3>🏠 Tanks</h3>`;
+    let tanksHtml = `<h3>🏠 ${t("shop.tanks")}</h3>`;
     for (const [tier, T] of Object.entries(DATA.TANKS)) {
       const isOwned = owned.includes(tier), isActive = active === tier;
       const need = tier === "large" && !owned.includes("medium");
       const extraT = (state.tanks.extra && state.tanks.extra[tier]) || 0;
       tanksHtml += `<div class="row-card"><div class="grow">
-        <b style="text-transform:capitalize">${tier}</b>
-        <div class="sub">🐟 ${T.capacity} fish · 🪸 ${T.decorSlots + extraT} decor</div></div>
-        ${isActive ? `<span class="tag">active</span>`
-          : isOwned ? `<button class="pill-btn blue" data-switch="${tier}">Use</button>`
+        <b style="text-transform:capitalize">${tankName(tier)}</b>
+        <div class="sub">${t("shop.tank_info", { fish: T.capacity, decor: T.decorSlots + extraT })}</div></div>
+        ${isActive ? `<span class="tag">${t("shop.active")}</span>`
+          : isOwned ? `<button class="pill-btn blue" data-switch="${tier}">${t("shop.use")}</button>`
           : `<button class="pill-btn" data-buytank="${tier}" ${need ? "disabled" : ""}>🪙 ${fmtCoins(T.price)}</button>`}
       </div>`;
-      if (need) tanksHtml += `<div class="sub" style="margin:-4px 0 8px">Needs Medium first</div>`;
+      if (need) tanksHtml += `<div class="sub" style="margin:-4px 0 8px">${t("shop.needs_first", { tank: tankName("medium") })}</div>`;
     }
 
     let html = `${tanksHtml}
-      <h3>🐟 Fish <span class="tag">${tf.length}/${DATA.TANKS[active].capacity} in ${active} tank</span></h3>
+      <h3>🐟 ${t("shop.fish")} <span class="tag">${t("shop.in_tank", { n: tf.length, cap: DATA.TANKS[active].capacity, tank: tankName(active) })}</span></h3>
       <div class="grid2">`;
     for (const it of items) {
       const sp = DATA.SPECIES[it.species_id] || {};
       html += `<div class="card">${fishImg(it.species_id)}
         <div class="nm">${esc(it.name)}</div>
-        <div class="sub">${esc(it.group)}${it.species_id === "female_betta" ? " · ♀ always" : ""} · 🌱 grows at Lv ${it.grow_level || 10}</div>
+        <div class="sub">${esc(it.group)}${it.species_id === "female_betta" ? " · " + t("shop.always_female") : ""} · ${t("shop.grows_at", { lvl: it.grow_level || 10 })}</div>
         <div class="price">${priceLabel(it)}</div>
-        <button class="pill-btn pink" data-buyfish="${esc(it.species_id)}">Buy</button>
+        <button class="pill-btn pink" data-buyfish="${esc(it.species_id)}">${t("shop.buy")}</button>
       </div>`;
     }
     html += `</div>
-      <h3>💊 Supplies</h3>
-      <div class="row-card"><div class="grow"><b>Medicine</b>
-        <div class="sub">Cures a sick fish 🤒 · you own <b>${state.wallets.medicine || 0}</b></div></div>
+      <h3>💊 ${t("shop.supplies")}</h3>
+      <div class="row-card"><div class="grow"><b>${t("shop.medicine")}</b>
+        <div class="sub">${t("shop.medicine_desc", { n: state.wallets.medicine || 0 })}</div></div>
         <button class="pill-btn gold" data-buymed="1">🪙 ${fmtCoins(DATA.MEDICINE_PRICE)}</button>
       </div>
-      <div class="empty">Sell fish from the Inventory tab 💰</div>`;
+      <div class="empty">${t("shop.sell_hint")}</div>`;
     body.innerHTML = html;
 
     body.querySelectorAll("[data-buymed]").forEach((b) => b.onclick = async () => {
       b.disabled = true;
       const r = await Api.buyMedicine(+b.dataset.buymed);
-      if (r.ok) { AudioFX.coin(); toast(`+${b.dataset.buymed} medicine 💊`); }
-      else { AudioFX.error(); toast(r.error || "Couldn't buy"); }
+      if (r.ok) { AudioFX.coin(); toast(t("toast.medicine_bought", { qty: b.dataset.buymed })); }
+      else { AudioFX.error(); toast(r.error || t("toast.couldnt_buy")); }
       await App.refresh();
       renderFishShop();
     });
@@ -436,21 +437,21 @@ const UI = (() => {
     body.querySelectorAll("[data-buyfish]").forEach((b) => b.onclick = async () => {
       b.disabled = true;
       const r = await Api.buyFish(b.dataset.buyfish);
-      if (r.ok) { AudioFX.coin(); toast(`Welcome, ${esc(r.fish.name || "little fish")}! 🐠`); }
-      else { AudioFX.error(); toast(r.error || "Couldn't buy"); }
+      if (r.ok) { AudioFX.coin(); toast(t("toast.welcome_fish", { name: esc(r.fish.name || t("toast.little_fish")) })); }
+      else { AudioFX.error(); toast(r.error || t("toast.couldnt_buy")); }
       await App.refresh();
       renderFishShop();
     });
     body.querySelectorAll("[data-buytank]").forEach((b) => b.onclick = async () => {
       const r = await Api.buyTank(b.dataset.buytank);
-      if (r.ok) { AudioFX.coin(); toast("Tank upgraded! 🏠✨"); }
-      else { AudioFX.error(); toast(r.error || "Couldn't buy tank"); }
+      if (r.ok) { AudioFX.coin(); toast(t("toast.tank_upgraded")); }
+      else { AudioFX.error(); toast(r.error || t("toast.couldnt_buy_tank")); }
       await App.refresh(); renderFishShop();
     });
     body.querySelectorAll("[data-switch]").forEach((b) => b.onclick = async () => {
       const r = await Api.switchTank(b.dataset.switch);
-      if (r.ok) toast("Tank switched 🏠");
-      else toast(r.error || "Couldn't switch");
+      if (r.ok) toast(t("toast.tank_switched"));
+      else toast(r.error || t("toast.couldnt_switch"));
       await App.refresh(); close();
     });
   }
@@ -459,7 +460,7 @@ const UI = (() => {
   async function renderDecorShop(filter) {
     const body = $("screen-body");
     if (!decorCatalog) {
-      body.innerHTML = `<div class="empty">Loading… 🫧</div>`;
+      body.innerHTML = `<div class="empty">${t("common.loading")}</div>`;
       const r = await Api.decorCatalog();
       if (r.ok) { decorCatalog = r.items; App.setDecoCatalog(r.items); }
     }
@@ -476,10 +477,10 @@ const UI = (() => {
     const slotCost = state.tanks.extraCost || 10;
     const placedCount = state.placements.filter((p) => p.tank === activeTank).length;
     const buySlotBtn = extraSlots < maxExtra
-      ? ` <button class="pill-btn pink" data-buyslot="${esc(activeTank)}">+1 slot 💎${slotCost}</button>`
+      ? ` <button class="pill-btn pink" data-buyslot="${esc(activeTank)}">${t("deco.slot_btn", { cost: slotCost })}</button>`
       : "";
-    let html = `<input class="search" id="decor-search" placeholder="🔍 Search 93 decorations…" value="${esc(filter || "")}">
-      <h3>🪸 Decorations <span class="tag">${placedCount}/${baseSlots + extraSlots} placed</span>${buySlotBtn}</h3>
+    let html = `<input class="search" id="decor-search" placeholder="${t("deco.search_ph")}" value="${esc(filter || "")}">
+      <h3>🪸 ${t("deco.title")} <span class="tag">${t("deco.placed", { n: placedCount, total: baseSlots + extraSlots })}</span>${buySlotBtn}</h3>
       <div class="deco-grid">`;
     for (const it of list) {
       const qty = ownedMap[it.id] || 0;
@@ -487,12 +488,12 @@ const UI = (() => {
         <img src="${esc(it.file)}" alt="" loading="lazy">
         <div class="nm">${esc(it.name)}</div>
         <div class="price">🪙 ${fmtCoins(it.price)}</div>
-        <button class="pill-btn pink" data-buydeco="${esc(it.id)}">Buy</button>
-        ${qty ? `<button class="pill-btn blue" data-placedeco="${esc(it.id)}">Place (${qty})</button>` : ""}
+        <button class="pill-btn pink" data-buydeco="${esc(it.id)}">${t("shop.buy")}</button>
+        ${qty ? `<button class="pill-btn blue" data-placedeco="${esc(it.id)}">${t("deco.place", { qty })}</button>` : ""}
       </div>`;
     }
     html += `</div>`;
-    if (!list.length) html += `<div class="empty">No decorations match 🔍</div>`;
+    if (!list.length) html += `<div class="empty">${t("deco.no_match")}</div>`;
     body.innerHTML = html;
 
     const si = $("decor-search");
@@ -502,8 +503,8 @@ const UI = (() => {
 
     body.querySelectorAll("[data-buydeco]").forEach((b) => b.onclick = async () => {
       const r = await Api.buyDecor(b.dataset.buydeco);
-      if (r.ok) { AudioFX.coin(); toast("Decoration bought! 🪸"); }
-      else { AudioFX.error(); toast(r.error || "Couldn't buy"); }
+      if (r.ok) { AudioFX.coin(); toast(t("toast.deco_bought")); }
+      else { AudioFX.error(); toast(r.error || t("toast.couldnt_buy")); }
       await App.refresh(); renderDecorShop($("decor-search") ? $("decor-search").value : "");
     });
     body.querySelectorAll("[data-placedeco]").forEach((b) => b.onclick = () => {
@@ -511,12 +512,12 @@ const UI = (() => {
     });
     body.querySelectorAll("[data-buyslot]").forEach((b) => b.onclick = async () => {
       const tank = b.dataset.buyslot;
-      if (!confirm(`Buy +1 decoration slot for the ${tank} tank? 💎${slotCost}`)) return;
+      if (!confirm(t("tankfull.confirm_slot", { tank: tankName(tank), cost: slotCost }))) return;
       const r = await Api.buyExtraSlot(tank);
-      if (r.ok) { AudioFX.coin(); toast("Extra slot unlocked! 🪸"); }
+      if (r.ok) { AudioFX.coin(); toast(t("toast.slot_unlocked")); }
       else {
         AudioFX.error();
-        toast(r.error === "not enough diamonds" ? "Not enough diamonds 💎" : (r.error || "Couldn't buy slot"));
+        toast(r.error === "not enough diamonds" ? t("toast.no_diamonds") : (r.error || t("toast.couldnt_buy_slot")));
       }
       await App.refresh(); renderDecorShop($("decor-search") ? $("decor-search").value : "");
     });
@@ -537,17 +538,17 @@ const UI = (() => {
           ${fishImg(f.species_id)}
           <div><b>${esc(f.name || speciesName(f.species_id))}</b></div>
           <div class="sub">${f.gender === "male" ? "♂" : "♀"} ${esc(speciesName(f.species_id))}</div>
-        </div>`).join("") || `<div class="empty">No fish in this tank yet 🐠</div>`}
+        </div>`).join("") || `<div class="empty">${t("breed.no_fish")}</div>`}
       </div>`;
 
     let html = `
-      <div class="sub" style="margin-bottom:6px">Breeding costs 💎${DATA.BREED_GEMS}. Babies hatch from eggs below ⏳</div>
-      ${pickRow(tf.filter((f) => f.gender === "male"), breedMale, "m", "♂ Choose father")}
-      ${pickRow(partners || tf.filter((f) => f.gender === "female"), breedFemale, "f", "♀ Choose mother")}
+      <div class="sub" style="margin-bottom:6px">${t("breed.intro", { gems: DATA.BREED_GEMS })}</div>
+      ${pickRow(tf.filter((f) => f.gender === "male"), breedMale, "m", "♂ " + t("breed.choose_father"))}
+      ${pickRow(partners || tf.filter((f) => f.gender === "female"), breedFemale, "f", "♀ " + t("breed.choose_mother"))}
       <div id="breed-msg" class="sub" style="margin:6px 0"></div>
       <button class="pill-btn pink" id="btn-do-breed" style="width:100%;padding:13px"
-        ${breedMale && breedFemale ? "" : "disabled"}>💕 Breed (💎${DATA.BREED_GEMS})</button>
-      <h3>🥚 Egg nursery</h3>
+        ${breedMale && breedFemale ? "" : "disabled"}>${t("breed.breed_btn", { gems: DATA.BREED_GEMS })}</button>
+      <h3>🥚 ${t("breed.egg_nursery")}</h3>
       <div id="egg-list">${eggListHtml()}</div>`;
     body.innerHTML = html;
 
@@ -569,12 +570,12 @@ const UI = (() => {
       const btn = $("btn-do-breed"); btn.disabled = true;
       const r = await Api.breed(breedMale.id, breedFemale.id);
       if (r.ok) {
-        AudioFX.coin(); toast("🥚 Egg laid! Check the nursery ⏳");
+        AudioFX.coin(); toast(t("toast.egg_laid"));
         breedMale = breedFemale = null; partners = null;
       } else {
         AudioFX.error();
-        $("breed-msg").textContent = r.error || "These species can't breed together";
-        toast(r.error || "These species can't breed together");
+        $("breed-msg").textContent = r.error || t("toast.cant_breed");
+        toast(r.error || t("toast.cant_breed"));
       }
       await App.refresh(); renderBreeding();
     };
@@ -583,11 +584,11 @@ const UI = (() => {
   }
   function eggListHtml() {
     const eggs = state.eggs || [];
-    if (!eggs.length) return `<div class="empty">No eggs yet — breed two fish to start 🥚</div>`;
+    if (!eggs.length) return `<div class="empty">${t("breed.no_eggs")}</div>`;
     return eggs.map((e) => `
       <div class="row-card egg-card"><div class="grow">
-        <b>🥚 ${esc(speciesName(e.variant_a) || e.group)} ${e.hybrid ? '<span class="tag hybrid">hybrid</span>' : ""}</b>
-        <div class="lineage">gen ${e.generation || 1} · ${esc(speciesName(e.variant_a) || "")} × ${esc(speciesName(e.variant_b) || "")}</div>
+        <b>🥚 ${esc(speciesName(e.variant_a) || e.group)} ${e.hybrid ? '<span class="tag hybrid">' + t("tag.hybrid") + "</span>" : ""}</b>
+        <div class="lineage">${t("tag.gen", { n: e.generation || 1 })} · ${esc(speciesName(e.variant_a) || "")} × ${esc(speciesName(e.variant_b) || "")}</div>
       </div><div class="countdown" data-hatch="${e.hatch_at * 1000}">…</div></div>`).join("");
   }
   function startEggTimer() {
@@ -601,7 +602,7 @@ const UI = (() => {
       });
       if (anyExpired) {
         clearInterval(eggTimer); eggTimer = null;
-        setTimeout(async () => { await App.refresh(); renderBreeding(); toast("🐣 An egg hatched!"); }, 2500);
+        setTimeout(async () => { await App.refresh(); renderBreeding(); toast(t("toast.egg_hatched")); }, 2500);
       }
     };
     tick();
@@ -613,25 +614,25 @@ const UI = (() => {
     const body = $("screen-body");
     const seen = {};
     for (const c of (state.collection || [])) seen[c.species_id] = c;
-    let html = `<h3>📖 Species log</h3><div class="grid2">`;
+    let html = `<h3>📖 ${t("coll.species_log")}</h3><div class="grid2">`;
     for (const [id, sp] of Object.entries(DATA.SPECIES)) {
       const c = seen[id];
       html += `<div class="card" style="${c ? "" : "opacity:.45;filter:grayscale(.8)"}">
         ${c ? fishImg(id) : `<div style="font-size:40px">❓</div>`}
         <div class="nm">${c ? esc(sp.name) : "???"}</div>
-        <div class="sub">${esc(sp.group)}${c ? ` · seen ×${c.count}` : " · not seen"}</div>
+        <div class="sub">${esc(sp.group)}${c ? t("coll.seen", { n: c.count }) : t("coll.not_seen")}</div>
       </div>`;
     }
-    html += `</div><h3>🧬 Lineage</h3>`;
+    html += `</div><h3>🧬 ${t("coll.lineage")}</h3>`;
     const bred = (state.fish || []).filter((f) => f.lineage && (f.lineage.mother || f.lineage.father || f.lineage.hybrid));
     html += bred.length ? bred.map((f) => {
       const L = f.lineage;
       return `<div class="row-card"><span style="display:flex;align-items:center">${fishImg(f.species_id)}</span><div class="grow">
         <b>${esc(f.nickname || f.name || speciesName(f.species_id))}</b>
-        ${L.hybrid ? ' <span class="tag hybrid">hybrid</span>' : ""}
+        ${L.hybrid ? ' <span class="tag hybrid">' + t("tag.hybrid") + "</span>" : ""}
         <div class="lineage">♂ ${esc(speciesName(L.father) || "?")} × ♀ ${esc(speciesName(L.mother) || "?")} · gen ${L.generation || 1}</div>
       </div></div>`;
-    }).join("") : `<div class="empty">No bred fish yet — lineage appears here 🧬</div>`;
+    }).join("") : `<div class="empty">${t("coll.no_lineage")}</div>`;
     body.innerHTML = html;
   }
 
@@ -639,8 +640,8 @@ const UI = (() => {
   function renderInventory() {
     const body = $("screen-body");
     let html = `<div class="tabbar">
-      <button class="pill-btn${invTab === "fishes" ? " active" : ""}" data-invtab="fishes">🐠 Fishes</button>
-      <button class="pill-btn${invTab === "furniture" ? " active" : ""}" data-invtab="furniture">🪑 Furniture</button>
+      <button class="pill-btn${invTab === "fishes" ? " active" : ""}" data-invtab="fishes">🐠 ${t("inv.fishes")}</button>
+      <button class="pill-btn${invTab === "furniture" ? " active" : ""}" data-invtab="furniture">🪑 ${t("inv.furniture")}</button>
     </div>`;
     html += invTab === "fishes" ? invFishesHtml() : invFurnitureHtml();
     body.innerHTML = html;
@@ -654,24 +655,24 @@ const UI = (() => {
     const inTank = all.filter((f) => (!f.location || f.location === "tank")).length;
     const inInv = all.filter((f) => f.location === "inventory").length;
     let html = `<div class="tabbar">
-      <button class="pill-btn${invFilter === "all" ? " active" : ""}" data-invfilter="all">All (${all.length})</button>
-      <button class="pill-btn${invFilter === "tank" ? " active" : ""}" data-invfilter="tank">🏠 Tank (${inTank})</button>
-      <button class="pill-btn${invFilter === "inventory" ? " active" : ""}" data-invfilter="inventory">🎒 Stored (${inInv})</button>
+      <button class="pill-btn${invFilter === "all" ? " active" : ""}" data-invfilter="all">${t("inv.filter_all", { n: all.length })}</button>
+      <button class="pill-btn${invFilter === "tank" ? " active" : ""}" data-invfilter="tank">🏠 ${t("inv.filter_tank", { n: inTank })}</button>
+      <button class="pill-btn${invFilter === "inventory" ? " active" : ""}" data-invfilter="inventory">🎒 ${t("inv.filter_stored", { n: inInv })}</button>
     </div>`;
     let list = all;
     if (invFilter === "tank") list = all.filter((f) => !f.location || f.location === "tank");
     if (invFilter === "inventory") list = all.filter((f) => f.location === "inventory");
-    if (!list.length) html += `<div class="empty">${invFilter === "inventory" ? "No stored fish — move one out of the tank from its menu 🎒" : "No fish yet 🐠"}</div>`;
+    if (!list.length) html += `<div class="empty">${invFilter === "inventory" ? t("inv.no_stored") : t("inv.no_fish")}</div>`;
     html += list.map((f) => {
       const locSub = f.location === "market"
-        ? `💎 on the market for <b>${f.listing_price} 💎</b> — tap the fish to manage`
-        : f.location === "inventory" ? "🎒 in storage — tap the fish to place it" : "🏠 " + esc(TANK_LABELS[f.tank] || f.tank || "") + " tank";
+        ? t("inv.on_market", { price: f.listing_price })
+        : f.location === "inventory" ? t("inv.in_storage") : "🏠 " + t("inv.in_tank", { tank: tankName(f.tank) });
       return `
       <div class="row-card"><span data-fishmenu="${f.id}" style="cursor:pointer;display:flex;align-items:center">${fishImg(f.species_id)}</span><div class="grow">
         <b>${esc(f.nickname || f.name || speciesName(f.species_id))}</b>
-        ${f.tradeable && f.location !== "market" ? ' <span class="tag">💎 tradeable</span>' : ""}
+        ${f.tradeable && f.location !== "market" ? ' <span class="tag">💎 ' + t("inv.tradeable") + "</span>" : ""}
         <div class="sub">${f.gender === "male" ? "♂" : "♀"} · ${esc(f.stage || "adult")} · ${locSub}</div>
-      </div>${f.location === "market" ? "" : `<button class="pill-btn" data-sell="${f.id}">Sell</button>`}</div>`;
+      </div>${f.location === "market" ? "" : `<button class="pill-btn" data-sell="${f.id}">${t("inv.sell")}</button>`}</div>`;
     }).join("");
     return html;
   }
@@ -683,10 +684,10 @@ const UI = (() => {
       if (f) openFishMenu(f);
     });
     body.querySelectorAll("[data-sell]").forEach((b) => b.onclick = async () => {
-      if (!confirm("Sell this fish? 💰")) return;
+      if (!confirm(t("inv.confirm_sell"))) return;
       const r = await Api.sellFish(+b.dataset.sell);
-      if (r.ok) { AudioFX.coin(); toast(`Sold for 🪙${fmtCoins(r.coins)}`); }
-      else toast(r.error || "Couldn't sell");
+      if (r.ok) { AudioFX.coin(); toast(t("toast.sold", { coins: fmtCoins(r.coins) })); }
+      else toast(r.error || t("toast.couldnt_sell"));
       await App.refresh(); renderInventory();
     });
   }
@@ -695,22 +696,22 @@ const UI = (() => {
     const w = state.wallets;
     const owned = state.decor_owned || [];
     let html = `
-      <h3>🍤 Food <span class="tag">${fmtCoins(w.food)}</span></h3>
-      <div class="row-card"><div class="grow"><b>Fish food</b>
-        <div class="sub">🪙 ${DATA.FOOD_PRICE} each · feeding drops ≥1 pellet per fish</div></div>
+      <h3>🍤 ${t("inv.food")} <span class="tag">${fmtCoins(w.food)}</span></h3>
+      <div class="row-card"><div class="grow"><b>${t("inv.fish_food")}</b>
+        <div class="sub">${t("inv.food_desc", { price: DATA.FOOD_PRICE })}</div></div>
         <button class="pill-btn" data-food="1">+1</button>
         <button class="pill-btn" data-food="5">+5</button>
         <button class="pill-btn" data-food="10">+10</button>
       </div>
-      <h3>🪸 Decorations owned</h3>`;
-    if (!owned.length) html += `<div class="empty">No decorations yet — visit the Decor shop 🪸</div>`;
+      <h3>🪸 ${t("inv.deco_owned")}</h3>`;
+    if (!owned.length) html += `<div class="empty">${t("inv.no_deco")}</div>`;
     for (const o of owned) {
       const it = (decorCatalog || []).find((d) => d.id === o.deco_id);
       const nm = it ? it.name : o.deco_id, file = it ? it.file : "";
       html += `<div class="row-card">
         ${file ? `<img src="${esc(file)}" style="width:56px;height:44px;object-fit:contain" alt="">` : ""}
         <div class="grow"><b>${esc(nm)}</b><div class="sub">×${o.qty}</div></div>
-        <button class="pill-btn blue" data-placeinv="${esc(o.deco_id)}">Place in tank</button>
+        <button class="pill-btn blue" data-placeinv="${esc(o.deco_id)}">${t("fishmenu.place_in_tank")}</button>
       </div>`;
     }
     return html;
@@ -719,8 +720,8 @@ const UI = (() => {
   function bindInvFurniture(body) {
     body.querySelectorAll("[data-food]").forEach((b) => b.onclick = async () => {
       const r = await Api.buyFood(+b.dataset.food);
-      if (r.ok) { AudioFX.coin(); toast(`+${b.dataset.food} food 🍤`); }
-      else { AudioFX.error(); toast(r.error || "Couldn't buy food"); }
+      if (r.ok) { AudioFX.coin(); toast(t("toast.food_bought", { qty: b.dataset.food })); }
+      else { AudioFX.error(); toast(r.error || t("toast.couldnt_buy_food")); }
       await App.refresh(); renderInventory();
     });
     body.querySelectorAll("[data-placeinv]").forEach((b) => b.onclick = () => {
@@ -732,33 +733,37 @@ const UI = (() => {
   function renderQuests() {
     const body = $("screen-body");
     const qs = state.quests || [];
-    let html = `<div class="sub" style="margin-bottom:8px">Daily quests reset at midnight UTC · weekly on Mondays 🎯</div>`;
-    const groups = [["daily", "☀️ Daily"], ["weekly", "📅 Weekly"]];
+    let html = `<div class="sub" style="margin-bottom:8px">${t("quest.reset_info")}</div>`;
+    const groups = [["daily", "☀️ " + t("quest.daily")], ["weekly", "📅 " + t("quest.weekly")]];
     for (const [period, label] of groups) {
       html += `<h3>${label}</h3>`;
       const list = qs.filter((q) => q.period === period);
-      if (!list.length) html += `<div class="empty">No ${period} quests right now</div>`;
+      if (!list.length) html += `<div class="empty">${period === "daily" ? t("quest.no_daily") : t("quest.no_weekly")}</div>`;
       for (const q of list) {
         const pct = Math.min(100, Math.round((q.progress / Math.max(1, q.target)) * 100));
         const done = q.progress >= q.target;
+        const qtk = "quest." + q.id + ".title";
+        const qtitle = t(qtk) === qtk ? q.title : t(qtk);
+        const qdk = "quest." + q.id + ".desc";
+        const qdesc = t(qdk) === qdk ? (q.desc || "") : t(qdk);
         html += `<div class="row-card ${q.claimed ? "quest-done" : ""}"><div class="grow">
-          <b>${esc(q.title)}</b>
-          <div class="sub">${esc(q.desc || "")}</div>
+          <b>${esc(qtitle)}</b>
+          <div class="sub">${esc(qdesc)}</div>
           <div class="progress"><i style="width:${pct}%"></i></div>
           <div class="sub">${q.progress}/${q.target}${q.reward_coins ? ` · 🪙${q.reward_coins}` : ""}${q.reward_gems ? ` · 💎${q.reward_gems}` : ""}</div>
         </div>
-        ${q.claimed ? `<span class="tag">claimed ✓</span>`
-          : done ? `<button class="pill-btn pink" data-claim="${esc(q.id)}">Claim</button>`
+        ${q.claimed ? `<span class="tag">${t("quest.claimed")}</span>`
+          : done ? `<button class="pill-btn pink" data-claim="${esc(q.id)}">${t("quest.claim")}</button>`
           : `<span class="tag">${pct}%</span>`}
         </div>`;
       }
     }
-    html += `<button class="pill-btn blue" id="btn-play-mg2" style="width:100%;padding:13px;margin-top:10px">🎮 Play minigame</button>`;
+    html += `<button class="pill-btn blue" id="btn-play-mg2" style="width:100%;padding:13px;margin-top:10px">🎮 ${t("quest.play_minigame")}</button>`;
     body.innerHTML = html;
     body.querySelectorAll("[data-claim]").forEach((b) => b.onclick = async () => {
       const r = await Api.claimQuest(b.dataset.claim);
-      if (r.ok) { AudioFX.coin(); toast(`Quest complete! 🪙${fmtCoins(r.coins || 0)}${r.gems ? ` 💎${r.gems}` : ""}`); }
-      else toast(r.error || "Couldn't claim");
+      if (r.ok) { AudioFX.coin(); toast(t("toast.quest_done", { coins: fmtCoins(r.coins || 0) }) + (r.gems ? t("toast.quest_done_gems", { gems: r.gems }) : "")); }
+      else toast(r.error || t("toast.couldnt_claim"));
       await App.refresh(); renderQuests();
     });
     $("btn-play-mg2").onclick = () => open("minigame");
@@ -769,21 +774,27 @@ const UI = (() => {
     const body = $("screen-body");
     const s = state.settings || { music: false, sfx: true, quality: "high" };
     body.innerHTML = `
-      <div class="toggle-row"><div><b>🎵 Music</b><div class="sub">gentle underwater pad</div></div>
+      <div class="toggle-row"><div><b>🎵 ${t("settings.music")}</b><div class="sub">${t("settings.music_desc")}</div></div>
         <button class="switch ${s.music ? "on" : ""}" data-set="music"></button></div>
-      <div class="toggle-row"><div><b>🔔 Sound effects</b><div class="sub">pops, munches, coins</div></div>
+      <div class="toggle-row"><div><b>🔔 ${t("settings.sfx")}</b><div class="sub">${t("settings.sfx_desc")}</div></div>
         <button class="switch ${s.sfx ? "on" : ""}" data-set="sfx"></button></div>
-      <div class="toggle-row" style="border:none"><div><b>✨ Graphics quality</b><div class="sub">lower = smoother on old phones</div></div></div>
+      <div class="toggle-row" style="border:none"><div><b>✨ ${t("settings.quality")}</b><div class="sub">${t("settings.quality_desc")}</div></div></div>
       <select class="sel" id="set-quality">
-        <option value="high" ${s.quality === "high" ? "selected" : ""}>High</option>
-        <option value="medium" ${s.quality === "medium" ? "selected" : ""}>Medium</option>
-        <option value="low" ${s.quality === "low" ? "selected" : ""}>Low</option>
+        <option value="high" ${s.quality === "high" ? "selected" : ""}>${t("settings.q_high")}</option>
+        <option value="medium" ${s.quality === "medium" ? "selected" : ""}>${t("settings.q_medium")}</option>
+        <option value="low" ${s.quality === "low" ? "selected" : ""}>${t("settings.q_low")}</option>
       </select>
-      <h3>👤 Account</h3>
+      <div class="toggle-row"><div><b>🌐 ${t("settings.language")}</b></div>
+        <div style="display:flex;gap:6px">
+          <button class="pill-btn${I18N.lang === "pt" ? " active" : ""}" data-setlang="pt">${t("lang.pt")}</button>
+          <button class="pill-btn${I18N.lang === "en" ? " active" : ""}" data-setlang="en">${t("lang.en")}</button>
+          <button class="pill-btn${I18N.lang === "es" ? " active" : ""}" data-setlang="es">${t("lang.es")}</button>
+        </div></div>
+      <h3>👤 ${t("settings.account")}</h3>
       <div class="row-card"><div class="grow"><b>${esc(state.user.name)}</b><div class="sub">${esc(state.user.email)}</div></div></div>
-      <button class="pill-btn" id="btn-tutorial" style="width:100%;padding:13px;background:linear-gradient(135deg,#7fb8e8,#4a7fc9);margin-bottom:10px">🎓 Replay tutorial</button>
-      <button class="pill-btn" id="btn-logout" style="width:100%;padding:13px;background:linear-gradient(135deg,#e08a9b,#c05a7a)">🚪 Log out</button>
-      <div class="empty">AquaNim · hand-drawn-style 2D sprite art 🐠<br>No accounts are shared · your tank is yours alone</div>
+      <button class="pill-btn" id="btn-tutorial" style="width:100%;padding:13px;background:linear-gradient(135deg,#7fb8e8,#4a7fc9);margin-bottom:10px">🎓 ${t("settings.replay_tutorial")}</button>
+      <button class="pill-btn" id="btn-logout" style="width:100%;padding:13px;background:linear-gradient(135deg,#e08a9b,#c05a7a)">🚪 ${t("settings.logout")}</button>
+      <div class="empty">${t("settings.footer")}</div>
     `;
     const save = async () => {
       const music = body.querySelector('[data-set="music"]').classList.contains("on");
@@ -796,6 +807,7 @@ const UI = (() => {
     body.querySelectorAll("[data-set]").forEach((sw) => sw.onclick = async () => {
       sw.classList.toggle("on"); AudioFX.unlock(); await save();
     });
+    body.querySelectorAll("[data-setlang]").forEach((b) => b.onclick = () => I18N.setLang(b.dataset.setlang));
     $("set-quality").onchange = save;
     $("btn-logout").onclick = async () => {
       await Api.logout();
@@ -812,17 +824,17 @@ const UI = (() => {
   async function renderShellGame(area) {
     if (!area) return;
     const st = await Api.shellStatus();
-    if (!st.ok) { area.innerHTML = `<div class="sub">${st.error || st.message || "Couldn't load 🐚"}</div>`; return; }
+    if (!st.ok) { area.innerHTML = `<div class="sub">${st.error || st.message || t("mg.couldnt_load")}</div>`; return; }
     if (!st.canPlay) {
       const ms = Math.max(0, (st.nextAt * 1000) - Date.now());
       const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
-      area.innerHTML = `<div class="sub">⏳ Next game in <b>${h}h ${m}m</b> — good luck tomorrow! 🍀</div>`;
+      area.innerHTML = `<div class="sub">${t("mg.next_in", { h, m })}</div>`;
       return;
     }
-    area.innerHTML = `<button class="pill-btn blue" id="shell-start" style="width:100%;padding:12px">🐚 Play today's game</button>`;
+    area.innerHTML = `<button class="pill-btn blue" id="shell-start" style="width:100%;padding:12px">${t("mg.play_today")}</button>`;
     $("shell-start").onclick = () => {
       area.innerHTML = `
-        <div class="sub" style="text-align:center">Watch closely… 👀</div>
+        <div class="sub" style="text-align:center">${t("mg.watch")}</div>
         <div id="shell-row"></div>
         <div class="shell-result" id="shell-msg"></div>`;
       const row = $("shell-row"), msg = $("shell-msg");
@@ -833,18 +845,18 @@ const UI = (() => {
       // pure theater: the pearl's hiding spot is decided server-side on tap
       setTimeout(() => {
         shells.forEach((s) => { s.classList.remove("shuffling"); s.disabled = false; });
-        msg.textContent = "Tap a shell! 🐚";
+        msg.textContent = t("mg.tap_shell");
         AudioFX.pop();
       }, 1500);
       shells.forEach((s) => s.onclick = async () => {
         const pick = Number(s.dataset.i);
         shells.forEach((x) => { x.disabled = true; x.classList.remove("picked"); });
         s.classList.add("picked");
-        msg.textContent = "Opening…";
+        msg.textContent = t("mg.opening");
         AudioFX.munch();
         const r = await Api.shellPlay(pick);
         if (!r.ok) {
-          msg.textContent = r.error || r.message || "Couldn't play";
+          msg.textContent = r.error || r.message || t("mg.couldnt_play");
           if (r.nextAt) setTimeout(() => renderShellGame(area), 1500);
           return;
         }
@@ -856,11 +868,11 @@ const UI = (() => {
         });
         if (r.win) {
           AudioFX.coin();
-          msg.innerHTML = `🎉 You found the pearl! <b>+💎${r.gems}</b>`;
-          toast(`🎉 Pearl found! +💎${r.gems}`);
+          msg.innerHTML = t("mg.found_pearl", { gems: r.gems });
+          toast(t("toast.pearl_found", { gems: r.gems }));
         } else {
           AudioFX.error();
-          msg.textContent = "The pearl was hiding in another shell… try tomorrow! 🍀";
+          msg.textContent = t("mg.no_pearl");
         }
         if (window.App && App.refresh) await App.refresh();
       });
@@ -876,7 +888,7 @@ const UI = (() => {
     const body = $("screen-body");
     body.innerHTML = `<div id="ev-root"></div>`;
     if (window.EventCrush) EventCrush.mount(body.querySelector("#ev-root"));
-    else body.innerHTML = `<div class="empty">Couldn't load the event game 🍂</div>`;
+    else body.innerHTML = `<div class="empty">${t("event.couldnt_load")}</div>`;
   }
 
   function renderMinigame() {
@@ -884,16 +896,16 @@ const UI = (() => {
     MG.round = 0; MG.times = []; MG.active = false;
     body.innerHTML = `
       <div class="shell-box">
-        <div class="shell-title">🐚 Daily Shell Game</div>
-        <div class="sub">Find the pearl and win <b>💎10</b>! · 30% luck · once every 24h</div>
+        <div class="shell-title">🐚 ${t("mg.shell_title")}</div>
+        <div class="sub">${t("mg.shell_desc")}</div>
         <div id="shell-area" style="margin-top:8px"></div>
       </div>
-      <div class="sub" style="margin:10px 0 8px;font-weight:800">🎮 Tap-the-Fish</div>
-      <div class="sub" style="margin-bottom:8px">A fish pops up — tap it as fast as you can! 8 rounds ⚡</div>
-      <div class="mg-hud"><span>Round <b id="mg-round">0</b>/8</span><span id="mg-last"></span></div>
+      <div class="sub" style="margin:10px 0 8px;font-weight:800">🎮 ${t("mg.title")}</div>
+      <div class="sub" style="margin-bottom:8px">${t("mg.tapfish_desc")}</div>
+      <div class="mg-hud"><span>${t("mg.round")} <b id="mg-round">0</b>/8</span><span id="mg-last"></span></div>
       <div id="mg-stage"><img id="mg-fish" alt="🐟"></div>
       <div class="big-score" id="mg-result"></div>
-      <button class="pill-btn pink" id="mg-start" style="width:100%;padding:13px">▶ Start</button>`;
+      <button class="pill-btn pink" id="mg-start" style="width:100%;padding:13px">▶ ${t("mg.start")}</button>`;
     renderShellGame($("shell-area"));
     const stage = $("mg-stage"), fish = $("mg-fish");
     const species = ["sakura_goldfish", "azure_tang", "ember_clownfish", "fullmoon_betta", "red_shrimp"];
@@ -928,14 +940,14 @@ const UI = (() => {
       MG.active = false;
       const avg = MG.times.reduce((a, b) => a + b, 0) / Math.max(1, MG.times.length);
       const score = Math.max(5, Math.min(100, Math.round(110 - avg / 12)));
-      $("mg-result").innerHTML = `⚡ Avg ${Math.round(avg)}ms<br>Score: <b>${score}</b>/100`;
-      $("mg-start").textContent = "↻ Play again";
+      $("mg-result").innerHTML = t("mg.result", { avg: Math.round(avg), score });
+      $("mg-start").textContent = "↻ " + t("mg.play_again");
       const r = await Api.minigameFinish(score);
       if (r.ok) {
         AudioFX.coin();
-        $("mg-result").innerHTML += `<br><span class="tag">+🪙${fmtCoins(r.coins)} coins!</span>`;
-        toast(`+🪙${fmtCoins(r.coins)} from the minigame! 🎮`);
-      } else toast(r.error || "Score not saved");
+        $("mg-result").innerHTML += t("mg.coins_won", { coins: fmtCoins(r.coins) });
+        toast(t("toast.mg_coins", { coins: fmtCoins(r.coins) }));
+      } else toast(r.error || t("toast.score_not_saved"));
       await App.refresh();
     }
     $("mg-start").onclick = () => {
@@ -948,48 +960,48 @@ const UI = (() => {
 
   async function renderMarket() {
     const body = $("screen-body");
-    body.innerHTML = `<div class="empty">Loading market… 💎</div>`;
+    body.innerHTML = `<div class="empty">${t("market.loading")}</div>`;
     const r = await Api.marketListings();
-    if (!r.ok) { body.innerHTML = `<div class="empty">Couldn't load the market 😢</div>`; return; }
+    if (!r.ok) { body.innerHTML = `<div class="empty">${t("market.couldnt_load")}</div>`; return; }
     const me = state.user && state.user.id;
-    let html = `<div class="sub" style="margin-bottom:8px">Player-to-player market · prices in 💎 diamonds · 10% fee on every sale</div>
-    <button class="pill-btn gold" id="mk-add" style="margin-bottom:8px">➕ Adicionar peixe</button>`;
+    let html = `<div class="sub" style="margin-bottom:8px">${t("market.intro")}</div>
+    <button class="pill-btn gold" id="mk-add" style="margin-bottom:8px">${t("market.add_fish")}</button>`;
     if (!r.listings.length) {
-      html += `<div class="empty">No fish listed yet.<br>List yours from the Inventory 💎</div>`;
+      html += `<div class="empty">${t("market.empty")}</div>`;
     }
     for (const l of r.listings) {
       const f = l.fish, lin = f.lineage || {};
       const tags = [];
-      if (lin.hybrid) tags.push("✨ hybrid");
-      if (lin.generation) tags.push(`gen ${lin.generation}`);
-      if (f.origin === "event") tags.push("🏆 event");
-      if (f.origin === "bred" && !lin.hybrid) tags.push("🧬 bred");
+      if (lin.hybrid) tags.push("✨ " + t("tag.hybrid"));
+      if (lin.generation) tags.push(t("tag.gen", { n: lin.generation }));
+      if (f.origin === "event") tags.push("🏆 " + t("tag.event"));
+      if (f.origin === "bred" && !lin.hybrid) tags.push("🧬 " + t("tag.bred"));
       const own = l.seller_id === me;
       html += `<div class="row-card">${fishImg(f.species_id, 0)}<div class="grow">
         <b>${esc(f.nickname || f.name)}</b>
         <span class="tag">${f.gender === "male" ? "♂" : "♀"}</span>${tags.map((t) => ` <span class="tag">${t}</span>`).join("")}
-        <div class="sub">${esc(f.name)} · seller: ${esc(l.seller_name || "player")}</div></div>
+        <div class="sub">${esc(f.name)} · ${t("market.seller", { name: esc(l.seller_name || t("market.player")) })}</div></div>
         <div style="text-align:right;flex-shrink:0">
           <div class="mk-price">💎 ${l.price_diamonds}</div>
           ${own
-            ? `<button class="pill-btn" data-mkcancel="${l.listing_id}">Cancel</button>`
-            : `<button class="pill-btn gold" data-mkbuy="${l.listing_id}">Buy</button>`}
+            ? `<button class="pill-btn" data-mkcancel="${l.listing_id}">${t("market.cancel")}</button>`
+            : `<button class="pill-btn gold" data-mkbuy="${l.listing_id}">${t("shop.buy")}</button>`}
         </div></div>`;
     }
     body.innerHTML = html;
     $("mk-add").onclick = renderMarketAdd;
     body.querySelectorAll("[data-mkbuy]").forEach((b) => b.onclick = async () => {
       const id = Number(b.dataset.mkbuy);
-      if (!confirm("Buy this fish with diamonds? 💎")) return;
+      if (!confirm(t("market.confirm_buy"))) return;
       b.disabled = true;
       const r2 = await Api.marketBuy(id);
-      if (r2.ok) { AudioFX.coin(); toast("Fish bought! It's in your inventory 🎒"); await App.refresh(); renderMarket(); }
-      else { AudioFX.error(); toast(r2.error || "Buy failed"); b.disabled = false; }
+      if (r2.ok) { AudioFX.coin(); toast(t("toast.fish_bought")); await App.refresh(); renderMarket(); }
+      else { AudioFX.error(); toast(r2.error || t("toast.buy_failed")); b.disabled = false; }
     });
     body.querySelectorAll("[data-mkcancel]").forEach((b) => b.onclick = async () => {
       const r2 = await Api.marketCancel(Number(b.dataset.mkcancel));
-      if (r2.ok) { toast("Listing cancelled — fish is back in your inventory 🎒"); await App.refresh(); renderMarket(); }
-      else toast(r2.error || "Cancel failed");
+      if (r2.ok) { toast(t("toast.listing_cancelled")); await App.refresh(); renderMarket(); }
+      else toast(r2.error || t("toast.cancel_failed"));
     });
   }
 
@@ -999,15 +1011,15 @@ const UI = (() => {
     const cands = (state.fish || []).filter((f) =>
       f.tradeable && f.location !== "market" &&
       (f.origin === "event" || (f.lineage && f.lineage.hybrid)));
-    let html = `<button class="pill-btn" id="mk-back">← Back to market</button>
-      <div class="fm-note" style="margin:8px 0">⚠️ Only event fish and hybrids can be sold between users.</div>`;
+    let html = `<button class="pill-btn" id="mk-back">← ${t("market.back")}</button>
+      <div class="fm-note" style="margin:8px 0">${t("market.only_tradable")}</div>`;
     if (!cands.length) {
-      html += `<div class="empty">🐟 You don't own any tradable fish yet</div>`;
+      html += `<div class="empty">${t("market.no_tradable")}</div>`;
     }
     for (const f of cands) {
       const tags = [];
-      if (f.origin === "event") tags.push("🏆 event");
-      if (f.lineage && f.lineage.hybrid) tags.push("✨ hybrid");
+      if (f.origin === "event") tags.push("🏆 " + t("tag.event"));
+      if (f.lineage && f.lineage.hybrid) tags.push("✨ " + t("tag.hybrid"));
       html += `<div class="row-card">${fishImg(f.species_id, 0)}<div class="grow">
         <b>${esc(f.nickname || f.name)}</b>
         <span class="tag">${f.gender === "male" ? "♂" : "♀"}</span>${tags.map((t) => ` <span class="tag">${t}</span>`).join("")}
@@ -1015,7 +1027,7 @@ const UI = (() => {
         <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
           <input id="mkp-${f.id}" type="number" min="1" max="999999" placeholder="💎"
             style="width:90px;padding:10px;border-radius:12px;border:2px solid var(--pink-d)" />
-          <button class="pill-btn gold" data-mkadd="${f.id}">List</button>
+          <button class="pill-btn gold" data-mkadd="${f.id}">${t("market.list")}</button>
         </div></div>`;
     }
     body.innerHTML = html;
@@ -1023,12 +1035,12 @@ const UI = (() => {
     body.querySelectorAll("[data-mkadd]").forEach((b) => b.onclick = async () => {
       const id = Number(b.dataset.mkadd);
       const price = Math.floor(Number($(`mkp-${id}`).value));
-      if (!price || price < 1 || price > 999999) { toast("Enter a price from 1 to 999999 💎"); return; }
-      if (!confirm(`List this fish for ${price} 💎? (10% fee on sale)`)) return;
+      if (!price || price < 1 || price > 999999) { toast(t("toast.enter_price")); return; }
+      if (!confirm(t("fishmenu.confirm_list", { price }))) return;
       b.disabled = true;
       const r = await Api.marketList(id, price);
-      if (r.ok) { AudioFX.coin(); toast("Listed on the fish market 💎"); await App.refresh(); renderMarketAdd(); }
-      else { AudioFX.error(); toast(r.error || "Couldn't list"); b.disabled = false; }
+      if (r.ok) { AudioFX.coin(); toast(t("toast.listed")); await App.refresh(); renderMarketAdd(); }
+      else { AudioFX.error(); toast(r.error || t("toast.couldnt_list")); b.disabled = false; }
     });
   }
 

@@ -1,6 +1,9 @@
 // POST /api/register, /api/login, /api/logout, GET /api/me
+// POST /api/password/forgot, POST /api/password/reset
 const { Router } = require('express');
+const crypto = require('crypto');
 const { ah } = require('../async');
+const { sendEmail, passwordResetHtml } = require('../email');
 const {
   hashPassword, checkPassword, createSession,
   setSessionCookie, destroySession, authRequired, COOKIE_NAME,
@@ -96,6 +99,54 @@ module.exports = function authRoutes(db) {
     );
     if (!row) return res.status(401).json({ ok: false, error: 'not logged in' });
     res.json({ ok: true, user: row });
+  }));
+
+  // ---------- forgot password ----------
+  // Always returns ok:true (even for unknown emails) so nobody can probe
+  // which emails are registered.
+  r.post('/password/forgot', ah(async (req, res) => {
+    const now = Math.floor(Date.now() / 1000);
+    const emailNorm = String((req.body && req.body.email) || '').trim().toLowerCase();
+    const user = emailNorm && EMAIL_RE.test(emailNorm)
+      ? await db.get('SELECT id,name,email FROM users WHERE email=?', emailNorm)
+      : null;
+    if (user) {
+      const token = crypto.randomBytes(32).toString('hex');
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      await db.run(
+        'INSERT INTO password_resets(user_id,token_hash,expires_at,used,created_at) VALUES(?,?,?,?,?)',
+        user.id, tokenHash, now + 3600, 0, now);
+      const base = (process.env.APP_URL || 'https://aquarium-game.onrender.com').replace(/\/$/, '');
+      const resetUrl = `${base}/?reset=${token}`;
+      sendEmail({
+        to: user.email,
+        subject: '🐠 Reset your Chibi Aquarium password',
+        html: passwordResetHtml(resetUrl),
+      }).catch((e) => console.error('[email] send failed:', e.message));
+    }
+    res.json({ ok: true });
+  }));
+
+  // ---------- reset password with token ----------
+  r.post('/password/reset', ah(async (req, res) => {
+    const now = Math.floor(Date.now() / 1000);
+    const token = String((req.body && req.body.token) || '');
+    const password = String((req.body && req.body.password) || '');
+    if (!token || password.length < 6) {
+      return res.status(400).json({ ok: false, error: 'invalid reset link or weak password' });
+    }
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const row = await db.get(
+      'SELECT * FROM password_resets WHERE token_hash=? AND used=0', tokenHash);
+    if (!row || row.expires_at < now) {
+      return res.status(400).json({ ok: false, error: 'this reset link is invalid or expired' });
+    }
+    const pwHash = await hashPassword(password);
+    await db.tx(async (t) => {
+      await t.run('UPDATE users SET password_hash=? WHERE id=?', pwHash, row.user_id);
+      await t.run('UPDATE password_resets SET used=1 WHERE id=?', row.id);
+    });
+    res.json({ ok: true });
   }));
 
   return r;

@@ -60,6 +60,10 @@ const SCHEMA = `
       price_diamonds INTEGER, listed_at INTEGER);
     CREATE INDEX IF NOT EXISTS idx_market_seller ON market_listings(seller_id);
     CREATE INDEX IF NOT EXISTS idx_market_fish ON market_listings(fish_id);
+    CREATE TABLE IF NOT EXISTS password_resets(
+      id INTEGER PRIMARY KEY, user_id INTEGER, token_hash TEXT UNIQUE,
+      expires_at INTEGER, used INTEGER, created_at INTEGER);
+    CREATE INDEX IF NOT EXISTS idx_resets_token ON password_resets(token_hash);
     CREATE INDEX IF NOT EXISTS idx_fish_user ON fish(user_id);
     CREATE INDEX IF NOT EXISTS idx_eggs_user ON eggs(user_id);
     CREATE INDEX IF NOT EXISTS idx_dirt_user ON dirt_spots(user_id);

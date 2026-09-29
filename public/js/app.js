@@ -22,6 +22,8 @@ const App = (() => {
 
     const me = await Api.me();
     if (!me.ok || !me.user) { showAuth(); return; }
+    // opened from a password-reset email: show the reset form, not the game
+    if (new URLSearchParams(location.search).get("reset")) { showAuth(); return; }
     enterGame();
   }
 
@@ -114,14 +116,19 @@ const App = (() => {
 
   /* ---------- auth forms ---------- */
   function bindAuth() {
+    let resetToken = null;
     const showTab = (which) => {
       $("tab-login").classList.toggle("active", which === "login");
       $("tab-register").classList.toggle("active", which === "register");
       $("form-login").hidden = which !== "login";
       $("form-register").hidden = which !== "register";
+      $("form-forgot").hidden = which !== "forgot";
+      $("form-reset").hidden = which !== "reset";
     };
     $("tab-login").onclick = () => showTab("login");
     $("tab-register").onclick = () => showTab("register");
+    $("link-forgot").onclick = (e) => { e.preventDefault(); showTab("forgot"); };
+    $("link-back-login").onclick = (e) => { e.preventDefault(); showTab("login"); };
 
     $("form-login").onsubmit = async (e) => {
       e.preventDefault();
@@ -138,6 +145,32 @@ const App = (() => {
       if (r.ok) { AudioFX.unlock(); UI.toast("Welcome to your aquarium! 🐠"); enterGame(); }
       else { err.textContent = r.error || r.message || "Registration failed"; err.hidden = false; AudioFX.error(); }
     };
+    $("form-forgot").onsubmit = async (e) => {
+      e.preventDefault();
+      const err = $("forgot-error"), ok = $("forgot-ok");
+      err.hidden = true; ok.hidden = true;
+      const r = await Api.passwordForgot($("forgot-email").value.trim());
+      if (r.ok) {
+        ok.textContent = "If that email is registered, a reset link is on its way 📧 (check spam too)";
+        ok.hidden = false;
+      } else { err.textContent = r.error || "Couldn't send the email"; err.hidden = false; }
+    };
+    $("form-reset").onsubmit = async (e) => {
+      e.preventDefault();
+      const err = $("reset-error"), okm = $("reset-ok");
+      err.hidden = true; okm.hidden = true;
+      const p1 = $("reset-password").value, p2 = $("reset-password2").value;
+      if (p1 !== p2) { err.textContent = "Passwords don't match"; err.hidden = false; return; }
+      const r = await Api.passwordReset(resetToken, p1);
+      if (r.ok) {
+        okm.textContent = "Password changed! You can log in now 🐠"; okm.hidden = false;
+        history.replaceState(null, "", location.pathname); // drop the token from the URL
+        setTimeout(() => showTab("login"), 1800);
+      } else { err.textContent = r.error || "Reset failed"; err.hidden = false; AudioFX.error(); }
+    };
+    // opened from a reset email? show the new-password form
+    resetToken = new URLSearchParams(location.search).get("reset");
+    if (resetToken) showTab("reset");
   }
 
   /* ---------- nav ---------- */

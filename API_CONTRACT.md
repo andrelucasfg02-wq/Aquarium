@@ -6,6 +6,14 @@ All `/api/*` require auth except `POST /api/register` and `POST /api/login`.
 Errors: `{ "ok": false, "error": "<message>" }`. Success: `{ "ok": true, ... }`.
 
 ## Auth
+- `POST /api/register` `{name, email, password}` → 201 `{ok, user}`.
+- `POST /api/login` `{email, password}` → `{ok, user}` (session cookie).
+- Forgot password: `POST /api/password/forgot` `{email}` → always `{ok:true}`
+  (never reveals whether the email is registered). Creates a 1-hour token and emails
+  a reset link (`APP_URL/?reset=TOKEN`) via Resend (`RESEND_API_KEY`, `EMAIL_FROM`).
+  Passwords are bcrypt-hashed — the old password can never be recovered, only replaced.
+- `POST /api/password/reset` `{token, password}` → `{ok}` — validates the token
+  (sha256-hashed at rest, single use, 1h expiry) and sets the new password.
 - `POST /api/register` `{name, email, password}` → `{ok, user:{id,name,email}}`
   Validate: name non-empty, email format + unique (409 if taken), password ≥ 6 chars.
   Creates starter kit (see Starter kit). bcrypt hash (bcryptjs, 10 rounds).

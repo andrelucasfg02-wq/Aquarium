@@ -25,6 +25,23 @@
       <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" required>
       <button type="submit" class="btn-primary">🐟 Dive in</button>
       <p class="auth-error" id="login-error" hidden></p>
+      <p class="auth-note"><a href="#" id="link-forgot">Forgot password?</a></p>
+    </form>
+    <form id="form-forgot" class="auth-form" hidden>
+      <p class="auth-sub">Enter your account email and we'll send you a reset link.</p>
+      <input type="email" id="forgot-email" placeholder="Email" autocomplete="email" required>
+      <button type="submit" class="btn-primary">📧 Send reset link</button>
+      <p class="auth-error" id="forgot-error" hidden></p>
+      <p class="auth-ok" id="forgot-ok" hidden></p>
+      <p class="auth-note"><a href="#" id="link-back-login">← Back to login</a></p>
+    </form>
+    <form id="form-reset" class="auth-form" hidden>
+      <p class="auth-sub">Choose a new password for your aquarium.</p>
+      <input type="password" id="reset-password" placeholder="New password (min 6 chars)" autocomplete="new-password" minlength="6" required>
+      <input type="password" id="reset-password2" placeholder="Repeat new password" autocomplete="new-password" minlength="6" required>
+      <button type="submit" class="btn-primary">🔑 Set new password</button>
+      <p class="auth-error" id="reset-error" hidden></p>
+      <p class="auth-ok" id="reset-ok" hidden></p>
     </form>
     <form id="form-register" class="auth-form" hidden>
       <input type="text" id="reg-name" placeholder="Your name" autocomplete="name" required>

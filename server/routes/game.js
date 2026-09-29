@@ -101,6 +101,12 @@ function helpers(db) {
     const hunger = C.hungerPct(row.fed_at, now);
     const sick = !!row.sick_at;
     const level = C.fishLevel(row.grp, !!lineage.hybrid, row.born_at, now);
+    const stage = C.growthStage(row.species_id, level);
+    // coin farming (tank fish only): finished cycle waits until collected
+    const coinRate = row.location === 'tank' ? (C.COIN_FARM[stage] || null) : null;
+    const coin_pending = row.coin_pending || 0;
+    const coin_in = (coinRate && !coin_pending)
+      ? Math.max(0, coinRate.secs - (now - (row.coin_at || now))) : 0;
     return {
       id: row.id, species_id: row.species_id, group: row.grp, variant: row.variant,
       name: C.SPECIES_NAMES[row.species_id] || row.species_id,
@@ -108,10 +114,11 @@ function helpers(db) {
       gender: row.gender, location: row.location, tank: row.tank,
       x: row.x, y: row.y, born_at: row.born_at,
       level,
-      stage: C.growthStage(row.species_id, level),
+      stage,
       grow_level: C.growLevel(row.species_id),
       hunger, sick, mood: C.fishMood(sick, hunger),
       fed_at: row.fed_at, lineage,
+      coin_pending, coin_in, coin_amount: coinRate ? coinRate.coins : 0,
       origin: row.origin || 'shop', event_id: row.event_id || null,
       tradeable: tr.ok, trade_lock: tr.ok ? null : tr.reason,
     };
@@ -124,12 +131,12 @@ function helpers(db) {
     const gender = opts.gender || (speciesId === 'female_betta' ? 'female' : (Math.random() < 0.5 ? 'male' : 'female'));
     const lineage = opts.lineage || { mother: null, father: null, hybrid: 0, generation: 0 };
     const info = await db.run(
-      `INSERT INTO fish (user_id,species_id,grp,variant,gender,location,tank,x,y,born_at,fed_at,lineage,origin,event_id)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO fish (user_id,species_id,grp,variant,gender,location,tank,x,y,born_at,fed_at,lineage,origin,event_id,coin_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       uid, speciesId, grp, opts.variant || speciesId, gender,
       opts.location || 'tank', tank, pos.x, pos.y,
       opts.born_at || now, opts.fed_at || now, JSON.stringify(lineage),
-      opts.origin || 'shop', opts.event_id || null);
+      opts.origin || 'shop', opts.event_id || null, now);
     await db.run(`INSERT INTO collection (user_id,species_id,count) VALUES (?,?,1)
                 ON CONFLICT(user_id,species_id) DO UPDATE SET count=count+1`, uid, speciesId);
     await questProgressMax(uid, 'own_8_fish', await totalFishCount(uid), now);
@@ -207,6 +214,19 @@ module.exports = function gameRoutes(db) {
     // lazy sickness: unfed for SICK_AFTER_SECS -> sick
     await db.run('UPDATE fish SET sick_at=? WHERE user_id=? AND sick_at IS NULL AND fed_at IS NOT NULL AND ? - fed_at > ?',
       t, uid, t, C.SICK_AFTER_SECS);
+    // lazy coin farming: a finished cycle banks coins and waits for collection
+    const coinFish = await db.all(
+      "SELECT id, species_id, grp, born_at, lineage, coin_pending, coin_at FROM fish WHERE user_id=? AND location='tank'", uid);
+    for (const fr of coinFish) {
+      if (fr.coin_pending > 0) continue;
+      if (!fr.coin_at) { await db.run('UPDATE fish SET coin_at=? WHERE id=?', t, fr.id); continue; }
+      const lin = fr.lineage ? JSON.parse(fr.lineage) : {};
+      const lvl = C.fishLevel(fr.grp, !!lin.hybrid, fr.born_at, t);
+      const rate = C.COIN_FARM[C.growthStage(fr.species_id, lvl)];
+      if (rate && t - fr.coin_at >= rate.secs) {
+        await db.run('UPDATE fish SET coin_pending=? WHERE id=?', rate.coins, fr.id);
+      }
+    }
     const user = await db.get(
       `SELECT u.id,u.name,u.email,w.level,w.xp,w.coins,w.gems,w.food,w.medicine
        FROM users u JOIN wallets w ON w.user_id=u.id WHERE u.id=?`, uid);
@@ -364,6 +384,24 @@ module.exports = function gameRoutes(db) {
       await txDb.run('UPDATE fish SET sick_at=NULL, fed_at=? WHERE id=?', t, fish_id);
     });
     res.json({ ok: true });
+  }));
+
+  // ---------- collect farmed coins (fish stops earning until collected) ----------
+  r.post('/fish/collect', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const { fish_id } = req.body || {};
+    const fish = await db.get('SELECT id,coin_pending FROM fish WHERE id=? AND user_id=?', fish_id, uid);
+    if (!fish) return res.status(404).json({ ok: false, error: 'fish not found' });
+    if (!fish.coin_pending || fish.coin_pending <= 0) {
+      return res.status(400).json({ ok: false, error: 'nothing to collect' });
+    }
+    const amount = fish.coin_pending;
+    await db.tx(async (txDb) => {
+      await txDb.run('UPDATE fish SET coin_pending=0, coin_at=? WHERE id=?', t, fish_id);
+      await txDb.run('UPDATE wallets SET coins=coins+? WHERE user_id=?', amount, uid);
+    });
+    const w = await H.getWallet(uid);
+    res.json({ ok: true, collected: amount, coins: w.coins });
   }));
 
   r.post('/fish/tap', ah(async (req, res) => {

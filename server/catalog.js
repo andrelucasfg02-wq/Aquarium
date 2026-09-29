@@ -164,6 +164,14 @@ const HUNGER_EMPTY_SECS = 24 * 3600;  // hunger hits 0% 24h after feeding
 const SICK_AFTER_SECS = 36 * 3600;   // fish gets sick 36h after last feeding
 const MEDICINE_PRICE = 250;          // coins per medicine
 
+// ---- coin farming: fish earn coins over time; a finished cycle waits until
+// collected, then restarts. stage -> {coins, secs}
+const COIN_FARM = {
+  baby:     { coins: 50,  secs: 3 * 60 },
+  juvenile: { coins: 100, secs: 5 * 60 },
+  adult:    { coins: 200, secs: 10 * 60 },
+};
+
 function hungerPct(fedAt, now) {
   if (!fedAt) return 100;
   const age = now - fedAt;
@@ -265,7 +273,7 @@ module.exports = {
   HATCH_HOURS, GROWTH_DAYS, HYBRID_HATCH_HOURS, HYBRID_GROWTH_DAYS, growthStage,
   GROW_LEVEL, growLevel,
   HUNGER_FULL_SECS, HUNGER_EMPTY_SECS, SICK_AFTER_SECS, MEDICINE_PRICE,
-  hungerPct, fishMood, fishLevel,
+  hungerPct, fishMood, fishLevel, COIN_FARM,
   TANK_CAPACITY, DECOR_SLOTS, TANK_PRICES, DECOR_EXTRA_SLOT_MAX, DECOR_EXTRA_SLOT_COST,
   GLASS, clampDecor, randomPointInGlass,
   decorCatalog, decorItem,

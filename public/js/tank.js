@@ -229,6 +229,10 @@ class TankView {
     if (e.data && e.data.sick && e.emoteCd <= 0) {
       this.addEmote(e.px, e.py - .03, "🤒", 2.2); e.emoteCd = 2.4;
     }
+    // coin-ready fish show 💰 until collected (shares emoteCd, alternates with 🤒)
+    if (e.data && e.data.coin_pending > 0 && e.emoteCd <= 0) {
+      this.addEmote(e.px, e.py - .03, "💰", 2.2); e.emoteCd = 2.4;
+    }
 
     const dx = e.tx - e.px, dy = e.ty - e.py;
     const dist = Math.hypot(dx, dy);
@@ -629,6 +633,11 @@ Object.assign(TankView.prototype, {
       if (d < bd) { bd = d; best = e; }
     }
     if (best) {
+      // coin-ready fish: tap collects instead of opening the menu
+      if (best.data && best.data.coin_pending > 0) {
+        this.emit("coinTap", best.data.id);
+        return;
+      }
       best.faceT = 1.4;
       best.dir = fx >= best.px ? 1 : -1;
       if (best.state === "sleep" || best.state === "idle") { this.pickTarget(best); best.state = "swim"; }

@@ -82,6 +82,9 @@ const UI = (() => {
           <div class="stat-row"><span>${moodIcon} Mood</span><b>${moodLabel}</b></div>
           <div class="stat-row"><span>⭐ Level</span><b>Lv ${lvl} · ${stageLabel}</b></div>
           ${fish.stage !== "adult" ? `<div class="stat-row"><span>🌱 Grows up at</span><b>Lv ${growAt}</b></div>` : ""}
+          ${fish.location === "tank" ? (fish.coin_pending > 0
+            ? `<div class="stat-row"><span>🪙 Coins</span><b>Ready! 💰</b></div>`
+            : `<div class="stat-row"><span>🪙 Coins</span><b id="fm-coin-cd">+${fish.coin_amount || 0} in ${fmtCd(fish.coin_in || 0)}</b></div>`) : ""}
         </div>
         ${listed ? `
         <div class="fm-note">\uD83D\uDC8E Listed on the market for <b>${fish.listing_price} \uD83D\uDC8E</b></div>
@@ -120,6 +123,22 @@ const UI = (() => {
     overlay.onclick = (e) => { if (e.target === overlay) closeFishMenu(); };
     document.body.appendChild(overlay);
     $("fish-menu-x").onclick = closeFishMenu;
+    // live coin countdown while the menu is open
+    if (fish.location === "tank" && !(fish.coin_pending > 0) && (fish.coin_in || 0) > 0) {
+      let left = fish.coin_in;
+      const amt = fish.coin_amount || 0;
+      coinCdTimer = setInterval(() => {
+        left -= 1;
+        const el = $("fm-coin-cd");
+        if (!el) { clearInterval(coinCdTimer); coinCdTimer = null; return; }
+        if (left <= 0) {
+          clearInterval(coinCdTimer); coinCdTimer = null;
+          el.textContent = "Ready! 💰";
+        } else {
+          el.textContent = `+${amt} in ${fmtCd(left)}`;
+        }
+      }, 1000);
+    }
     if (listed) {
       $("fm-mkcancel").onclick = async () => {
         const r = await Api.marketCancel(fish.listing_id);
@@ -203,7 +222,15 @@ const UI = (() => {
       }
     };
   }
-  function closeFishMenu() { const o = $("fish-menu-overlay"); if (o) o.remove(); }
+  let coinCdTimer = null;
+  function fmtCd(s) {
+    s = Math.max(0, Math.ceil(s));
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  }
+  function closeFishMenu() {
+    if (coinCdTimer) { clearInterval(coinCdTimer); coinCdTimer = null; }
+    const o = $("fish-menu-overlay"); if (o) o.remove();
+  }
 
   /* ---------- quick food buy from the HUD 🍤 counter ---------- */
   function openFoodPop() {

@@ -296,6 +296,13 @@ const App = (() => {
       if (f) UI.openFishMenu(f);
     });
 
+    tank.on("coinTap", async (fishId) => {
+      const r = await Api.collectCoins(fishId);
+      if (r.ok) { AudioFX.coin(); UI.toast(`+${r.collected} 🪙`); }
+      else { AudioFX.error(); UI.toast(r.error || "Couldn't collect"); }
+      await refresh();
+    });
+
     tank.on("wiped", async (ids) => {
       const r = await Api.wipeDirt(ids);
       if (!r.ok && r.error !== "auth") UI.toast(r.error || r.message || "Couldn't wipe");

@@ -29,7 +29,8 @@ const SCHEMA = `
       id INTEGER PRIMARY KEY, user_id INTEGER, species_id TEXT, grp TEXT,
       variant TEXT, gender TEXT, location TEXT, tank TEXT,
       x REAL, y REAL, born_at INTEGER, fed_at INTEGER, lineage TEXT,
-      nickname TEXT, origin TEXT, event_id TEXT, sick_at INTEGER);
+      nickname TEXT, origin TEXT, event_id TEXT, sick_at INTEGER,
+      coin_pending INTEGER NOT NULL DEFAULT 0, coin_at INTEGER);
     CREATE TABLE IF NOT EXISTS eggs(
       id INTEGER PRIMARY KEY, user_id INTEGER, grp TEXT,
       variant_a TEXT, variant_b TEXT, hybrid INTEGER,
@@ -160,6 +161,16 @@ async function openDb() {
         sql: 'UPDATE fish SET fed_at=? WHERE fed_at IS NOT NULL AND fed_at < ?',
         args: [_t - 20 * 3600, _t - 20 * 3600],
       });
+    }
+    // coin farming: pending coins waiting for collection + cycle start
+    if (!cols.rows.some((c) => c.name === 'coin_pending')) {
+      await client.execute('ALTER TABLE fish ADD COLUMN coin_pending INTEGER NOT NULL DEFAULT 0');
+    }
+    if (!cols.rows.some((c) => c.name === 'coin_at')) {
+      await client.execute('ALTER TABLE fish ADD COLUMN coin_at INTEGER');
+      // existing fish start their first coin cycle now
+      const _t = Math.floor(Date.now() / 1000);
+      await client.execute({ sql: 'UPDATE fish SET coin_at=? WHERE coin_at IS NULL', args: [_t] });
     }
     const wcols = await client.execute('PRAGMA table_info(wallets)');
     if (!wcols.rows.some((c) => c.name === 'medicine')) {

@@ -229,6 +229,66 @@ const UI = (() => {
   }
   function closeFoodPop() { const o = $("food-pop-overlay"); if (o) o.remove(); }
 
+  /* ---------- tank full: offer extra slot (diamonds) or bigger tank (coins) ---------- */
+  function showTankFullPopup({ deco_id, x, y }) {
+    closeTankFullPopup();
+    const active = state.tanks.active;
+    const extra = (state.tanks.extra && state.tanks.extra[active]) || 0;
+    const maxExtra = (state.tanks.extraMax && state.tanks.extraMax[active]) || 0;
+    const slotCost = state.tanks.extraCost || 10;
+    const canBuySlot = extra < maxExtra;
+    const owned = state.tanks.owned || [];
+    const nextBuy = ["medium", "large"].find((t) => !owned.includes(t));
+    const nextPrice = nextBuy ? DATA.TANKS[nextBuy].price : 0;
+
+    const overlay = document.createElement("div");
+    overlay.id = "tank-full-overlay";
+    overlay.className = "food-pop-overlay";
+    overlay.innerHTML = `
+      <div class="food-pop">
+        <div style="text-align:center;font-weight:800;margin-bottom:4px">🪸 Tank is full!</div>
+        <div class="sub" style="text-align:center;margin-bottom:10px">All decoration slots are used.<br>Need more room?</div>
+        <div class="fish-menu-btns">
+          ${canBuySlot
+            ? `<button class="pill-btn pink" id="tf-slot">+1 slot 💎${slotCost}</button>`
+            : `<div class="sub" style="text-align:center;width:100%">You can't add more slots to this tank 🚫</div>`}
+          ${nextBuy ? `<button class="pill-btn blue" id="tf-tank">Get the ${nextBuy} tank 🪙${fmtCoins(nextPrice)}</button>` : ""}
+        </div>
+      </div>`;
+    overlay.onclick = (e) => { if (e.target === overlay) closeTankFullPopup(); };
+    document.body.appendChild(overlay);
+
+    if (canBuySlot) $("tf-slot").onclick = async () => {
+      const r = await Api.buyExtraSlot(active);
+      if (!r.ok) {
+        AudioFX.error();
+        toast(r.error === "not enough diamonds" ? "Not enough diamonds 💎" : (r.error || "Couldn't buy slot"));
+        return;
+      }
+      AudioFX.coin();
+      // retry the placement now that there's a free slot
+      const rp = await Api.placeDecor(deco_id, active, x, y);
+      if (rp.ok) toast("Extra slot unlocked and placed! 🪸");
+      else toast("Extra slot unlocked! Place it from the decor shop 🪸");
+      closeTankFullPopup();
+      await App.refresh();
+    };
+    if (nextBuy) $("tf-tank").onclick = async () => {
+      if (!confirm(`Buy the ${nextBuy} tank for 🪙${fmtCoins(nextPrice)}?`)) return;
+      const r = await Api.buyTank(nextBuy);
+      if (!r.ok) {
+        AudioFX.error();
+        toast(r.error === "not enough coins" ? "Not enough coins 🪙" : (r.error || "Couldn't buy tank"));
+        return;
+      }
+      AudioFX.coin();
+      toast(`New ${nextBuy} tank! Switch to it from 🐠 Fishes 🎉`);
+      closeTankFullPopup();
+      await App.refresh();
+    };
+  }
+  function closeTankFullPopup() { const o = $("tank-full-overlay"); if (o) o.remove(); }
+
   async function openBreedingWith(fish) {
     const tf = (state.fish || []).filter((f) =>
       f.tank === state.tanks.active && (!f.location || f.location === "tank"));
@@ -945,7 +1005,7 @@ const UI = (() => {
   };
 
   return {
-    toast, updateHUD, open, close,
+    toast, updateHUD, open, close, showTankFullPopup, closeTankFullPopup,
     openFishMenu, closeFishMenu, openBreedingWith, renderTankTabs,
     setCatalogs(f, d) { fishCatalog = f; decorCatalog = d; },
     get decorCatalog() { return decorCatalog; },

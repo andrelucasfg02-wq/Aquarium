@@ -325,6 +325,10 @@ const App = (() => {
       const r = await Api.placeDecor(deco_id, state.tanks.active, cx, cy);
       tank.placements = tank.placements.filter((p) => p !== tmp);
       if (r.ok) UI.toast("Placed! 🪸");
+      else if (r.error === "no free decor slots") {
+        AudioFX.error();
+        UI.showTankFullPopup({ deco_id, x: cx, y: cy });
+      }
       else { AudioFX.error(); UI.toast(r.error || r.message || "Couldn't place"); }
       await refresh();
     });

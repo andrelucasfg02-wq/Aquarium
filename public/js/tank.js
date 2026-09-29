@@ -454,6 +454,17 @@ Object.assign(TankView.prototype, {
     this.ctx.save();
     this.ctx.translate(x, y);
     this.ctx.scale(e.dir, 1);
+    if (e.state === "swim") {
+      // tail-beat: a shear anchored at the head, so the tail and fins flex
+      // side to side while the head stays steady — reads as natural swimming
+      // instead of a rigid sprite sliding around.
+      const ph = (e.animT || 0) * 9;
+      const flex = 0.11 * Math.sin(ph);
+      this.ctx.translate(w / 2, 0);            // head to origin
+      this.ctx.transform(1, -flex, 0, 1, 0, 0); // shear: tail swings, head steady
+      this.ctx.translate(-w / 2, 0);
+      this.ctx.rotate(0.045 * Math.sin(ph - 1.2)); // gentle body roll, phase-lagged
+    }
     this.ctx.drawImage(im, -w / 2, -h / 2, w, h);
     this.ctx.restore();
 

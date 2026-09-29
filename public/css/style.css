@@ -37,11 +37,17 @@ input{font-family:inherit}
   text-align:center;
 }
 .auth-mascot{
-  position:absolute;top:-36px;left:50%;transform:translateX(-50%);
-  font-size:54px;filter:drop-shadow(0 5px 6px rgba(0,40,60,.35));
-  animation:bob 3s ease-in-out infinite;pointer-events:none;
+  position:absolute;top:-44px;left:50%;width:88px;transform:translateX(-50%);
+  filter:drop-shadow(0 5px 6px rgba(0,40,60,.35));
+  animation:swim 4.5s ease-in-out infinite;pointer-events:none;
 }
-@keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-8px)}}
+.auth-mascot img{width:100%;display:block}
+@keyframes swim{
+  0%,100%{transform:translateX(calc(-50% - 26px)) rotate(-7deg)}
+  50%{transform:translateX(calc(-50% + 26px)) rotate(7deg)}
+}
+.sub-betta{height:1.6em;vertical-align:-0.4em;margin:0 1px}
+.dive-fish img{height:28px;vertical-align:-6px}
 .auth-title{
   margin:0 0 4px;font-size:37px;font-weight:900;letter-spacing:.5px;line-height:1.08;
   font-family:ui-rounded,'SF Pro Rounded','Nunito','Trebuchet MS','Comic Sans MS',sans-serif;

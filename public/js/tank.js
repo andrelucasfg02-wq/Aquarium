@@ -490,8 +490,10 @@ Object.assign(TankView.prototype, {
     this.ctx.drawImage(im, -w / 2, -h / 2, w, h);
     this.ctx.restore();
 
-    // persistent coin badge: fish with coins ready keep a 🪙 above them until collected
+    // persistent coin badge: fish with coins ready keep a badge above them until collected
+    // (💎 for event fish with diamonds banked, 🪙 otherwise)
     if (f.coin_pending > 0) {
+      const badge = f.gem_pending > 0 ? "💎" : "🪙";
       const bob = Math.sin((e.animT || 0) * 3) * 4;
       const cs = Math.max(16, .032 * T.w * v.s);
       const ctx2 = this.ctx;
@@ -506,7 +508,7 @@ Object.assign(TankView.prototype, {
       ctx2.arc(x, y - h / 2 - cs * .7 + bob, cs * .62, 0, 7);
       ctx2.fill();
       ctx2.globalAlpha = 1;
-      ctx2.fillText("🪙", x, y - h / 2 - cs * .7 + bob);
+      ctx2.fillText(badge, x, y - h / 2 - cs * .7 + bob);
       ctx2.restore();
     }
 

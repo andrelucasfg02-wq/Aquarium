@@ -171,6 +171,8 @@ const COIN_FARM = {
   juvenile: { coins: 100, secs: 5 * 60 },
   adult:    { coins: 200, secs: 10 * 60 },
 };
+// adult event fish also earn diamonds with each coin cycle (event fish only)
+const EVENT_DIAMONDS = { baby: 1, juvenile: 1, adult: 2 };
 
 function hungerPct(fedAt, now) {
   if (!fedAt) return 100;
@@ -273,7 +275,7 @@ module.exports = {
   HATCH_HOURS, GROWTH_DAYS, HYBRID_HATCH_HOURS, HYBRID_GROWTH_DAYS, growthStage,
   GROW_LEVEL, growLevel,
   HUNGER_FULL_SECS, HUNGER_EMPTY_SECS, SICK_AFTER_SECS, MEDICINE_PRICE,
-  hungerPct, fishMood, fishLevel, COIN_FARM,
+  hungerPct, fishMood, fishLevel, COIN_FARM, EVENT_DIAMONDS,
   TANK_CAPACITY, DECOR_SLOTS, TANK_PRICES, DECOR_EXTRA_SLOT_MAX, DECOR_EXTRA_SLOT_COST,
   GLASS, clampDecor, randomPointInGlass,
   decorCatalog, decorItem,

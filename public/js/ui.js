@@ -66,6 +66,9 @@ const UI = (() => {
     const lvl = fish.level || 1;
     const stageLabel = fish.stage === "baby" ? "Baby" : fish.stage === "juvenile" ? "Teen" : "Adult";
     const growAt = fish.grow_level || 10;
+    // coin farming reward text (diamonds for event fish)
+    const gemAmt = fish.gem_pending || fish.gem_amount || 0;
+    const rewardTxt = `+${fish.coin_amount || 0} 🪙${gemAmt ? ` +${gemAmt} 💎` : ""}`;
     const overlay = document.createElement("div");
     overlay.id = "fish-menu-overlay";
     overlay.innerHTML = `
@@ -83,8 +86,8 @@ const UI = (() => {
           <div class="stat-row"><span>⭐ Level</span><b>Lv ${lvl} · ${stageLabel}</b></div>
           ${fish.stage !== "adult" ? `<div class="stat-row"><span>🌱 Grows up at</span><b>Lv ${growAt}</b></div>` : ""}
           ${fish.location === "tank" ? (fish.coin_pending > 0
-            ? `<div class="stat-row"><span>🪙 Coins</span><b>Ready! 💰</b></div>`
-            : `<div class="stat-row"><span>🪙 Coins</span><b id="fm-coin-cd">+${fish.coin_amount || 0} in ${fmtCd(fish.coin_in || 0)}</b></div>`) : ""}
+            ? `<div class="stat-row"><span>🪙 Coins</span><b>${rewardTxt} — Ready! 💰</b></div>`
+            : `<div class="stat-row"><span>🪙 Coins</span><b id="fm-coin-cd">${rewardTxt} in ${fmtCd(fish.coin_in || 0)}</b></div>`) : ""}
         </div>
         ${listed ? `
         <div class="fm-note">\uD83D\uDC8E Listed on the market for <b>${fish.listing_price} \uD83D\uDC8E</b></div>
@@ -126,16 +129,15 @@ const UI = (() => {
     // live coin countdown while the menu is open
     if (fish.location === "tank" && !(fish.coin_pending > 0) && (fish.coin_in || 0) > 0) {
       let left = fish.coin_in;
-      const amt = fish.coin_amount || 0;
       coinCdTimer = setInterval(() => {
         left -= 1;
         const el = $("fm-coin-cd");
         if (!el) { clearInterval(coinCdTimer); coinCdTimer = null; return; }
         if (left <= 0) {
           clearInterval(coinCdTimer); coinCdTimer = null;
-          el.textContent = "Ready! 💰";
+          el.textContent = `${rewardTxt} — Ready! 💰`;
         } else {
-          el.textContent = `+${amt} in ${fmtCd(left)}`;
+          el.textContent = `${rewardTxt} in ${fmtCd(left)}`;
         }
       }, 1000);
     }

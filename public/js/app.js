@@ -298,7 +298,7 @@ const App = (() => {
 
     tank.on("coinTap", async (fishId) => {
       const r = await Api.collectCoins(fishId);
-      if (r.ok) { AudioFX.coin(); UI.toast(`+${r.collected} 🪙`); }
+      if (r.ok) { AudioFX.coin(); UI.toast(`+${r.collected} 🪙${r.collected_gems ? ` +${r.collected_gems} 💎` : ""}`); }
       else { AudioFX.error(); UI.toast(r.error || "Couldn't collect"); }
       await refresh();
     });

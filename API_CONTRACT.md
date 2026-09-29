@@ -50,11 +50,12 @@ Fish: `{id, species_id, group, variant, name, gender, location, tank, x, y,
 - `POST /api/fish/feed` → `{ok, pellets:n}` — needs food>0 (400: "no food"); n = max(fish in tank, 1);
   deducts 1 food; sets fed_at=now for tank fish. Client animates pellets + rush + munch (visual only).
 - `POST /api/fish/tap` `{fish_id}` → `{ok}` — sets fed_at/happy_at (hearts emote), tiny XP (+1).
-- `POST /api/fish/collect` `{fish_id}` → `{ok, collected, coins}` — collects farmed coins
-  from a fish whose coin cycle finished (400 "nothing to collect" otherwise); restarts its cycle.
+- `POST /api/fish/collect` `{fish_id}` → `{ok, collected, collected_gems, coins, gems}` —
+  collects farmed coins (400 "nothing to collect" otherwise); restarts its cycle.
   Fish farm coins by stage while in a tank: baby 50/3min, teen 100/5min, adult 200/10min;
-  a finished cycle waits (fish shows 💰) until collected. Fish JSON carries
-  `coin_pending`, `coin_in` (secs left), `coin_amount`.
+  event fish also bank diamonds per cycle: baby 1, teen 1, adult 2. A finished cycle
+  waits (fish shows 🪙/💎 badge) until collected. Fish JSON carries `coin_pending`,
+  `coin_in` (secs left), `coin_amount`, `gem_pending`, `gem_amount`.
 - `POST /api/fish/transfer` `{fish_id, tier}` → `{ok, tier}` — moves a fish to an owned tank
   with space; also places fish from inventory into a tank (`location` becomes 'tank').
 

@@ -132,6 +132,17 @@ const App = (() => {
     };
     $("tab-login").onclick = () => showTab("login");
     $("tab-register").onclick = () => showTab("register");
+    // show/hide password toggles
+    document.querySelectorAll(".auth-eye").forEach((btn) => {
+      btn.onclick = () => {
+        const inp = $(btn.dataset.eye);
+        if (!inp) return;
+        const show = inp.type === "password";
+        inp.type = show ? "text" : "password";
+        btn.textContent = show ? "🙈" : "👁️";
+        btn.setAttribute("aria-label", show ? "Hide password" : "Show password");
+      };
+    });
     $("link-forgot").onclick = (e) => { e.preventDefault(); showTab("forgot"); };
     $("link-back-login").onclick = (e) => { e.preventDefault(); showTab("login"); };
 

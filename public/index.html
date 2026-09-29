@@ -14,44 +14,44 @@
 <!-- ============ AUTH ============ -->
 <div id="auth-screen" class="auth-screen" hidden>
   <div class="auth-card">
-    <div class="auth-logo">🐠</div>
-    <h1>Chibi Aquarium</h1>
-    <p class="auth-sub">Your pocket pastel aquarium</p>
+    <div class="auth-mascot">🐟</div>
+    <h1 class="auth-title"><span class="t-green">Chibi</span> <span class="t-yellow">Aquarium</span></h1>
+    <p class="auth-sub">Your pocket pastel aquarium 💛</p>
     <div class="auth-tabs">
-      <button id="tab-login" class="auth-tab active">Log in</button>
-      <button id="tab-register" class="auth-tab">Register</button>
+      <button id="tab-login" class="auth-tab active" type="button">Log in</button>
+      <button id="tab-register" class="auth-tab" type="button">Register</button>
     </div>
     <form id="form-login" class="auth-form">
-      <input type="email" id="login-email" placeholder="Email" autocomplete="email" required>
-      <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" required>
-      <button type="submit" class="btn-primary">🐟 Dive in</button>
+      <label class="auth-field"><span class="auth-ico">✉️</span><input type="email" id="login-email" placeholder="Email" autocomplete="email" required></label>
+      <label class="auth-field"><span class="auth-ico">🔒</span><input type="password" id="login-password" placeholder="Password" autocomplete="current-password" required><button type="button" class="auth-eye" data-eye="login-password" aria-label="Show password">👁️</button></label>
+      <button type="submit" class="btn-dive"><span class="dive-fish">🐟</span> Dive in <span class="dive-arrow">›</span></button>
       <p class="auth-error" id="login-error" hidden></p>
       <p class="auth-note"><a href="#" id="link-forgot">Forgot password?</a></p>
     </form>
     <form id="form-forgot" class="auth-form" hidden>
       <p class="auth-sub">Enter your account email and we'll send you a reset link.</p>
-      <input type="email" id="forgot-email" placeholder="Email" autocomplete="email" required>
-      <button type="submit" class="btn-primary">📧 Send reset link</button>
+      <label class="auth-field"><span class="auth-ico">✉️</span><input type="email" id="forgot-email" placeholder="Email" autocomplete="email" required></label>
+      <button type="submit" class="btn-dive"><span class="dive-fish">📧</span> Send reset link <span class="dive-arrow">›</span></button>
       <p class="auth-error" id="forgot-error" hidden></p>
       <p class="auth-ok" id="forgot-ok" hidden></p>
       <p class="auth-note"><a href="#" id="link-back-login">← Back to login</a></p>
     </form>
     <form id="form-reset" class="auth-form" hidden>
       <p class="auth-sub">Choose a new password for your aquarium.</p>
-      <input type="password" id="reset-password" placeholder="New password (min 6 chars)" autocomplete="new-password" minlength="6" required>
-      <input type="password" id="reset-password2" placeholder="Repeat new password" autocomplete="new-password" minlength="6" required>
-      <button type="submit" class="btn-primary">🔑 Set new password</button>
+      <label class="auth-field"><span class="auth-ico">🔒</span><input type="password" id="reset-password" placeholder="New password (min 6 chars)" autocomplete="new-password" minlength="6" required><button type="button" class="auth-eye" data-eye="reset-password" aria-label="Show password">👁️</button></label>
+      <label class="auth-field"><span class="auth-ico">🔒</span><input type="password" id="reset-password2" placeholder="Repeat new password" autocomplete="new-password" minlength="6" required><button type="button" class="auth-eye" data-eye="reset-password2" aria-label="Show password">👁️</button></label>
+      <button type="submit" class="btn-dive"><span class="dive-fish">🔑</span> Set new password <span class="dive-arrow">›</span></button>
       <p class="auth-error" id="reset-error" hidden></p>
       <p class="auth-ok" id="reset-ok" hidden></p>
     </form>
     <form id="form-register" class="auth-form" hidden>
-      <input type="text" id="reg-name" placeholder="Your name" autocomplete="name" required>
-      <input type="email" id="reg-email" placeholder="Email" autocomplete="email" required>
-      <input type="password" id="reg-password" placeholder="Password (min 6 chars)" autocomplete="new-password" minlength="6" required>
-      <button type="submit" class="btn-primary">🌊 Create aquarium</button>
+      <label class="auth-field"><span class="auth-ico">👤</span><input type="text" id="reg-name" placeholder="Your name" autocomplete="name" required></label>
+      <label class="auth-field"><span class="auth-ico">✉️</span><input type="email" id="reg-email" placeholder="Email" autocomplete="email" required></label>
+      <label class="auth-field"><span class="auth-ico">🔒</span><input type="password" id="reg-password" placeholder="Password (min 6 chars)" autocomplete="new-password" minlength="6" required><button type="button" class="auth-eye" data-eye="reg-password" aria-label="Show password">👁️</button></label>
+      <button type="submit" class="btn-dive"><span class="dive-fish">🌊</span> Create aquarium <span class="dive-arrow">›</span></button>
       <p class="auth-error" id="reg-error" hidden></p>
     </form>
-    <p class="auth-note">A fresh tank, two starter fish and treats await. 🫧</p>
+    <p class="auth-note auth-foot">🌱 A fresh tank, two starter fish and treats await. 🌱</p>
   </div>
 </div>
 

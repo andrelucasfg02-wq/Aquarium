@@ -24,34 +24,82 @@ input{font-family:inherit}
 /* ---------- auth ---------- */
 .auth-screen{
   position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(160deg,#aee3ff 0%,#cdeffb 40%,#ffd6e8 100%);
+  background:#0e7d9c url('../assets/auth/underwater-bg.jpg') center/cover no-repeat;
   padding:20px;z-index:50;overflow:auto;
 }
 .auth-card{
-  background:var(--card);border-radius:26px;padding:28px 24px;width:100%;max-width:360px;
-  box-shadow:var(--shadow);text-align:center;border:3px solid #fff;
+  position:relative;
+  background:rgba(240,255,250,.30);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border-radius:28px;padding:46px 22px 22px;width:100%;max-width:370px;
+  box-shadow:0 18px 50px rgba(0,40,60,.35), inset 0 1px 0 rgba(255,255,255,.65);
+  border:2px solid rgba(255,255,255,.55);
+  text-align:center;
 }
-.auth-logo{font-size:56px;animation:bob 3s ease-in-out infinite}
-@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-.auth-card h1{margin:6px 0 2px;font-size:26px;color:#5b4a75}
-.auth-sub{margin:0 0 16px;color:var(--ink-soft);font-size:14px}
-.auth-tabs{display:flex;background:var(--lav);border-radius:999px;padding:4px;margin-bottom:14px}
-.auth-tab{flex:1;padding:10px;border-radius:999px;font-weight:700;color:var(--ink-soft)}
-.auth-tab.active{background:#fff;color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.12)}
-.auth-form{display:flex;flex-direction:column;gap:10px}
-.auth-form input{
-  padding:13px 16px;border-radius:14px;border:2px solid var(--blue);
-  background:#fff;font-size:16px;outline:none;
+.auth-mascot{
+  position:absolute;top:-36px;left:50%;transform:translateX(-50%);
+  font-size:54px;filter:drop-shadow(0 5px 6px rgba(0,40,60,.35));
+  animation:bob 3s ease-in-out infinite;pointer-events:none;
 }
-.auth-form input:focus{border-color:var(--blue-d)}
-.btn-primary{
-  background:linear-gradient(135deg,var(--pink-d),#c39bd3);color:#fff;font-weight:800;
-  padding:14px;border-radius:16px;font-size:17px;box-shadow:0 4px 14px rgba(195,155,211,.5);
+@keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-8px)}}
+.auth-title{
+  margin:0 0 4px;font-size:37px;font-weight:900;letter-spacing:.5px;line-height:1.08;
+  font-family:ui-rounded,'SF Pro Rounded','Nunito','Trebuchet MS','Comic Sans MS',sans-serif;
 }
-.btn-primary:active{transform:scale(.97)}
-.auth-error{color:#d64570;font-size:13px;margin:4px 0 0}
-.auth-ok{color:#2e9e5b;font-size:13px;margin:4px 0 0}
-.auth-note{font-size:12px;color:var(--ink-soft);margin:14px 0 0}
+.auth-title .t-green{
+  color:#58bd4c;
+  text-shadow:2px 0 0 #fff,-2px 0 0 #fff,0 2px 0 #fff,0 -2px 0 #fff,
+    2px 2px 0 #fff,-2px -2px 0 #fff,2px -2px 0 #fff,-2px 2px 0 #fff,
+    0 5px 0 #2e7a35,0 8px 10px rgba(0,40,60,.30);
+}
+.auth-title .t-yellow{
+  color:#ffc93c;
+  text-shadow:2px 0 0 #fff,-2px 0 0 #fff,0 2px 0 #fff,0 -2px 0 #fff,
+    2px 2px 0 #fff,-2px -2px 0 #fff,2px -2px 0 #fff,-2px 2px 0 #fff,
+    0 5px 0 #d18a1f,0 8px 10px rgba(0,40,60,.30);
+}
+.auth-sub{margin:0 0 4px;color:#0e5b50;font-size:14px;font-weight:600;text-shadow:0 1px 0 rgba(255,255,255,.5)}
+.auth-tabs{
+  display:flex;background:rgba(8,84,72,.60);border-radius:999px;padding:5px;
+  margin:14px 0;box-shadow:inset 0 2px 6px rgba(0,0,0,.25);
+}
+.auth-tab{
+  flex:1;padding:11px;border:none;background:transparent;border-radius:999px;
+  font-weight:800;font-size:16px;color:rgba(255,255,255,.72);cursor:pointer;
+}
+.auth-tab.active{background:#fff;color:#1d6b4f;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.auth-form{display:flex;flex-direction:column;gap:12px}
+.auth-field{
+  display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,.88);border-radius:999px;padding:3px 8px 3px 16px;
+  border:2px solid rgba(255,255,255,.95);
+  box-shadow:0 3px 10px rgba(0,60,80,.18);
+}
+.auth-field:focus-within{border-color:#7fe0a8;box-shadow:0 0 0 3px rgba(127,224,168,.35)}
+.auth-ico{font-size:20px;flex:none}
+.auth-field input{
+  flex:1;min-width:0;border:none;background:transparent;outline:none;
+  font-size:16px;padding:13px 0;color:#223;
+}
+.auth-field input::placeholder{color:#8a9aa0}
+.auth-eye{background:none;border:none;font-size:20px;cursor:pointer;padding:8px;flex:none;opacity:.65}
+.auth-eye:active{transform:scale(.9)}
+.btn-dive{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  background:linear-gradient(135deg,#5ccb52,#2f9e44 60%,#1f7a38);
+  color:#fff;font-weight:900;font-size:21px;padding:15px;border:none;border-radius:999px;cursor:pointer;
+  box-shadow:0 6px 18px rgba(46,158,68,.50), inset 0 2px 2px rgba(255,255,255,.45), inset 0 -3px 0 rgba(0,0,0,.12);
+  text-shadow:0 2px 3px rgba(0,60,20,.35);
+  font-family:ui-rounded,'SF Pro Rounded','Nunito','Trebuchet MS',sans-serif;
+}
+.btn-dive:active{transform:scale(.97)}
+.dive-fish{font-size:24px}
+.dive-arrow{font-size:26px;font-weight:900;opacity:.9}
+.auth-error{color:#c22a55;font-size:13px;margin:4px 0 0;font-weight:700;text-shadow:0 1px 0 rgba(255,255,255,.6)}
+.auth-ok{color:#1e7a45;font-size:13px;margin:4px 0 0;font-weight:700;text-shadow:0 1px 0 rgba(255,255,255,.6)}
+.auth-note{font-size:13px;color:#0d5c46;margin:12px 0 0;font-weight:600}
+.auth-note a{color:#0b4a39;font-weight:800;text-decoration:underline}
+.auth-foot{margin-top:16px}
 
 /* ---------- game shell ---------- */
 #game{position:fixed;inset:0}

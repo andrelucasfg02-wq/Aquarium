@@ -2,7 +2,7 @@
 // Env:
 //   RESEND_API_KEY — required to actually send; if missing, emails are logged
 //                    server-side and skipped (forgot-password still returns ok).
-//   EMAIL_FROM     — sender address, e.g. "Chibi Aquarium <noreply@aquarium-game.onrender.com>".
+//   EMAIL_FROM     — sender address, e.g. "AquaNim <noreply@aquarium-game.onrender.com>".
 //                    Must be a verified sender in Resend.
 //   APP_URL        — public base URL used to build reset links.
 
@@ -12,7 +12,7 @@ async function sendEmail({ to, subject, html }) {
     console.warn('[email] RESEND_API_KEY not set — email to %s skipped (subject: %s)', to, subject);
     return { ok: false, skipped: true };
   }
-  const from = process.env.EMAIL_FROM || 'Chibi Aquarium <onboarding@resend.dev>';
+  const from = process.env.EMAIL_FROM || 'AquaNim <onboarding@resend.dev>';
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
@@ -30,7 +30,7 @@ function passwordResetHtml(resetUrl) {
   return `
     <div style="font-family:sans-serif;max-width:480px;margin:0 auto;color:#3a2b4d">
       <h2>🐠 Reset your password</h2>
-      <p>Someone asked to reset the password for your Chibi Aquarium account.
+      <p>Someone asked to reset the password for your AquaNim account.
          If that was you, tap the button below. The link expires in 1 hour.</p>
       <p><a href="${resetUrl}"
             style="display:inline-block;background:#e8a34c;color:#fff;text-decoration:none;

@@ -120,7 +120,7 @@ module.exports = function authRoutes(db) {
       const resetUrl = `${base}/?reset=${token}`;
       sendEmail({
         to: user.email,
-        subject: '🐠 Reset your Chibi Aquarium password',
+        subject: '🐠 Reset your AquaNim password',
         html: passwordResetHtml(resetUrl),
       }).catch((e) => console.error('[email] send failed:', e.message));
     }

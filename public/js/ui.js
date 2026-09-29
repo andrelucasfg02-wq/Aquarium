@@ -760,9 +760,9 @@ const UI = (() => {
       f.tradeable && f.location !== "market" &&
       (f.origin === "event" || (f.lineage && f.lineage.hybrid)));
     let html = `<button class="pill-btn" id="mk-back">← Back to market</button>
-      <div class="fm-note" style="margin:8px 0">⚠️ Apenas peixes de eventos e híbridos podem ser vendidos entre usuários.</div>`;
+      <div class="fm-note" style="margin:8px 0">⚠️ Only event fish and hybrids can be sold between users.</div>`;
     if (!cands.length) {
-      html += `<div class="empty">🐟 vc ainda não possui nenhum peixe tradable</div>`;
+      html += `<div class="empty">🐟 You don't own any tradable fish yet</div>`;
     }
     for (const f of cands) {
       const tags = [];

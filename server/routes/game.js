@@ -131,7 +131,11 @@ function helpers(db) {
     const grp = C.speciesGroup(speciesId);
     const tank = opts.tank || await activeTank(uid);
     const pos = (opts.x != null) ? { x: opts.x, y: opts.y } : C.randomPointInGlass(tank);
-    const gender = opts.gender || (speciesId === 'female_betta' ? 'female' : (Math.random() < 0.5 ? 'male' : 'female'));
+    // bettas: only the female betta is female, every other betta is male;
+    // all other groups keep a random gender
+    const gender = opts.gender || (grp === 'betta'
+      ? (speciesId === 'female_betta' ? 'female' : 'male')
+      : (Math.random() < 0.5 ? 'male' : 'female'));
     const lineage = opts.lineage || { mother: null, father: null, hybrid: 0, generation: 0 };
     const info = await db.run(
       `INSERT INTO fish (user_id,species_id,grp,variant,gender,location,tank,x,y,born_at,fed_at,lineage,origin,event_id,coin_at)

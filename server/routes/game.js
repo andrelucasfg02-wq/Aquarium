@@ -185,14 +185,20 @@ function helpers(db) {
   // --- time-based maintenance (runs inside GET /api/state, in a transaction) ---
   const maintain = (uid, now) => db.tx(async (t) => {
     const H = helpers(t);
-    let ds = await t.get('SELECT last_cleaned_at FROM dirt_state WHERE user_id=?', uid);
-    if (!ds) { await t.run('INSERT INTO dirt_state (user_id,last_cleaned_at) VALUES (?,?)', uid, now); ds = { last_cleaned_at: now }; }
-    const hours = Math.floor((now - ds.last_cleaned_at) / 3600);
+    let ds = await t.get('SELECT last_cleaned_at, spawned_at FROM dirt_state WHERE user_id=?', uid);
+    if (!ds) { await t.run('INSERT INTO dirt_state (user_id,last_cleaned_at,spawned_at) VALUES (?,?,?)', uid, now, now); ds = { last_cleaned_at: now, spawned_at: now }; }
+    // bill each elapsed hour exactly once (2 spots/hr, cap 15): previously the
+    // hours were re-billed on every state refresh, flooding dirt back in
+    const billedFrom = ds.spawned_at != null ? ds.spawned_at : ds.last_cleaned_at;
+    const hours = Math.floor((now - billedFrom) / 3600);
     const existing = (await t.get('SELECT COUNT(*) c FROM dirt_spots WHERE user_id=?', uid)).c;
     const toAdd = Math.max(0, Math.min(hours * 2, 15 - existing)); // 2/hr, cap 15
     for (let i = 0; i < toAdd; i++) {
       await t.run('INSERT INTO dirt_spots (user_id,x,y,created_at) VALUES (?,?,?,?)',
         uid, rand(0.08, 0.92), rand(0.3, 0.9), now);
+    }
+    if (hours > 0) {
+      await t.run('UPDATE dirt_state SET spawned_at=? WHERE user_id=?', billedFrom + hours * 3600, uid);
     }
     const green = (now - ds.last_cleaned_at) >= 5 * 3600;
 
@@ -597,7 +603,7 @@ module.exports = function gameRoutes(db) {
       const ds = await txDb.get('SELECT last_cleaned_at FROM dirt_state WHERE user_id=?', uid);
       const green = ds && (t - ds.last_cleaned_at) >= 5 * 3600;
       if (remaining === 0 && !green) {
-        await txDb.run('UPDATE dirt_state SET last_cleaned_at=? WHERE user_id=?', t, uid);
+        await txDb.run('UPDATE dirt_state SET last_cleaned_at=?, spawned_at=? WHERE user_id=?', t, t, uid);
       }
       return { remaining, green: !!green };
     });
@@ -614,7 +620,7 @@ module.exports = function gameRoutes(db) {
     await db.tx(async (txDb) => {
       await txDb.run('UPDATE wallets SET coins=coins-100 WHERE user_id=?', uid);
       await txDb.run('DELETE FROM dirt_spots WHERE user_id=?', uid);
-      await txDb.run('UPDATE dirt_state SET last_cleaned_at=? WHERE user_id=?', t, uid);
+      await txDb.run('UPDATE dirt_state SET last_cleaned_at=?, spawned_at=? WHERE user_id=?', t, t, uid);
     });
     res.json({ ok: true });
   }));

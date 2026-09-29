@@ -202,6 +202,13 @@ async function openDb() {
     if (!eggCols.rows.some((c) => c.name === 'event_id')) {
       await client.execute('ALTER TABLE eggs ADD COLUMN event_id TEXT');
     }
+    // dirt spawn billing: spawned_at marks up to when hourly dirt was generated,
+    // so maintain() only ever spawns each hour's dirt once (no flood on refresh)
+    const dsCols = await client.execute('PRAGMA table_info(dirt_state)');
+    if (!dsCols.rows.some((c) => c.name === 'spawned_at')) {
+      await client.execute('ALTER TABLE dirt_state ADD COLUMN spawned_at INTEGER');
+      await client.execute('UPDATE dirt_state SET spawned_at=last_cleaned_at WHERE spawned_at IS NULL');
+    }
     // event re-runs: each event can grant up to EVENT_MAX_RUNS prizes, one per
     // run. Progress and rewards are tracked per (user_id,event_id,run).
     const evpCols = await client.execute('PRAGMA table_info(event_progress)');

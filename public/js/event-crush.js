@@ -461,7 +461,7 @@ async function mount(root) {
   ${_done ? `<p style="font-size:13px">\uD83C\uDF89 Voc&ecirc; garantiu os <b>2 Maple Bettas</b> do evento!<br>Evento conclu&iacute;do.</p>`
     : _second && !_has ? `<p style="font-size:13px">\uD83C\uDF42 <b>Segunda e &uacute;ltima chance!</b><br>Comece do zero e ganhe mais um Maple Betta.</p>`
     : _second ? `<p style="font-size:13px">\uD83C\uDF42 <b>&Uacute;ltima chance</b> &mdash; boa sorte!</p>` : ``}
-  ${_done ? `` : _has ? `<button class="btn" id="ev-continue-btn">Continuar &mdash; Nv ${_save.level + 1} (${fmt(_save.score)} pts)</button>` : `<button class="btn" id="ev-start-btn">${_second ? "Come\u00e7ar de novo" : "Come\u00e7ar"}</button>`}`;
+  ${_done ? `` : _has ? `<button class="btn" id="ev-continue-btn">Continuar</button>` : `<button class="btn" id="ev-start-btn">${_second ? "Come\u00e7ar de novo" : "Come\u00e7ar"}</button>`}`;
   updateHud();
   if (_has) R.querySelector("#ev-continue-btn").onclick = () => {
     score = _save.score; level = _save.level; moves = _save.moves;

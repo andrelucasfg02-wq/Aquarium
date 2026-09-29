@@ -491,9 +491,9 @@ Object.assign(TankView.prototype, {
     this.ctx.restore();
 
     // persistent coin badge: fish with coins ready keep a badge above them until collected
-    // (💎 for event fish with diamonds banked, 🪙 otherwise)
+    // (💎 for event fish with diamonds banked, 💰 otherwise)
     if (f.coin_pending > 0) {
-      const badge = f.gem_pending > 0 ? "💎" : "🪙";
+      const badge = f.gem_pending > 0 ? "💎" : "💰";
       const bob = Math.sin((e.animT || 0) * 3) * 4;
       const cs = Math.max(16, .032 * T.w * v.s);
       const ctx2 = this.ctx;

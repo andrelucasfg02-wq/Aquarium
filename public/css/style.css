@@ -187,6 +187,9 @@ input{font-family:inherit}
 .pill-btn.blue{background:linear-gradient(135deg,#8fcdf0,#5aa9dd)}
 .pill-btn.gold{background:linear-gradient(135deg,#f2c14e,#e09b2d)}
 .pill-btn:active{transform:scale(.95)}
+.tabbar{display:flex;gap:8px;margin-bottom:12px}
+.tabbar .pill-btn{flex:1;background:#fff;color:#8a7ba8;border:2px solid #e9dcf7}
+.tabbar .pill-btn.active{background:linear-gradient(135deg,var(--pink-d),#c39bd3);color:#fff;border-color:transparent}
 .progress{height:10px;background:#eee3f7;border-radius:999px;overflow:hidden;margin-top:6px}
 .progress>i{display:block;height:100%;background:linear-gradient(90deg,var(--pink-d),#c39bd3);border-radius:999px}
 .search{

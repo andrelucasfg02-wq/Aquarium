@@ -4,11 +4,21 @@ const fs = require('fs');
 const path = require('path');
 
 const GROUPS = {
-  goldfish: ['sakura_goldfish', 'azure_tang', 'ember_clownfish', 'lemon_drop_goldfish', 'midnight_moor', 'autumn_fish'],
-  betta: ['fullmoon_betta', 'crowntail_betta', 'veiltail_betta', 'female_betta', 'plakat_betta'],
+  goldfish: ['sakura_goldfish', 'azure_tang', 'ember_clownfish', 'lemon_drop_goldfish', 'midnight_moor'],
+  betta: ['autumn_fish', 'fullmoon_betta', 'crowntail_betta', 'veiltail_betta', 'female_betta', 'plakat_betta',
+    'maple_rose_betta', 'maple_ember_betta', 'maple_dusk_betta', 'maple_storm_betta',
+    'maple_lilac_betta', 'maple_petal_betta', 'maple_tide_betta', 'maple_coral_betta'],
   shrimp: ['red_shrimp', 'blue_shrimp', 'yellow_shrimp'],
   snail: ['snail'],
   bottom_fish: ['bottom_fish'],
+};
+
+// Maple Betta crosses: betta parent species -> the two hybrid offspring (50/50 on hatch).
+const MAPLE_CROSSES = {
+  fullmoon_betta: ['maple_rose_betta', 'maple_ember_betta'],
+  crowntail_betta: ['maple_dusk_betta', 'maple_storm_betta'],
+  female_betta: ['maple_lilac_betta', 'maple_petal_betta'],
+  plakat_betta: ['maple_tide_betta', 'maple_coral_betta'],
 };
 
 const SPECIES_NAMES = {
@@ -17,6 +27,10 @@ const SPECIES_NAMES = {
   autumn_fish: 'Maple Betta',
   fullmoon_betta: 'Full Moon Betta', crowntail_betta: 'Crown-tail Betta', veiltail_betta: 'Veil Tail Betta',
   female_betta: 'Female Betta', plakat_betta: 'Plakat Betta',
+  maple_rose_betta: 'Rose Maple Betta', maple_ember_betta: 'Ember Maple Betta',
+  maple_dusk_betta: 'Dusk Maple Betta', maple_storm_betta: 'Storm Maple Betta',
+  maple_lilac_betta: 'Lilac Maple Betta', maple_petal_betta: 'Petal Maple Betta',
+  maple_tide_betta: 'Tide Maple Betta', maple_coral_betta: 'Coral Maple Betta',
   red_shrimp: 'Red Shrimp', blue_shrimp: 'Blue Shrimp', yellow_shrimp: 'Yellow Shrimp',
   snail: 'Snail', bottom_fish: 'Bottom Fish',
 };
@@ -34,6 +48,11 @@ const SPECIES_PRICES = {
   fullmoon_betta: { coins: 1000, gems: null }, crowntail_betta: { coins: 1000, gems: null },
   female_betta: { coins: 1000, gems: null },
   veiltail_betta: { coins: 1400, gems: 8 }, plakat_betta: { coins: 1400, gems: 8 },
+  // maple hybrids: bred-only, never sold in the shop
+  maple_rose_betta: { coins: null, gems: null }, maple_ember_betta: { coins: null, gems: null },
+  maple_dusk_betta: { coins: null, gems: null }, maple_storm_betta: { coins: null, gems: null },
+  maple_lilac_betta: { coins: null, gems: null }, maple_petal_betta: { coins: null, gems: null },
+  maple_tide_betta: { coins: null, gems: null }, maple_coral_betta: { coins: null, gems: null },
 };
 
 const SPECIES_RARITY = {
@@ -42,6 +61,10 @@ const SPECIES_RARITY = {
   autumn_fish: 'legendary',
   fullmoon_betta: 'epic', crowntail_betta: 'epic', veiltail_betta: 'epic',
   female_betta: 'epic', plakat_betta: 'epic',
+  maple_rose_betta: 'legendary', maple_ember_betta: 'legendary',
+  maple_dusk_betta: 'legendary', maple_storm_betta: 'legendary',
+  maple_lilac_betta: 'legendary', maple_petal_betta: 'legendary',
+  maple_tide_betta: 'legendary', maple_coral_betta: 'legendary',
   red_shrimp: 'common', blue_shrimp: 'common', yellow_shrimp: 'common',
   snail: 'common', bottom_fish: 'uncommon',
 };
@@ -155,7 +178,7 @@ function periodKey(period, nowSec) {
 }
 
 module.exports = {
-  GROUPS, SPECIES_NAMES, SPECIES_PRICES, SPECIES_RARITY,
+  GROUPS, MAPLE_CROSSES, SPECIES_NAMES, SPECIES_PRICES, SPECIES_RARITY,
   speciesGroup, fishCatalog,
   HATCH_HOURS, GROWTH_DAYS, HYBRID_HATCH_HOURS, HYBRID_GROWTH_DAYS, growthStage,
   TANK_CAPACITY, DECOR_SLOTS, TANK_PRICES, GLASS, clampDecor, randomPointInGlass,

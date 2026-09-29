@@ -132,9 +132,20 @@ function helpers(db) {
 
   const hatchEgg = async (uid, egg, now) => {
     const hybrid = !!egg.hybrid;
-    const variant = egg.variant_a === egg.variant_b
-      ? egg.variant_a
-      : (Math.random() < 0.5 ? egg.variant_a : egg.variant_b); // cross-variant inherits one parent's look
+    // Maple Betta crosses produce true hybrid offspring (the blended look),
+    // not just one parent's look: 50/50 between the cross's two variants.
+    const pair = [egg.variant_a, egg.variant_b];
+    let variant;
+    if (pair.includes('autumn_fish')) {
+      const other = pair[0] === 'autumn_fish' ? pair[1] : pair[0];
+      const hybs = (C.MAPLE_CROSSES || {})[other];
+      variant = hybs ? hybs[Math.random() < 0.5 ? 0 : 1] : null;
+    }
+    if (!variant) {
+      variant = egg.variant_a === egg.variant_b
+        ? egg.variant_a
+        : (Math.random() < 0.5 ? egg.variant_a : egg.variant_b); // cross-variant inherits one parent's look
+    }
     const tank = await activeTank(uid);
     const location = await tankFishCount(uid, tank) < C.TANK_CAPACITY[tank] ? 'tank' : 'inventory';
     const fish = await addFish(uid, variant, {

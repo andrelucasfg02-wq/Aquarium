@@ -158,6 +158,9 @@ async function openDb() {
     if (!eggCols.rows.some((c) => c.name === 'event_id')) {
       await client.execute('ALTER TABLE eggs ADD COLUMN event_id TEXT');
     }
+    // Maple Betta moved from the goldfish group to the betta group (it breeds with bettas)
+    await client.execute("UPDATE fish SET grp='betta' WHERE species_id='autumn_fish' AND grp='goldfish'");
+    await client.execute("UPDATE eggs SET grp='betta' WHERE grp='goldfish' AND (variant_a='autumn_fish' OR variant_b='autumn_fish')");
   } catch (_) { /* non-fatal */ }
 
   const db = wrap(client);

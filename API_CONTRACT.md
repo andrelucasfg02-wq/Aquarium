@@ -73,6 +73,16 @@ Hatch hours: goldfish 1, shrimp 2, betta 3, snail 4, bottom_fish 5, hybrid(any c
 Growth days/stage: goldfish 1, betta 2, bottom_fish 3, hybrid 3, shrimp 1, snail 1.
 (baby→juvenile = N days, juvenile→adult = N days, from born_at.)
 
+Maple Betta crosses: the Maple Betta (`autumn_fish`, betta group) breeds with bettas.
+A Maple Betta × betta egg hatches into a true hybrid (blended look), 50/50 between
+the cross's two variants — not one parent's look:
+- × Full Moon Betta → Rose Maple Betta / Ember Maple Betta
+- × Crown-tail Betta → Dusk Maple Betta / Storm Maple Betta
+- × Female Betta → Lilac Maple Betta / Petal Maple Betta
+- × Plakat Betta → Tide Maple Betta / Coral Maple Betta
+Hybrids are bred-only (never sold in the shop), `origin='bred'`, legendary rarity,
+and tradeable on the fish market like any bred fish.
+
 ## Dirt / cleaning
 - `POST /api/dirt/wipe` `{ids:[spotIds]}` → `{ok, remaining:n, green:bool}` —
   deletes those spots; if 0 remain and not green → last_cleaned_at=now.

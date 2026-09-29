@@ -456,7 +456,7 @@ Object.assign(TankView.prototype, {
     const f = e.data;
     const stage = f.stage || "adult";
     const scale = DATA.STAGE_SCALE[stage] || 1;
-    const base = (DATA.GROUP_BASE_PX[e.group] || 130) * scale;
+    const base = (DATA.GROUP_BASE_PX[e.group] || 130) * scale * (T.fishScale || 1);
     const frame = (e.faceT > 0) ? 0 : e.frame;
     const im = loadImg(spriteURL(f.species_id, frame));
     const [x, y] = fracToPx(e.px, e.py, v, T.w, T.h);

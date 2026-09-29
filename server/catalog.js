@@ -4,13 +4,30 @@ const fs = require('fs');
 const path = require('path');
 
 const GROUPS = {
-  goldfish: ['sakura_goldfish', 'azure_tang', 'ember_clownfish', 'lemon_drop_goldfish', 'midnight_moor'],
+  goldfish: ['sakura_goldfish', 'azure_tang', 'ember_clownfish', 'lemon_drop_goldfish', 'midnight_moor',
+    'twilight_goldfish', 'sunset_goldfish', 'tidepool_goldfish', 'duskfin_goldfish', 'blaze_goldfish',
+    'orchid_goldfish', 'cinder_goldfish', 'gilded_goldfish', 'nebula_goldfish', 'ember_night_goldfish'],
   betta: ['autumn_fish', 'fullmoon_betta', 'crowntail_betta', 'veiltail_betta', 'female_betta', 'plakat_betta',
     'maple_rose_betta', 'maple_ember_betta', 'maple_dusk_betta', 'maple_storm_betta',
     'maple_lilac_betta', 'maple_petal_betta', 'maple_tide_betta', 'maple_coral_betta'],
   shrimp: ['red_shrimp', 'blue_shrimp', 'yellow_shrimp'],
   snail: ['snail'],
   bottom_fish: ['bottom_fish'],
+};
+
+// Goldfish hybrid mixes: sorted "speciesA+speciesB" -> blended offspring species.
+// Every cross-species goldfish pair has its own mix art (breed-only, not sold in the shop).
+const HYBRID_MIXES = {
+  'azure_tang+sakura_goldfish': 'twilight_goldfish',
+  'lemon_drop_goldfish+sakura_goldfish': 'sunset_goldfish',
+  'azure_tang+ember_clownfish': 'tidepool_goldfish',
+  'azure_tang+lemon_drop_goldfish': 'duskfin_goldfish',
+  'ember_clownfish+sakura_goldfish': 'blaze_goldfish',
+  'midnight_moor+sakura_goldfish': 'orchid_goldfish',
+  'ember_clownfish+lemon_drop_goldfish': 'cinder_goldfish',
+  'lemon_drop_goldfish+midnight_moor': 'gilded_goldfish',
+  'azure_tang+midnight_moor': 'nebula_goldfish',
+  'ember_clownfish+midnight_moor': 'ember_night_goldfish',
 };
 
 // Maple Betta crosses: betta parent species -> the two hybrid offspring (50/50 on hatch).
@@ -31,6 +48,11 @@ const SPECIES_NAMES = {
   maple_dusk_betta: 'Dusk Maple Betta', maple_storm_betta: 'Storm Maple Betta',
   maple_lilac_betta: 'Lilac Maple Betta', maple_petal_betta: 'Petal Maple Betta',
   maple_tide_betta: 'Tide Maple Betta', maple_coral_betta: 'Coral Maple Betta',
+  twilight_goldfish: 'Twilight Goldfish', sunset_goldfish: 'Sunset Goldfish',
+  tidepool_goldfish: 'Tidepool Goldfish', duskfin_goldfish: 'Duskfin Goldfish',
+  blaze_goldfish: 'Blaze Goldfish', orchid_goldfish: 'Orchid Goldfish',
+  cinder_goldfish: 'Cinder Goldfish', gilded_goldfish: 'Gilded Goldfish',
+  nebula_goldfish: 'Nebula Goldfish', ember_night_goldfish: 'Ember Night Goldfish',
   red_shrimp: 'Red Shrimp', blue_shrimp: 'Blue Shrimp', yellow_shrimp: 'Yellow Shrimp',
   snail: 'Snail', bottom_fish: 'Bottom Fish',
 };
@@ -65,6 +87,10 @@ const SPECIES_RARITY = {
   maple_dusk_betta: 'legendary', maple_storm_betta: 'legendary',
   maple_lilac_betta: 'legendary', maple_petal_betta: 'legendary',
   maple_tide_betta: 'legendary', maple_coral_betta: 'legendary',
+  twilight_goldfish: 'epic', sunset_goldfish: 'epic', tidepool_goldfish: 'epic',
+  duskfin_goldfish: 'epic', blaze_goldfish: 'epic', orchid_goldfish: 'epic',
+  cinder_goldfish: 'epic', gilded_goldfish: 'epic', nebula_goldfish: 'epic',
+  ember_night_goldfish: 'epic',
   red_shrimp: 'common', blue_shrimp: 'common', yellow_shrimp: 'common',
   snail: 'common', bottom_fish: 'uncommon',
 };
@@ -178,7 +204,7 @@ function periodKey(period, nowSec) {
 }
 
 module.exports = {
-  GROUPS, MAPLE_CROSSES, SPECIES_NAMES, SPECIES_PRICES, SPECIES_RARITY,
+  GROUPS, MAPLE_CROSSES, HYBRID_MIXES, SPECIES_NAMES, SPECIES_PRICES, SPECIES_RARITY,
   speciesGroup, fishCatalog,
   HATCH_HOURS, GROWTH_DAYS, HYBRID_HATCH_HOURS, HYBRID_GROWTH_DAYS, growthStage,
   TANK_CAPACITY, DECOR_SLOTS, TANK_PRICES, GLASS, clampDecor, randomPointInGlass,

@@ -142,6 +142,11 @@ function helpers(db) {
       variant = hybs ? hybs[Math.random() < 0.5 ? 0 : 1] : null;
     }
     if (!variant) {
+      // Goldfish hybrid mixes: each cross-species pair has its own blended look.
+      const mixKey = [egg.variant_a, egg.variant_b].sort().join('+');
+      variant = (C.HYBRID_MIXES || {})[mixKey] || null;
+    }
+    if (!variant) {
       variant = egg.variant_a === egg.variant_b
         ? egg.variant_a
         : (Math.random() < 0.5 ? egg.variant_a : egg.variant_b); // cross-variant inherits one parent's look

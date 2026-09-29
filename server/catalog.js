@@ -42,7 +42,7 @@ const SPECIES_NAMES = {
   sakura_goldfish: 'Sakura Goldfish', azure_tang: 'Azure Tang', ember_clownfish: 'Ember Goldfish',
   lemon_drop_goldfish: 'Lemon Drop Goldfish', midnight_moor: 'Midnight Moor',
   autumn_fish: 'Maple Betta',
-  fullmoon_betta: 'Full Moon Betta', crowntail_betta: 'Crown-tail Betta', veiltail_betta: 'Veil Tail Betta',
+  fullmoon_betta: 'Halfmoon Betta', crowntail_betta: 'Crown-tail Betta', veiltail_betta: 'Veil Tail Betta',
   female_betta: 'Female Betta', plakat_betta: 'Plakat Betta',
   maple_rose_betta: 'Rose Maple Betta', maple_ember_betta: 'Ember Maple Betta',
   maple_dusk_betta: 'Dusk Maple Betta', maple_storm_betta: 'Storm Maple Betta',

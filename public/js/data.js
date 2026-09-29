@@ -21,7 +21,7 @@ const DATA = {
     lemon_drop_goldfish:   { group:"goldfish", name:"Lemon Drop Goldfish",folder:"yellow",price:800 },
     midnight_moor:         { group:"goldfish", name:"Midnight Moor",     folder:"black",  price:800 },
     autumn_fish:            { group:"betta", name:"Maple Betta" },
-    fullmoon_betta:        { group:"betta", name:"Full Moon Betta",  price:1000 },
+    fullmoon_betta:        { group:"betta", name:"Halfmoon Betta",  price:1000 },
     crowntail_betta:       { group:"betta", name:"Crown-tail Betta", price:1000 },
     veiltail_betta:        { group:"betta", name:"Veil Tail Betta",  price:1400, priceGems:8 },
     female_betta:          { group:"betta", name:"Female Betta",     price:1000 },
@@ -62,7 +62,7 @@ const DATA = {
 
 /** Frame roles: 0 idle, 1-4 swim, 5 eat (only while eating), 6 sleep, 7 rear/turn */
 // Bump SPRITE_V whenever shipped art changes so phones don't keep stale cached PNGs.
-const SPRITE_V = 7;
+const SPRITE_V = 8;
 function spriteURL(speciesId, frame) {
   const s = DATA.SPECIES[speciesId];
   if (!s) return "";

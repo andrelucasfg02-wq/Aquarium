@@ -27,6 +27,8 @@ const UI = (() => {
     $("hud-coins").textContent = `🪙 ${fmtCoins(w.coins)}`;
     $("hud-gems").textContent = `💎 ${fmtCoins(w.gems)}`;
     $("hud-food").textContent = `🍤 ${fmtCoins(w.food)}`;
+    const hf = $("hud-food");
+    if (hf && !hf._foodBound) { hf._foodBound = true; hf.title = "Tap to buy food 🍤"; hf.onclick = openFoodPop; }
     const filt = $("btn-filter");
     if (st.dirt.green) { filt.classList.remove("hidden"); filt.textContent = `🫧 Filtrar (${DATA.FILTER_PRICE})`; }
     else filt.classList.add("hidden");
@@ -158,6 +160,32 @@ const UI = (() => {
     };
   }
   function closeFishMenu() { const o = $("fish-menu-overlay"); if (o) o.remove(); }
+
+  /* ---------- quick food buy from the HUD 🍤 counter ---------- */
+  function openFoodPop() {
+    closeFoodPop();
+    const price = DATA.FOOD_PRICE || 10;
+    const overlay = document.createElement("div");
+    overlay.id = "food-pop-overlay";
+    overlay.innerHTML = `
+      <div class="food-pop">
+        <div style="text-align:center;font-weight:800;margin-bottom:10px">🍤 Buy food <span class="sub">🪙${fmtCoins(price)} each</span></div>
+        <div class="fish-menu-btns">
+          ${[1, 5, 10].map((q) => `<button class="pill-btn pink" data-foodq="${q}">+${q}<br>🪙${fmtCoins(price * q)}</button>`).join("")}
+        </div>
+      </div>`;
+    overlay.onclick = (e) => { if (e.target === overlay) closeFoodPop(); };
+    document.body.appendChild(overlay);
+    overlay.querySelectorAll("[data-foodq]").forEach((b) => b.onclick = async () => {
+      b.disabled = true;
+      const r = await Api.buyFood(+b.dataset.foodq);
+      if (r.ok) { AudioFX.coin(); toast(`+${b.dataset.foodq} food 🍤`); }
+      else { AudioFX.error(); toast(r.error || "Couldn't buy food"); }
+      closeFoodPop();
+      await App.refresh();
+    });
+  }
+  function closeFoodPop() { const o = $("food-pop-overlay"); if (o) o.remove(); }
 
   async function openBreedingWith(fish) {
     const tf = (state.fish || []).filter((f) =>

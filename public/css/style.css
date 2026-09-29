@@ -70,6 +70,17 @@ input{font-family:inherit}
   font-size:12.5px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.12);
   border:1.5px solid #fff;white-space:nowrap;
 }
+#hud-food{cursor:pointer}
+#hud-food:active{transform:scale(.94)}
+.food-pop-overlay{
+  position:fixed;inset:0;z-index:300;background:rgba(40,20,60,.28);
+  display:flex;align-items:flex-start;justify-content:center;
+  padding-top:calc(64px + env(safe-area-inset-top,0px));
+}
+.food-pop{
+  background:#fff;border-radius:18px;padding:14px 14px 12px;min-width:250px;max-width:86vw;
+  border:2px solid #f3e8ff;box-shadow:0 10px 32px rgba(0,0,0,.22);
+}
 .hud-btn{
   background:rgba(255,255,255,.85);border:1.5px solid #fff;border-radius:12px;
   width:32px;height:32px;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.12);

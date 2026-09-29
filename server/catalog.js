@@ -167,9 +167,9 @@ const MEDICINE_PRICE = 250;          // coins per medicine
 // ---- coin farming: fish earn coins over time; a finished cycle waits until
 // collected, then restarts. stage -> {coins, secs}
 const COIN_FARM = {
-  baby:     { coins: 50,  secs: 3 * 60 },
-  juvenile: { coins: 75,  secs: 5 * 60 },
-  adult:    { coins: 100, secs: 10 * 60 },
+  baby:     { coins: 50,  secs: 60 * 60 },
+  juvenile: { coins: 75,  secs: 60 * 60 },
+  adult:    { coins: 100, secs: 60 * 60 },
 };
 // adult event fish also earn diamonds with each coin cycle (event fish only)
 const EVENT_DIAMONDS = { baby: 1, juvenile: 1, adult: 2 };

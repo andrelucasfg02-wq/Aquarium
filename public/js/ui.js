@@ -97,13 +97,13 @@ const UI = (() => {
           <button class="pill-btn" id="fm-mkcancel">\u274C ${t("fishmenu.cancel_listing")}</button>
         </div>` : `
         <div class="fish-menu-btns">
-          <button class="pill-btn pink" id="fm-feed">🍤 ${t("fishmenu.feed")}</button>
+          <button class="pill-btn pink" id="fm-feed"><img class="btn-ic" src="assets/icons/icon_food.png" alt="">${t("fishmenu.feed")}</button>
           ${fish.sick ? `<button class="pill-btn gold" id="fm-treat">💊 ${t("fishmenu.treat")}</button>` : ""}
         </div>
         <div class="fish-menu-btns">
           <button class="pill-btn pink" id="fm-pet"><img class="btn-ic" src="assets/icons/icon_pet.png" alt="">${t("fishmenu.pet")}</button>
           <button class="pill-btn blue" id="fm-transfer">${fish.location === "inventory" ? "\uD83C\uDFE0 " + t("fishmenu.place_in_tank") : "\uD83D\uDD00 " + t("fishmenu.transfer")}</button>
-          <button class="pill-btn" id="fm-breed">\uD83E\uDD5A ${t("fishmenu.breed")}</button>
+          <button class="pill-btn" id="fm-breed"><img class="btn-ic" src="assets/icons/icon_nav_eggs.png" alt="">${t("fishmenu.breed")}</button>
         </div>
         ${fish.tradeable ? `
         <div class="fish-menu-btns">

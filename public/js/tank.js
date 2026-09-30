@@ -457,8 +457,10 @@ Object.assign(TankView.prototype, {
     const stage = f.stage || "adult";
     let scale = DATA.STAGE_SCALE[stage] || 1;
     if (stage === "adult" && e.group === "goldfish") scale *= 0.85; // adult goldfish run a bit smaller
-    const base = (DATA.GROUP_BASE_PX[e.group] || 130) * scale * (T.fishScale || 1);
+    const base0 = (DATA.GROUP_BASE_PX[e.group] || 130) * scale * (T.fishScale || 1);
     const frame = (e.faceT > 0) ? 0 : e.frame;
+    // betta front (0) and sleeping (6) frames render 15% smaller
+    const base = (e.group === "betta" && (frame === 0 || frame === 6)) ? base0 * 0.85 : base0;
     const im = loadImg(spriteURL(f.species_id, frame));
     const [x, y] = fracToPx(e.px, e.py, v, T.w, T.h);
     const w = base * v.s;

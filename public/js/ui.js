@@ -336,9 +336,10 @@ const UI = (() => {
     open("breeding");
   }
 
-  function open(name) {
+  function open(name, arg) {
     close(true);
     currentScreen = name;
+    if (name === "community" && arg) communityTab = arg;
     $("screen-title").innerHTML = TITLES[name] || esc(name);
     $("screen-overlay").hidden = false;
     RENDER[name]();
@@ -350,7 +351,7 @@ const UI = (() => {
     if (window.EventCrush) EventCrush.unmount();
     $("screen-overlay").hidden = true;
     $("screen-body").innerHTML = "";
-    $("screen-body").classList.remove("chat-screen");
+    document.querySelectorAll(".chat-screen").forEach((e) => e.classList.remove("chat-screen"));
     currentScreen = null;
     if (eggTimer) { clearInterval(eggTimer); eggTimer = null; }
     if (chatTimer) { clearInterval(chatTimer); chatTimer = null; }
@@ -362,6 +363,7 @@ const UI = (() => {
     collection: ICON("nav_collection") + t("nav.collection"), inventory: ICON("nav_inventory") + t("nav.inventory"), quests: "🎯 " + t("nav.quests"),
     settings: "⚙️ " + t("settings.title"), minigame: "🎮 " + t("mg.title"), event: "🍂 " + t("event.title"),
     market: `<img class="title-ic" src="assets/icons/icon_diamond.png" alt="">` + t("market.title"), chat: ICON("chat") + t("chat.title"),
+    community: ICON("community") + t("nav.community"),
   };
 
   /* ---------- helpers ---------- */
@@ -962,8 +964,22 @@ const UI = (() => {
     };
   }
 
-  async function renderMarket() {
+  /* ================= COMMUNITY (chat + user market tabs) ================= */
+  let communityTab = "chat";
+  function renderCommunity() {
     const body = $("screen-body");
+    if (chatTimer) { clearInterval(chatTimer); chatTimer = null; }
+    body.innerHTML = `<div class="tabbar comm-tabs">
+        <button class="pill-btn${communityTab === "chat" ? " active" : ""}" data-ctab="chat">${ICON("chat")}<span>${t("chat.title")}</span></button>
+        <button class="pill-btn${communityTab === "market" ? " active" : ""}" data-ctab="market"><img src="assets/icons/icon_diamond.png" alt=""><span>${t("market.title")}</span></button>
+      </div><div id="comm-body"></div>`;
+    body.querySelectorAll("[data-ctab]").forEach((b) => b.onclick = () => { communityTab = b.dataset.ctab; renderCommunity(); });
+    const sub = $("comm-body");
+    if (communityTab === "chat") renderChat(sub); else renderMarket(sub);
+  }
+
+  async function renderMarket(root) {
+    const body = root || $("screen-body");
     body.innerHTML = `<div class="empty">${t("market.loading")}</div>`;
     const r = await Api.marketListings();
     if (!r.ok) { body.innerHTML = `<div class="empty">${t("market.couldnt_load")}</div>`; return; }
@@ -993,25 +1009,25 @@ const UI = (() => {
         </div></div>`;
     }
     body.innerHTML = html;
-    $("mk-add").onclick = renderMarketAdd;
+    $("mk-add").onclick = () => renderMarketAdd(body);
     body.querySelectorAll("[data-mkbuy]").forEach((b) => b.onclick = async () => {
       const id = Number(b.dataset.mkbuy);
       if (!confirm(htmlToText(t("market.confirm_buy")))) return;
       b.disabled = true;
       const r2 = await Api.marketBuy(id);
-      if (r2.ok) { AudioFX.coin(); toast(t("toast.fish_bought")); await App.refresh(); renderMarket(); }
+      if (r2.ok) { AudioFX.coin(); toast(t("toast.fish_bought")); await App.refresh(); renderMarket(body); }
       else { AudioFX.error(); toast(r2.error || t("toast.buy_failed")); b.disabled = false; }
     });
     body.querySelectorAll("[data-mkcancel]").forEach((b) => b.onclick = async () => {
       const r2 = await Api.marketCancel(Number(b.dataset.mkcancel));
-      if (r2.ok) { toast(t("toast.listing_cancelled")); await App.refresh(); renderMarket(); }
+      if (r2.ok) { toast(t("toast.listing_cancelled")); await App.refresh(); renderMarket(body); }
       else toast(r2.error || t("toast.cancel_failed"));
     });
   }
 
   /* ---------- market: add fish (event + hybrid only) ---------- */
-  function renderMarketAdd() {
-    const body = $("screen-body");
+  function renderMarketAdd(root) {
+    const body = root || $("screen-body");
     const cands = (state.fish || []).filter((f) =>
       f.tradeable && f.location !== "market" &&
       (f.origin === "event" || (f.lineage && f.lineage.hybrid)));
@@ -1035,7 +1051,7 @@ const UI = (() => {
         </div></div>`;
     }
     body.innerHTML = html;
-    $("mk-back").onclick = renderMarket;
+    $("mk-back").onclick = () => renderMarket(body);
     body.querySelectorAll("[data-mkadd]").forEach((b) => b.onclick = async () => {
       const id = Number(b.dataset.mkadd);
       const price = Math.floor(Number($(`mkp-${id}`).value));
@@ -1043,7 +1059,7 @@ const UI = (() => {
       if (!confirm(htmlToText(t("fishmenu.confirm_list", { price })))) return;
       b.disabled = true;
       const r = await Api.marketList(id, price);
-      if (r.ok) { AudioFX.coin(); toast(t("toast.listed")); await App.refresh(); renderMarketAdd(); }
+      if (r.ok) { AudioFX.coin(); toast(t("toast.listed")); await App.refresh(); renderMarketAdd(body); }
       else { AudioFX.error(); toast(r.error || t("toast.couldnt_list")); b.disabled = false; }
     });
   }
@@ -1058,8 +1074,8 @@ const UI = (() => {
       `<div class="chat-text">${esc(m.text)}</div>` +
       `<div class="chat-time">${time}</div></div></div>`;
   }
-  async function renderChat() {
-    const body = $("screen-body");
+  async function renderChat(root) {
+    const body = root || $("screen-body");
     body.classList.add("chat-screen");
     body.innerHTML = `<div id="chat-list" class="chat-list"><div class="empty">${t("chat.loading")}</div></div>
       <div class="chat-input-row">
@@ -1111,7 +1127,7 @@ const UI = (() => {
     fishshop: renderFishShop, decor: renderDecorShop, breeding: renderBreeding,
     collection: renderCollection, inventory: renderInventory, quests: renderQuests,
     settings: renderSettings, minigame: renderMinigame, event: renderEvent,
-    market: renderMarket, chat: renderChat,
+    market: renderMarket, chat: renderChat, community: renderCommunity,
   };
 
   return {

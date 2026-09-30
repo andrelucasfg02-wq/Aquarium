@@ -231,7 +231,8 @@ const App = (() => {
     $("btn-chat").onclick = () => {
       cancelPlace();
       document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
-      UI.open("chat");
+      document.querySelector('.nav-tab[data-screen="community"]').classList.add("active");
+      UI.open("community", "chat");
     };
     $("btn-event").onclick = () => {
       cancelPlace();

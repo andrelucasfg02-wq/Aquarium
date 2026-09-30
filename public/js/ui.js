@@ -364,7 +364,7 @@ const UI = (() => {
     aquariums: ICON("aquariums") + t("nav.aquariums"), shop: ICON("nav_shop") + t("nav.shop"), lab: ICON("lab") + t("nav.lab"),
     breeding: ICON("nav_eggs") + t("breed.title"),
     collection: ICON("nav_collection") + t("nav.collection"), inventory: ICON("nav_inventory") + t("nav.inventory"), quests: ICON("quests") + t("nav.quests"),
-    settings: "⚙️ " + t("settings.title"), minigame: "🎮 " + t("mg.title"), event: "🍂 " + t("event.title"),
+    settings: `<img class="title-ic" src="assets/icons/icon_settings.png" alt=""> ` + t("settings.title"), minigame: "🎮 " + t("mg.title"), event: "🍂 " + t("event.title"),
     market: `<img class="title-ic" src="assets/icons/icon_diamond.png" alt="">` + t("market.title"), chat: ICON("chat") + t("chat.title"),
     community: ICON("community") + t("nav.community"),
   };

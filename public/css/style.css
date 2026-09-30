@@ -143,6 +143,7 @@ input{font-family:inherit}
   width:32px;height:32px;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.12);
 }
 .hud-btn:active{transform:scale(.92)}
+.hud-btn img{width:24px;height:24px;object-fit:contain;pointer-events:none;vertical-align:middle}
 #btn-edit.on{background:var(--pink);border-color:var(--pink-d)}
 
 /* floating action buttons on home */

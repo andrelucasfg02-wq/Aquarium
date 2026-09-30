@@ -137,9 +137,9 @@ const UI = (() => {
         if (!el) { clearInterval(coinCdTimer); coinCdTimer = null; return; }
         if (left <= 0) {
           clearInterval(coinCdTimer); coinCdTimer = null;
-          el.textContent = t("fishmenu.coins_ready", { reward: rewardTxt });
+          el.innerHTML = t("fishmenu.coins_ready", { reward: rewardTxt });
         } else {
-          el.textContent = t("fishmenu.coins_in", { reward: rewardTxt, time: fmtCd(left) });
+          el.innerHTML = t("fishmenu.coins_in", { reward: rewardTxt, time: fmtCd(left) });
         }
       }, 1000);
     }

@@ -38,7 +38,7 @@ const UI = (() => {
 
   /* ---------- tank quick-switch tabs (home screen) ---------- */
   function tankName(k) { const key = "tank." + k; const v = t(key); return v === key ? (k || "") : v; }
-  const TANK_LABELS = { small: "🥣 " + t("tank.small"), medium: "🪣 " + t("tank.medium"), large: "🌊 " + t("tank.large") };
+  const TANK_LABELS = { small: t("tank.small"), medium: t("tank.medium"), large: t("tank.large") };
   function renderTankTabs() {
     const bar = $("tank-tabs");
     if (!bar || !state || !state.tanks) return;

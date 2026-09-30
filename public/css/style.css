@@ -346,6 +346,11 @@ select.sel{padding:10px;border-radius:12px;border:2px solid var(--blue);font-siz
   background:#ff5b7f;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);
   animation:dotpulse 1.2s ease-in-out infinite}
 @keyframes dotpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
+/* daily shell game badge on the quests nav tab */
+.nav-tab{position:relative}
+.nav-tab .dot{position:absolute;top:2px;right:calc(50% - 22px);width:12px;height:12px;border-radius:50%;
+  background:#ff5b7f;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);
+  animation:dotpulse 1.2s ease-in-out infinite}
 .empty{padding:26px 10px;text-align:center;color:var(--ink-soft);font-size:14px}
 @media (min-width:560px){ .grid2{grid-template-columns:repeat(3,1fr)} }
 

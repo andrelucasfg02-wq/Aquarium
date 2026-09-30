@@ -75,9 +75,9 @@ const App = (() => {
     UI.updateHUD(state);
     tank.syncState(state);
     applySettings(state.settings, true);
-    // daily shell game badge on the minigame button
+    // daily shell game badge on the quests nav tab (games live under Quests now)
     Api.shellStatus().then((s) => {
-      const b = document.getElementById("btn-minigame");
+      const b = document.querySelector('.nav-tab[data-screen="quests"]');
       if (!b) return;
       let dot = b.querySelector(".dot");
       if (s.ok && s.canPlay) {
@@ -224,18 +224,6 @@ const App = (() => {
       cancelPlace();
       document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
       UI.open("breeding");
-    };
-    $("btn-minigame").onclick = () => {
-      cancelPlace();
-      document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
-      document.querySelector('.nav-tab[data-screen="quests"]').classList.add("active");
-      UI.open("quests", "games");
-    };
-    $("btn-chat").onclick = () => {
-      cancelPlace();
-      document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
-      document.querySelector('.nav-tab[data-screen="community"]').classList.add("active");
-      UI.open("community", "chat");
     };
     $("btn-event").onclick = () => {
       cancelPlace();

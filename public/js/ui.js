@@ -63,7 +63,7 @@ const UI = (() => {
     const hunger = Math.max(0, Math.min(100, fish.hunger == null ? 100 : fish.hunger));
     const hColor = hunger >= 50 ? "#6fbf8f" : hunger >= 25 ? "#f2a54e" : "#e05d5d";
     const mood = fish.mood || "happy";
-    const moodIcon = mood === "sick" ? "🤒" : mood === "hungry" ? "😟" : "😊";
+    const moodIcon = mood === "sick" ? `<img class="emo-ic" src="assets/icons/emote_sick.png" alt="">` : mood === "hungry" ? "😟" : "😊";
     const moodLabel = mood === "sick" ? t("fishmenu.sick") : mood === "hungry" ? t("fishmenu.hungry") : t("fishmenu.happy");
     const lvl = fish.level || 1;
     const stageLabel = fish.stage === "baby" ? t("fishmenu.baby") : fish.stage === "juvenile" ? t("fishmenu.teen") : t("fishmenu.adult");

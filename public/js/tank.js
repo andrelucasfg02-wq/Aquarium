@@ -227,7 +227,7 @@ class TankView {
     if (e.faceT > 0) e.faceT -= dt;
     // sick fish keep emoting 🤒 until treated
     if (e.data && e.data.sick && e.emoteCd <= 0) {
-      this.addEmote(e.px, e.py - .03, "🤒", 2.2); e.emoteCd = 2.4;
+      this.addEmoteImg(e.px, e.py - .03, "assets/icons/emote_sick.png", 2.2); e.emoteCd = 2.4;
     }
 
     const dx = e.tx - e.px, dy = e.ty - e.py;
@@ -263,7 +263,7 @@ class TankView {
         this.moveToward(e, speed * 2.4, dt);
         if (Math.hypot(p.x - e.px, p.y - e.py) < .028) {
           p.gone = true; e.state = "eat"; e.eatT = .9;
-          this.addEmote(e.px, e.py - .035, "💕", 1.4);
+          this.addEmoteImg(e.px, e.py - .035, "assets/icons/emote_love.png", 1.4);
           AudioFX.munch();
         }
         break;
@@ -303,6 +303,9 @@ class TankView {
 
   addEmote(fx, fy, text, dur) {
     this.emotes.push({ fx, fy, text, t0: performance.now() / 1000, dur: dur || 1.5 });
+  }
+  addEmoteImg(fx, fy, url, dur) {
+    this.emotes.push({ fx, fy, img: url, t0: performance.now() / 1000, dur: dur || 1.5 });
   }
   drawRichEmote(ctx, text, x, y, px) {
     // "+50 🪙 +2 💎" -> text runs + currency icon images, drawn centered
@@ -434,7 +437,14 @@ Object.assign(TankView.prototype, {
       const k = (now - m.t0) / m.dur;
       ctx.globalAlpha = 1 - k * k;
       const px = Math.max(14, .028 * T.w * v.s);
-      if (/[🪙💎]/u.test(m.text)) this.drawRichEmote(ctx, m.text, x, y - k * 26, px);
+      if (m.img) {
+        const im = loadImg(m.img);
+        if (imgReady(im)) {
+          const s = px * 2.6;
+          ctx.drawImage(im, x - s / 2, y - k * 26 - s / 2, s, s);
+        }
+      }
+      else if (/[🪙💎]/u.test(m.text)) this.drawRichEmote(ctx, m.text, x, y - k * 26, px);
       else { ctx.font = `${px}px serif`; ctx.fillText(m.text, x, y - k * 26); }
       ctx.globalAlpha = 1;
     }
@@ -699,7 +709,7 @@ Object.assign(TankView.prototype, {
       best.faceT = 1.4;
       best.dir = fx >= best.px ? 1 : -1;
       if (best.state === "sleep" || best.state === "idle") { this.pickTarget(best); best.state = "swim"; }
-      this.addEmote(best.px, best.py - .04, "💕", 1.4);
+      this.addEmoteImg(best.px, best.py - .04, "assets/icons/emote_love.png", 1.4);
       AudioFX.pop();
       this.emit("fishTap", best.data.id);
     }

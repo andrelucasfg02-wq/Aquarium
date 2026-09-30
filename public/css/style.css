@@ -367,8 +367,8 @@ select.sel{padding:10px;border-radius:12px;border:2px solid var(--blue);font-siz
 .screen-body.chat-screen{display:flex;flex-direction:column;overflow:hidden;padding-bottom:calc(10px + var(--safe-b))}
 .chat-screen{display:flex;flex-direction:column;overflow:hidden;min-height:0}
 #comm-body{display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden}
-.comm-tabs{margin-bottom:10px}
-.comm-tabs .pill-btn img{width:22px;height:22px;object-fit:contain;vertical-align:-6px;margin-right:4px;pointer-events:none}
+.comm-tabs{margin-bottom:10px;flex-shrink:0}
+.comm-tabs .pill-btn img{width:40px;height:40px;object-fit:contain;vertical-align:-12px;margin-right:6px;pointer-events:none}
 .chat-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:6px 2px;-webkit-overflow-scrolling:touch;min-height:30vh}
 .chat-msg{display:flex;justify-content:flex-start}
 .chat-msg.mine{justify-content:flex-end}

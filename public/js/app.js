@@ -226,7 +226,8 @@ const App = (() => {
     $("btn-minigame").onclick = () => {
       cancelPlace();
       document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
-      UI.open("minigame");
+      document.querySelector('.nav-tab[data-screen="quests"]').classList.add("active");
+      UI.open("quests", "games");
     };
     $("btn-chat").onclick = () => {
       cancelPlace();

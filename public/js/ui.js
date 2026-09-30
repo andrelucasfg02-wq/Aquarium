@@ -340,6 +340,7 @@ const UI = (() => {
     close(true);
     currentScreen = name;
     if (name === "community" && arg) communityTab = arg;
+    if (name === "quests" && arg) questsTab = arg;
     $("screen-title").innerHTML = TITLES[name] || esc(name);
     $("screen-overlay").hidden = false;
     RENDER[name]();
@@ -360,7 +361,7 @@ const UI = (() => {
   const ICON = (f) => `<img class="title-ic" src="assets/icons/icon_${f}.png" alt="">`;
   const TITLES = {
     fishshop: ICON("nav_shop") + t("nav.shop"), decor: "🪸 " + t("deco.shop_title"), breeding: ICON("nav_eggs") + t("breed.title"),
-    collection: ICON("nav_collection") + t("nav.collection"), inventory: ICON("nav_inventory") + t("nav.inventory"), quests: "🎯 " + t("nav.quests"),
+    collection: ICON("nav_collection") + t("nav.collection"), inventory: ICON("nav_inventory") + t("nav.inventory"), quests: ICON("quests") + t("nav.quests"),
     settings: "⚙️ " + t("settings.title"), minigame: "🎮 " + t("mg.title"), event: "🍂 " + t("event.title"),
     market: `<img class="title-ic" src="assets/icons/icon_diamond.png" alt="">` + t("market.title"), chat: ICON("chat") + t("chat.title"),
     community: ICON("community") + t("nav.community"),
@@ -736,8 +737,22 @@ const UI = (() => {
   }
 
   /* ================= QUESTS ================= */
-  function renderQuests() {
+  /* ================= QUESTS + GAMES ================= */
+  let questsTab = "missions";
+  function renderQuestsScreen() {
     const body = $("screen-body");
+    clearTimeout(MG.timer); MG.shellGen = (MG.shellGen || 0) + 1;
+    body.innerHTML = `<div class="tabbar comm-tabs">
+        <button class="pill-btn${questsTab === "missions" ? " active" : ""}" data-qtab="missions"><img src="assets/icons/icon_quests.png" alt=""><span>${t("nav.quests")}</span></button>
+        <button class="pill-btn${questsTab === "games" ? " active" : ""}" data-qtab="games"><img src="assets/icons/icon_games.png" alt=""><span>${t("mg.title")}</span></button>
+      </div><div id="quests-body"></div>`;
+    body.querySelectorAll("[data-qtab]").forEach((b) => b.onclick = () => { questsTab = b.dataset.qtab; renderQuestsScreen(); });
+    const sub = $("quests-body");
+    if (questsTab === "games") renderMinigame(sub); else renderQuests(sub);
+  }
+
+  function renderQuests(root) {
+    const body = root || $("screen-body");
     const qs = state.quests || [];
     let html = `<div class="sub" style="margin-bottom:8px">${t("quest.reset_info")}</div>`;
     const groups = [["daily", "☀️ " + t("quest.daily")], ["weekly", "📅 " + t("quest.weekly")]];
@@ -764,15 +779,13 @@ const UI = (() => {
         </div>`;
       }
     }
-    html += `<button class="pill-btn blue" id="btn-play-mg2" style="width:100%;padding:13px;margin-top:10px">🎮 ${t("quest.play_minigame")}</button>`;
     body.innerHTML = html;
     body.querySelectorAll("[data-claim]").forEach((b) => b.onclick = async () => {
       const r = await Api.claimQuest(b.dataset.claim);
       if (r.ok) { AudioFX.coin(); toast(t("toast.quest_done", { coins: fmtCoins(r.coins || 0) }) + (r.gems ? t("toast.quest_done_gems", { gems: r.gems }) : "")); }
       else toast(r.error || t("toast.couldnt_claim"));
-      await App.refresh(); renderQuests();
+      await App.refresh(); renderQuests(body);
     });
-    $("btn-play-mg2").onclick = () => open("minigame");
   }
 
   /* ================= SETTINGS ================= */
@@ -863,7 +876,7 @@ const UI = (() => {
         const r = await Api.shellPlay(pick);
         if (!r.ok) {
           msg.textContent = r.error || r.message || t("mg.couldnt_play");
-          if (r.nextAt) setTimeout(() => renderShellGame(area), 1500);
+          if (r.nextAt) { const g = MG.shellGen; setTimeout(() => { if (MG.shellGen === g) renderShellGame(area); }, 1500); }
           return;
         }
         shells.forEach((x, i) => {
@@ -897,8 +910,8 @@ const UI = (() => {
     else body.innerHTML = `<div class="empty">${t("event.couldnt_load")}</div>`;
   }
 
-  function renderMinigame() {
-    const body = $("screen-body");
+  function renderMinigame(root) {
+    const body = root || $("screen-body");
     MG.round = 0; MG.times = []; MG.active = false;
     body.innerHTML = `
       <div class="shell-box">
@@ -969,6 +982,7 @@ const UI = (() => {
   function renderCommunity() {
     const body = $("screen-body");
     if (chatTimer) { clearInterval(chatTimer); chatTimer = null; }
+    body.classList.toggle("chat-screen", communityTab === "chat");
     body.innerHTML = `<div class="tabbar comm-tabs">
         <button class="pill-btn${communityTab === "chat" ? " active" : ""}" data-ctab="chat">${ICON("chat")}<span>${t("chat.title")}</span></button>
         <button class="pill-btn${communityTab === "market" ? " active" : ""}" data-ctab="market"><img src="assets/icons/icon_diamond.png" alt=""><span>${t("market.title")}</span></button>
@@ -1076,7 +1090,7 @@ const UI = (() => {
   }
   async function renderChat(root) {
     const body = root || $("screen-body");
-    body.classList.add("chat-screen");
+    if (body === $("screen-body")) body.classList.add("chat-screen");
     body.innerHTML = `<div id="chat-list" class="chat-list"><div class="empty">${t("chat.loading")}</div></div>
       <div class="chat-input-row">
         <input id="chat-input" maxlength="200" placeholder="${esc(t("chat.placeholder"))}" autocomplete="off" />
@@ -1125,7 +1139,7 @@ const UI = (() => {
 
   const RENDER = {
     fishshop: renderFishShop, decor: renderDecorShop, breeding: renderBreeding,
-    collection: renderCollection, inventory: renderInventory, quests: renderQuests,
+    collection: renderCollection, inventory: renderInventory, quests: renderQuestsScreen,
     settings: renderSettings, minigame: renderMinigame, event: renderEvent,
     market: renderMarket, chat: renderChat, community: renderCommunity,
   };

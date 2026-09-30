@@ -250,7 +250,7 @@ class TankView {
         if (e.stateT <= 0) { this.pickTarget(e); e.state = "swim"; }
         break;
       case "turn":
-        e.frame = 7;
+        e.frame = e.group === "betta" ? 2 : 7; // bettas have no back (top) pose: keep a swim frame while turning
         e.turnT -= dt;
         if (e.turnT <= 0) { e.dir = wantDir; e.state = "swim"; }
         break;
@@ -277,7 +277,7 @@ class TankView {
       default:
         e.frame = 1 + Math.floor(e.animT * 7) % 4;
         if (dist > .004 && wantDir !== e.dir) {
-          e.state = "turn"; e.turnT = .32; e.frame = 7;
+          e.state = "turn"; e.turnT = .32; e.frame = e.group === "betta" ? 2 : 7;
           break;
         }
         this.moveToward(e, speed, dt);

@@ -195,11 +195,13 @@ const App = (() => {
   function bindNav() {
     document.querySelectorAll(".nav-tab").forEach((b) => b.onclick = () => {
       AudioFX.unlock();
+      const scr = b.dataset.screen;
+      // tapping the aquariums tab while its screen is open goes back to the tank
+      if (scr === "aquariums" && currentScreen === "aquariums") { goHome(); return; }
       document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
       b.classList.add("active");
-      currentScreen = b.dataset.screen;
-      if (currentScreen === "home") UI.close();
-      else UI.open(currentScreen);
+      currentScreen = scr;
+      UI.open(scr);
     });
     $("screen-close").onclick = () => goHome();
   }
@@ -207,7 +209,7 @@ const App = (() => {
     UI.close(true); // silent: avoid close() -> onScreenClosed() -> goHome() loop
     currentScreen = "home";
     document.querySelectorAll(".nav-tab").forEach((x) =>
-      x.classList.toggle("active", x.dataset.screen === "home"));
+      x.classList.toggle("active", x.dataset.screen === "aquariums"));
   }
   function onScreenClosed() { goHome(); }
 

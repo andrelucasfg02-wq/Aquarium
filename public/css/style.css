@@ -186,6 +186,7 @@ input{font-family:inherit}
 .nav-ico{font-size:21px;line-height:1}
 .nav-ico img.nav-ic{width:28px;height:28px;object-fit:contain;pointer-events:none;vertical-align:middle}
 .nav-ico img.nav-ic.big{width:34px;height:34px}
+.nav-ico img.nav-ic.xl{width:46px;height:46px}
 #screen-title img.title-ic{width:26px;height:26px;object-fit:contain;vertical-align:-6px;margin-right:6px;pointer-events:none}
 .nav-tab.active{color:#b0528f}
 .nav-tab.active .nav-ico{transform:scale(1.18)}

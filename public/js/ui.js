@@ -341,6 +341,7 @@ const UI = (() => {
     currentScreen = name;
     if (name === "community" && arg) communityTab = arg;
     if (name === "quests" && arg) questsTab = arg;
+    if (name === "shop" && arg) shopTab = arg;
     $("screen-title").innerHTML = TITLES[name] || esc(name);
     $("screen-overlay").hidden = false;
     RENDER[name]();
@@ -360,7 +361,8 @@ const UI = (() => {
   }
   const ICON = (f) => `<img class="title-ic" src="assets/icons/icon_${f}.png" alt="">`;
   const TITLES = {
-    fishshop: ICON("nav_shop") + t("nav.shop"), decor: "🪸 " + t("deco.shop_title"), breeding: ICON("nav_eggs") + t("breed.title"),
+    aquariums: ICON("aquariums") + t("nav.aquariums"), shop: ICON("nav_shop") + t("nav.shop"), lab: ICON("lab") + t("nav.lab"),
+    breeding: ICON("nav_eggs") + t("breed.title"),
     collection: ICON("nav_collection") + t("nav.collection"), inventory: ICON("nav_inventory") + t("nav.inventory"), quests: ICON("quests") + t("nav.quests"),
     settings: "⚙️ " + t("settings.title"), minigame: "🎮 " + t("mg.title"), event: "🍂 " + t("event.title"),
     market: `<img class="title-ic" src="assets/icons/icon_diamond.png" alt="">` + t("market.title"), chat: ICON("chat") + t("chat.title"),
@@ -381,8 +383,56 @@ const UI = (() => {
   }
 
   /* ================= FISH SHOP ================= */
-  async function renderFishShop() {
+  /* ================= AQUARIUMS ================= */
+  async function renderAquariums() {
     const body = $("screen-body");
+    const owned = state.tanks.owned, active = state.tanks.active;
+    let html = `<button class="pill-btn blue" id="btn-view-tank" style="width:100%;padding:13px;margin-bottom:6px">🐠 ${t("aq.view_tank")}</button>
+      <h3><img class="title-ic" src="assets/icons/icon_aquariums.png" alt=""> ${t("shop.tanks")}</h3>`;
+    for (const [tier, T] of Object.entries(DATA.TANKS)) {
+      const isOwned = owned.includes(tier), isActive = active === tier;
+      const need = tier === "large" && !owned.includes("medium");
+      const extraT = (state.tanks.extra && state.tanks.extra[tier]) || 0;
+      html += `<div class="row-card"><div class="grow">
+        <b style="text-transform:capitalize">${tankName(tier)}</b>
+        <div class="sub">${t("shop.tank_info", { fish: T.capacity, decor: T.decorSlots + extraT })}</div></div>
+        ${isActive ? `<span class="tag">${t("shop.active")}</span>`
+          : isOwned ? `<button class="pill-btn blue" data-switch="${tier}">${t("shop.use")}</button>`
+          : `<button class="pill-btn" data-buytank="${tier}" ${need ? "disabled" : ""}>${CUR_GOLD} ${fmtCoins(T.price)}</button>`}
+      </div>`;
+      if (need) html += `<div class="sub" style="margin:-4px 0 8px">${t("shop.needs_first", { tank: tankName("medium") })}</div>`;
+    }
+    body.innerHTML = html;
+    $("btn-view-tank").onclick = () => close();
+    body.querySelectorAll("[data-buytank]").forEach((b) => b.onclick = async () => {
+      const r = await Api.buyTank(b.dataset.buytank);
+      if (r.ok) { AudioFX.coin(); toast(t("toast.tank_upgraded")); }
+      else { AudioFX.error(); toast(r.error || t("toast.couldnt_buy_tank")); }
+      await App.refresh(); renderAquariums();
+    });
+    body.querySelectorAll("[data-switch]").forEach((b) => b.onclick = async () => {
+      const r = await Api.switchTank(b.dataset.switch);
+      if (r.ok) toast(t("toast.tank_switched"));
+      else toast(r.error || t("toast.couldnt_switch"));
+      await App.refresh(); close();
+    });
+  }
+
+  /* ================= SHOP (fish + decor tabs) ================= */
+  let shopTab = "fish";
+  async function renderShopScreen() {
+    const body = $("screen-body");
+    body.innerHTML = `<div class="tabbar comm-tabs">
+        <button class="pill-btn${shopTab === "fish" ? " active" : ""}" data-stab="fish"><img src="assets/icons/icon_fish.png" alt=""><span>${t("shop.fish")}</span></button>
+        <button class="pill-btn${shopTab === "decor" ? " active" : ""}" data-stab="decor"><img src="assets/icons/icon_decor.png" alt=""><span>${t("deco.title")}</span></button>
+      </div><div id="shop-body"></div>`;
+    body.querySelectorAll("[data-stab]").forEach((b) => b.onclick = () => { shopTab = b.dataset.stab; renderShopScreen(); });
+    const sub = $("shop-body");
+    if (shopTab === "decor") renderDecorShop(sub); else renderShopFish(sub);
+  }
+
+  async function renderShopFish(root) {
+    const body = root || $("screen-body");
     if (!fishCatalog) {
       body.innerHTML = `<div class="empty">${t("common.loading")}</div>`;
       const r = await Api.fishCatalog();
@@ -394,28 +444,10 @@ const UI = (() => {
       price_gems: (DATA.SPECIES[id] || {}).priceGems || 0,
     }));
     const tf = tankFish();
-    const owned = state.tanks.owned, active = state.tanks.active;
-
-    let tanksHtml = `<h3>🏠 ${t("shop.tanks")}</h3>`;
-    for (const [tier, T] of Object.entries(DATA.TANKS)) {
-      const isOwned = owned.includes(tier), isActive = active === tier;
-      const need = tier === "large" && !owned.includes("medium");
-      const extraT = (state.tanks.extra && state.tanks.extra[tier]) || 0;
-      tanksHtml += `<div class="row-card"><div class="grow">
-        <b style="text-transform:capitalize">${tankName(tier)}</b>
-        <div class="sub">${t("shop.tank_info", { fish: T.capacity, decor: T.decorSlots + extraT })}</div></div>
-        ${isActive ? `<span class="tag">${t("shop.active")}</span>`
-          : isOwned ? `<button class="pill-btn blue" data-switch="${tier}">${t("shop.use")}</button>`
-          : `<button class="pill-btn" data-buytank="${tier}" ${need ? "disabled" : ""}>${CUR_GOLD} ${fmtCoins(T.price)}</button>`}
-      </div>`;
-      if (need) tanksHtml += `<div class="sub" style="margin:-4px 0 8px">${t("shop.needs_first", { tank: tankName("medium") })}</div>`;
-    }
-
-    let html = `${tanksHtml}
-      <h3>🐟 ${t("shop.fish")} <span class="tag">${t("shop.in_tank", { n: tf.length, cap: DATA.TANKS[active].capacity, tank: tankName(active) })}</span></h3>
+    const active = state.tanks.active;
+    let html = `<h3><img class="title-ic" src="assets/icons/icon_fish.png" alt=""> ${t("shop.fish")} <span class="tag">${t("shop.in_tank", { n: tf.length, cap: DATA.TANKS[active].capacity, tank: tankName(active) })}</span></h3>
       <div class="grid2">`;
     for (const it of items) {
-      const sp = DATA.SPECIES[it.species_id] || {};
       html += `<div class="card">${fishImg(it.species_id)}
         <div class="nm">${esc(it.name)}</div>
         <div class="sub">${esc(it.group)}${it.species_id === "female_betta" ? " · " + t("shop.always_female") : ""} · ${t("shop.grows_at", { lvl: it.grow_level || 10 })}</div>
@@ -423,49 +455,41 @@ const UI = (() => {
         <button class="pill-btn pink" data-buyfish="${esc(it.species_id)}">${t("shop.buy")}</button>
       </div>`;
     }
-    html += `</div>
-      <h3>💊 ${t("shop.supplies")}</h3>
-      <div class="row-card"><div class="grow"><b>${t("shop.medicine")}</b>
-        <div class="sub">${t("shop.medicine_desc", { n: state.wallets.medicine || 0 })}</div></div>
-        <button class="pill-btn gold" data-buymed="1">${CUR_GOLD} ${fmtCoins(DATA.MEDICINE_PRICE)}</button>
-      </div>
-      <div class="empty">${t("shop.sell_hint")}</div>`;
+    html += `</div><div class="empty">${t("shop.sell_hint")}</div>`;
     body.innerHTML = html;
-
-    body.querySelectorAll("[data-buymed]").forEach((b) => b.onclick = async () => {
-      b.disabled = true;
-      const r = await Api.buyMedicine(+b.dataset.buymed);
-      if (r.ok) { AudioFX.coin(); toast(t("toast.medicine_bought", { qty: b.dataset.buymed })); }
-      else { AudioFX.error(); toast(r.error || t("toast.couldnt_buy")); }
-      await App.refresh();
-      renderFishShop();
-    });
-
     body.querySelectorAll("[data-buyfish]").forEach((b) => b.onclick = async () => {
       b.disabled = true;
       const r = await Api.buyFish(b.dataset.buyfish);
       if (r.ok) { AudioFX.coin(); toast(t("toast.welcome_fish", { name: esc(r.fish.name || t("toast.little_fish")) })); }
       else { AudioFX.error(); toast(r.error || t("toast.couldnt_buy")); }
       await App.refresh();
-      renderFishShop();
+      renderShopFish(body);
     });
-    body.querySelectorAll("[data-buytank]").forEach((b) => b.onclick = async () => {
-      const r = await Api.buyTank(b.dataset.buytank);
-      if (r.ok) { AudioFX.coin(); toast(t("toast.tank_upgraded")); }
-      else { AudioFX.error(); toast(r.error || t("toast.couldnt_buy_tank")); }
-      await App.refresh(); renderFishShop();
-    });
-    body.querySelectorAll("[data-switch]").forEach((b) => b.onclick = async () => {
-      const r = await Api.switchTank(b.dataset.switch);
-      if (r.ok) toast(t("toast.tank_switched"));
-      else toast(r.error || t("toast.couldnt_switch"));
-      await App.refresh(); close();
+  }
+
+  /* ================= LAB (medicine) ================= */
+  async function renderLab() {
+    const body = $("screen-body");
+    body.innerHTML = `<h3><img class="title-ic" src="assets/icons/icon_lab.png" alt=""> ${t("shop.medicine")}</h3>
+      <div class="row-card"><div class="grow"><b>${t("shop.medicine")}</b>
+        <div class="sub">${t("shop.medicine_desc", { n: state.wallets.medicine || 0 })}</div></div>
+        <button class="pill-btn gold" data-buymed="1">${CUR_GOLD} ${fmtCoins(DATA.MEDICINE_PRICE)}</button>
+      </div>
+      <div class="sub" style="margin-top:10px">${t("lab.hint")}</div>`;
+    body.querySelectorAll("[data-buymed]").forEach((b) => b.onclick = async () => {
+      b.disabled = true;
+      const r = await Api.buyMedicine(+b.dataset.buymed);
+      if (r.ok) { AudioFX.coin(); toast(t("toast.medicine_bought", { qty: b.dataset.buymed })); }
+      else { AudioFX.error(); toast(r.error || t("toast.couldnt_buy")); }
+      await App.refresh();
+      renderLab();
     });
   }
 
   /* ================= DECOR SHOP ================= */
-  async function renderDecorShop(filter) {
-    const body = $("screen-body");
+  async function renderDecorShop(root, filter) {
+    const body = (typeof root === "string" || !root) ? $("screen-body") : root;
+    if (typeof root === "string") filter = root;
     if (!decorCatalog) {
       body.innerHTML = `<div class="empty">${t("common.loading")}</div>`;
       const r = await Api.decorCatalog();
@@ -504,7 +528,7 @@ const UI = (() => {
     body.innerHTML = html;
 
     const si = $("decor-search");
-    si.oninput = () => renderDecorShop(si.value);
+    si.oninput = () => renderDecorShop(body, si.value);
     // keep focus after re-render
     si.focus(); si.setSelectionRange(si.value.length, si.value.length);
 
@@ -512,7 +536,7 @@ const UI = (() => {
       const r = await Api.buyDecor(b.dataset.buydeco);
       if (r.ok) { AudioFX.coin(); toast(t("toast.deco_bought")); }
       else { AudioFX.error(); toast(r.error || t("toast.couldnt_buy")); }
-      await App.refresh(); renderDecorShop($("decor-search") ? $("decor-search").value : "");
+      await App.refresh(); renderDecorShop(body, $("decor-search") ? $("decor-search").value : "");
     });
     body.querySelectorAll("[data-placedeco]").forEach((b) => b.onclick = () => {
       close(); App.beginPlace(b.dataset.placedeco);
@@ -526,7 +550,7 @@ const UI = (() => {
         AudioFX.error();
         toast(r.error === "not enough diamonds" ? t("toast.no_diamonds") : (r.error || t("toast.couldnt_buy_slot")));
       }
-      await App.refresh(); renderDecorShop($("decor-search") ? $("decor-search").value : "");
+      await App.refresh(); renderDecorShop(body, $("decor-search") ? $("decor-search").value : "");
     });
   }
 
@@ -1138,7 +1162,7 @@ const UI = (() => {
   }
 
   const RENDER = {
-    fishshop: renderFishShop, decor: renderDecorShop, breeding: renderBreeding,
+    aquariums: renderAquariums, shop: renderShopScreen, lab: renderLab, breeding: renderBreeding,
     collection: renderCollection, inventory: renderInventory, quests: renderQuestsScreen,
     settings: renderSettings, minigame: renderMinigame, event: renderEvent,
     market: renderMarket, chat: renderChat, community: renderCommunity,

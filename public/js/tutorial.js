@@ -34,7 +34,7 @@ const Tutorial = (() => {
     {
       icon: "🛍️", title: "tut.s6.title",
       text: "tut.s6.text",
-      target: '.nav-tab[data-screen="fishshop"]',
+      target: '.nav-tab[data-screen="shop"]',
     },
     {
       icon: "🎉", title: "tut.s7.title",

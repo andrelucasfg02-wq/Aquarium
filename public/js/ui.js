@@ -101,7 +101,7 @@ const UI = (() => {
           ${fish.sick ? `<button class="pill-btn gold" id="fm-treat">💊 ${t("fishmenu.treat")}</button>` : ""}
         </div>
         <div class="fish-menu-btns">
-          <button class="pill-btn pink" id="fm-pet">\uD83D\uDC95 ${t("fishmenu.pet")}</button>
+          <button class="pill-btn pink" id="fm-pet"><img class="btn-ic" src="assets/icons/icon_pet.png" alt="">${t("fishmenu.pet")}</button>
           <button class="pill-btn blue" id="fm-transfer">${fish.location === "inventory" ? "\uD83C\uDFE0 " + t("fishmenu.place_in_tank") : "\uD83D\uDD00 " + t("fishmenu.transfer")}</button>
           <button class="pill-btn" id="fm-breed">\uD83E\uDD5A ${t("fishmenu.breed")}</button>
         </div>
@@ -356,12 +356,12 @@ const UI = (() => {
     if (chatTimer) { clearInterval(chatTimer); chatTimer = null; }
     if (!silent && window.App) App.onScreenClosed();
   }
-  const ICON = (n) => `<img class="title-ic" src="assets/icons/icon_nav_${n}.png" alt="">`;
+  const ICON = (f) => `<img class="title-ic" src="assets/icons/icon_${f}.png" alt="">`;
   const TITLES = {
-    fishshop: ICON("shop") + t("nav.shop"), decor: "🪸 " + t("deco.shop_title"), breeding: ICON("eggs") + t("breed.title"),
-    collection: ICON("collection") + t("nav.collection"), inventory: ICON("inventory") + t("nav.inventory"), quests: "🎯 " + t("nav.quests"),
+    fishshop: ICON("nav_shop") + t("nav.shop"), decor: "🪸 " + t("deco.shop_title"), breeding: ICON("nav_eggs") + t("breed.title"),
+    collection: ICON("nav_collection") + t("nav.collection"), inventory: ICON("nav_inventory") + t("nav.inventory"), quests: "🎯 " + t("nav.quests"),
     settings: "⚙️ " + t("settings.title"), minigame: "🎮 " + t("mg.title"), event: "🍂 " + t("event.title"),
-    market: "💎 " + t("market.title"), chat: "💬 " + t("chat.title"),
+    market: "💎 " + t("market.title"), chat: ICON("chat") + t("chat.title"),
   };
 
   /* ---------- helpers ---------- */

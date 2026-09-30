@@ -67,7 +67,7 @@ const DATA = {
 
 /** Frame roles: 0 idle, 1-4 swim, 5 eat (only while eating), 6 sleep, 7 rear/turn */
 // Bump SPRITE_V whenever shipped art changes so phones don't keep stale cached PNGs.
-const SPRITE_V = 14;
+const SPRITE_V = 15;
 function spriteURL(speciesId, frame) {
   const s = DATA.SPECIES[speciesId];
   if (!s) return "";

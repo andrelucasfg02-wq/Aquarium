@@ -220,11 +220,6 @@ const App = (() => {
       document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
       UI.open("settings");
     };
-    $("btn-breed").onclick = () => {
-      cancelPlace();
-      document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
-      UI.open("breeding");
-    };
     $("btn-event").onclick = () => {
       cancelPlace();
       document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));

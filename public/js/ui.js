@@ -316,7 +316,7 @@ const UI = (() => {
     } else {
       breedFemale = f; breedMale = null; partners = null; partnersFor = null;
     }
-    open("breeding");
+    open("lab", "breeding");
   }
 
   function open(name, arg) {
@@ -325,6 +325,7 @@ const UI = (() => {
     if (name === "community" && arg) communityTab = arg;
     if (name === "quests" && arg) questsTab = arg;
     if (name === "shop" && arg) shopTab = arg;
+    if (name === "lab" && arg) labTab = arg;
     $("screen-title").innerHTML = TITLES[name] || esc(name);
     $("screen-overlay").hidden = false;
     RENDER[name]();
@@ -345,7 +346,6 @@ const UI = (() => {
   const ICON = (f) => `<img class="title-ic" src="assets/icons/icon_${f}.png" alt="">`;
   const TITLES = {
     aquariums: ICON("aquariums") + t("nav.aquariums"), shop: ICON("nav_shop") + t("nav.shop"), lab: ICON("lab") + t("nav.lab"),
-    breeding: ICON("nav_eggs") + t("breed.title"),
     collection: ICON("nav_collection") + t("nav.collection"), inventory: ICON("nav_inventory") + t("nav.inventory"), quests: ICON("quests") + t("nav.quests"),
     settings: `<img class="title-ic" src="assets/icons/icon_settings.png" alt=""> ` + t("settings.title"), minigame: "🎮 " + t("mg.title"), event: "🍂 " + t("event.title"),
     market: `<img class="title-ic" src="assets/icons/icon_diamond.png" alt="">` + t("market.title"), chat: ICON("chat") + t("chat.title"),
@@ -451,10 +451,19 @@ const UI = (() => {
   }
 
   /* ================= LAB (medicine) ================= */
+  let labTab = "medicine";
   async function renderLab() {
     const body = $("screen-body");
-    body.innerHTML = `<h3><img class="title-ic" src="assets/icons/icon_lab.png" alt=""> ${t("shop.medicine")}</h3>
-      <div class="row-card"><img src="assets/icons/icon_medicine.png" alt="" style="width:56px;height:56px;object-fit:contain;margin-right:10px;flex:none"><div class="grow"><b>${t("shop.medicine")}</b>
+    body.innerHTML = `<div class="tabbar comm-tabs">
+        <button class="pill-btn${labTab === "medicine" ? " active" : ""}" data-ltab="medicine"><img src="assets/icons/icon_medicine.png" alt=""><span>${t("shop.medicine")}</span></button>
+        <button class="pill-btn${labTab === "breeding" ? " active" : ""}" data-ltab="breeding"><img src="assets/icons/icon_nav_eggs.png" alt=""><span>${t("breed.title")}</span></button>
+      </div><div id="lab-body"></div>`;
+    body.querySelectorAll("[data-ltab]").forEach((b) => b.onclick = () => { labTab = b.dataset.ltab; renderLab(); });
+    if (labTab === "breeding") renderBreeding(); else renderMedicine($("lab-body"));
+  }
+  async function renderMedicine(root) {
+    const body = root || $("screen-body");
+    body.innerHTML = `<div class="row-card"><img src="assets/icons/icon_medicine.png" alt="" style="width:56px;height:56px;object-fit:contain;margin-right:10px;flex:none"><div class="grow"><b>${t("shop.medicine")}</b>
         <div class="sub">${t("shop.medicine_desc", { n: state.wallets.medicine || 0 })}</div></div>
         <button class="pill-btn gold" data-buymed="1">${CUR_GOLD} ${fmtCoins(DATA.MEDICINE_PRICE)}</button>
       </div>
@@ -540,7 +549,7 @@ const UI = (() => {
   /* ================= BREEDING ================= */
   let breedMale = null, breedFemale = null, partners = null, partnersFor = null;
   async function renderBreeding() {
-    const body = $("screen-body");
+    const body = $("lab-body") || $("screen-body");
     const tf = tankFish();
     breedMale = breedMale && tf.find((f) => f.id === breedMale.id) ? breedMale : null;
     breedFemale = breedFemale && tf.find((f) => f.id === breedFemale.id) ? breedFemale : null;
@@ -1145,7 +1154,7 @@ const UI = (() => {
   }
 
   const RENDER = {
-    aquariums: renderAquariums, shop: renderShopScreen, lab: renderLab, breeding: renderBreeding,
+    aquariums: renderAquariums, shop: renderShopScreen, lab: renderLab,
     collection: renderCollection, inventory: renderInventory, quests: renderQuestsScreen,
     settings: renderSettings, minigame: renderMinigame, event: renderEvent,
     market: renderMarket, chat: renderChat, community: renderCommunity,

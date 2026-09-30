@@ -34,6 +34,11 @@ const DATA = {
     maple_petal_betta:     { group:"betta", name:"Petal Maple Betta" },
     maple_tide_betta:      { group:"betta", name:"Tide Maple Betta" },
     maple_coral_betta:     { group:"betta", name:"Coral Maple Betta" },
+    golden_veil_betta:     { group:"betta", name:"Golden Veil Betta" },
+    rose_halfmoon_betta:   { group:"betta", name:"Rose Halfmoon Betta" },
+    ember_crown_betta:     { group:"betta", name:"Ember Crown Betta" },
+    bloom_maple_betta:     { group:"betta", name:"Bloom Maple Betta" },
+    azure_plakat_betta:    { group:"betta", name:"Azure Plakat Betta" },
     twilight_goldfish:     { group:"goldfish", name:"Twilight Goldfish",    folder:"twilight" },
     sunset_goldfish:       { group:"goldfish", name:"Sunset Goldfish",      folder:"sunset" },
     tidepool_goldfish:     { group:"goldfish", name:"Tidepool Goldfish",    folder:"tidepool" },
@@ -62,7 +67,7 @@ const DATA = {
 
 /** Frame roles: 0 idle, 1-4 swim, 5 eat (only while eating), 6 sleep, 7 rear/turn */
 // Bump SPRITE_V whenever shipped art changes so phones don't keep stale cached PNGs.
-const SPRITE_V = 10;
+const SPRITE_V = 11;
 function spriteURL(speciesId, frame) {
   const s = DATA.SPECIES[speciesId];
   if (!s) return "";

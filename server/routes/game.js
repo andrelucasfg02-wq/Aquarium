@@ -156,7 +156,13 @@ function helpers(db) {
     // not just one parent's look: 50/50 between the cross's two variants.
     const pair = [egg.variant_a, egg.variant_b];
     let variant;
-    if (pair.includes('autumn_fish')) {
+    // Female Betta crosses produce their own hybrid offspring (not a 50/50 inherit).
+    // Checked before the Maple branch so maple x female yields the bloom hybrid.
+    if (pair.includes('female_betta')) {
+      const other = pair[0] === 'female_betta' ? pair[1] : pair[0];
+      variant = (C.FEMALE_CROSSES || {})[other] || null;
+    }
+    if (!variant && pair.includes('autumn_fish')) {
       const other = pair[0] === 'autumn_fish' ? pair[1] : pair[0];
       const hybs = (C.MAPLE_CROSSES || {})[other];
       variant = hybs ? hybs[Math.random() < 0.5 ? 0 : 1] : null;

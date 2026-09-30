@@ -9,7 +9,8 @@ const GROUPS = {
     'orchid_goldfish', 'cinder_goldfish', 'gilded_goldfish', 'nebula_goldfish', 'ember_night_goldfish'],
   betta: ['autumn_fish', 'fullmoon_betta', 'crowntail_betta', 'veiltail_betta', 'female_betta', 'plakat_betta',
     'maple_rose_betta', 'maple_ember_betta', 'maple_dusk_betta', 'maple_storm_betta',
-    'maple_lilac_betta', 'maple_petal_betta', 'maple_tide_betta', 'maple_coral_betta'],
+    'maple_lilac_betta', 'maple_petal_betta', 'maple_tide_betta', 'maple_coral_betta',
+    'golden_veil_betta', 'rose_halfmoon_betta', 'ember_crown_betta', 'bloom_maple_betta', 'azure_plakat_betta'],
   shrimp: ['red_shrimp', 'blue_shrimp', 'yellow_shrimp'],
   snail: ['snail'],
   bottom_fish: ['bottom_fish'],
@@ -38,6 +39,16 @@ const MAPLE_CROSSES = {
   plakat_betta: ['maple_tide_betta', 'maple_coral_betta'],
 };
 
+// Female Betta crosses: the other betta parent species -> the hybrid offspring.
+// (Checked before MAPLE_CROSSES in hatchEgg, so maple x female yields the bloom hybrid.)
+const FEMALE_CROSSES = {
+  veiltail_betta: 'golden_veil_betta',
+  fullmoon_betta: 'rose_halfmoon_betta',
+  crowntail_betta: 'ember_crown_betta',
+  autumn_fish: 'bloom_maple_betta',
+  plakat_betta: 'azure_plakat_betta',
+};
+
 const SPECIES_NAMES = {
   sakura_goldfish: 'Sakura Goldfish', azure_tang: 'Azure Tang', ember_clownfish: 'Ember Goldfish',
   lemon_drop_goldfish: 'Lemon Drop Goldfish', midnight_moor: 'Midnight Moor',
@@ -48,6 +59,9 @@ const SPECIES_NAMES = {
   maple_dusk_betta: 'Dusk Maple Betta', maple_storm_betta: 'Storm Maple Betta',
   maple_lilac_betta: 'Lilac Maple Betta', maple_petal_betta: 'Petal Maple Betta',
   maple_tide_betta: 'Tide Maple Betta', maple_coral_betta: 'Coral Maple Betta',
+  golden_veil_betta: 'Golden Veil Betta', rose_halfmoon_betta: 'Rose Halfmoon Betta',
+  ember_crown_betta: 'Ember Crown Betta', bloom_maple_betta: 'Bloom Maple Betta',
+  azure_plakat_betta: 'Azure Plakat Betta',
   twilight_goldfish: 'Twilight Goldfish', sunset_goldfish: 'Sunset Goldfish',
   tidepool_goldfish: 'Tidepool Goldfish', duskfin_goldfish: 'Duskfin Goldfish',
   blaze_goldfish: 'Blaze Goldfish', orchid_goldfish: 'Orchid Goldfish',
@@ -75,6 +89,10 @@ const SPECIES_PRICES = {
   maple_dusk_betta: { coins: null, gems: null }, maple_storm_betta: { coins: null, gems: null },
   maple_lilac_betta: { coins: null, gems: null }, maple_petal_betta: { coins: null, gems: null },
   maple_tide_betta: { coins: null, gems: null }, maple_coral_betta: { coins: null, gems: null },
+  // female hybrids: bred-only, never sold in the shop
+  golden_veil_betta: { coins: null, gems: null }, rose_halfmoon_betta: { coins: null, gems: null },
+  ember_crown_betta: { coins: null, gems: null }, bloom_maple_betta: { coins: null, gems: null },
+  azure_plakat_betta: { coins: null, gems: null },
   // goldfish hybrids: bred-only, never sold in the shop
   twilight_goldfish: { coins: null, gems: null }, sunset_goldfish: { coins: null, gems: null },
   tidepool_goldfish: { coins: null, gems: null }, duskfin_goldfish: { coins: null, gems: null },
@@ -93,6 +111,9 @@ const SPECIES_RARITY = {
   maple_dusk_betta: 'legendary', maple_storm_betta: 'legendary',
   maple_lilac_betta: 'legendary', maple_petal_betta: 'legendary',
   maple_tide_betta: 'legendary', maple_coral_betta: 'legendary',
+  golden_veil_betta: 'legendary', rose_halfmoon_betta: 'legendary',
+  ember_crown_betta: 'legendary', bloom_maple_betta: 'legendary',
+  azure_plakat_betta: 'legendary',
   twilight_goldfish: 'epic', sunset_goldfish: 'epic', tidepool_goldfish: 'epic',
   duskfin_goldfish: 'epic', blaze_goldfish: 'epic', orchid_goldfish: 'epic',
   cinder_goldfish: 'epic', gilded_goldfish: 'epic', nebula_goldfish: 'epic',
@@ -146,6 +167,8 @@ const GROW_LEVEL = {
   female_betta: 7, plakat_betta: 7,
   maple_rose_betta: 8, maple_ember_betta: 8, maple_dusk_betta: 8, maple_storm_betta: 8,
   maple_lilac_betta: 8, maple_petal_betta: 8, maple_tide_betta: 8, maple_coral_betta: 8,
+  golden_veil_betta: 8, rose_halfmoon_betta: 8, ember_crown_betta: 8,
+  bloom_maple_betta: 8, azure_plakat_betta: 8,
   autumn_fish: 10, // Maple Betta — the rarest takes the full journey
 };
 function growLevel(speciesId) { return GROW_LEVEL[speciesId] || 10; }
@@ -270,7 +293,7 @@ function periodKey(period, nowSec) {
 }
 
 module.exports = {
-  GROUPS, MAPLE_CROSSES, HYBRID_MIXES, SPECIES_NAMES, SPECIES_PRICES, SPECIES_RARITY,
+  GROUPS, MAPLE_CROSSES, FEMALE_CROSSES, HYBRID_MIXES, SPECIES_NAMES, SPECIES_PRICES, SPECIES_RARITY,
   speciesGroup, fishCatalog,
   HATCH_HOURS, GROWTH_DAYS, HYBRID_HATCH_HOURS, HYBRID_GROWTH_DAYS, growthStage,
   GROW_LEVEL, growLevel,

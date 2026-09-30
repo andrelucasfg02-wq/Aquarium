@@ -435,9 +435,15 @@ Object.assign(TankView.prototype, {
 
     // sponge cursor
     if (this.mode === "sponge") {
-      ctx.font = "34px serif"; ctx.textAlign = "center";
+      const sim = loadImg("assets/icons/icon_sponge.png");
       ctx.globalAlpha = .95;
-      ctx.fillText("🧽", this.sponge.x, this.sponge.y + 10);
+      if (imgReady(sim)) {
+        const sw = 46, sh = 46 * sim.naturalHeight / sim.naturalWidth;
+        ctx.drawImage(sim, this.sponge.x - sw / 2, this.sponge.y - sh / 2, sw, sh);
+      } else {
+        ctx.font = "34px serif"; ctx.textAlign = "center";
+        ctx.fillText("🧽", this.sponge.x, this.sponge.y + 10);
+      }
       ctx.globalAlpha = 1;
       if (this.placeDecoId) { /* not used together */ }
     }

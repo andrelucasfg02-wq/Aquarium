@@ -24,9 +24,10 @@ const UI = (() => {
     const w = st.wallets, u = st.user;
     $("hud-player").textContent = `😊 ${u.name || t("hud.player")}`;
     $("hud-level").textContent = `⭐ ${w.level || 1}`;
-    $("hud-coins").textContent = `🪙 ${fmtCoins(w.coins)}`;
-    $("hud-gems").textContent = `💎 ${fmtCoins(w.gems)}`;
-    $("hud-food").textContent = `🍤 ${fmtCoins(w.food)}`;
+    const setChip = (id, val) => { const el = $(id); const s = el && el.querySelector("span"); if (s) s.textContent = val; };
+    setChip("hud-coins", fmtCoins(w.coins));
+    setChip("hud-gems", fmtCoins(w.gems));
+    setChip("hud-food", fmtCoins(w.food));
     const hf = $("hud-food");
     if (hf && !hf._foodBound) { hf._foodBound = true; hf.title = t("hud.buy_food"); hf.onclick = openFoodPop; }
     const filt = $("btn-filter");

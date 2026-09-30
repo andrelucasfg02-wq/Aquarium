@@ -339,7 +339,7 @@ const UI = (() => {
   function open(name) {
     close(true);
     currentScreen = name;
-    $("screen-title").textContent = TITLES[name] || name;
+    $("screen-title").innerHTML = TITLES[name] || esc(name);
     $("screen-overlay").hidden = false;
     RENDER[name]();
   }
@@ -356,9 +356,10 @@ const UI = (() => {
     if (chatTimer) { clearInterval(chatTimer); chatTimer = null; }
     if (!silent && window.App) App.onScreenClosed();
   }
+  const ICON = (n) => `<img class="title-ic" src="assets/icons/icon_nav_${n}.png" alt="">`;
   const TITLES = {
-    fishshop: "🐟 " + t("nav.shop"), decor: "🪸 " + t("deco.shop_title"), breeding: "🥚 " + t("breed.title"),
-    collection: "📖 " + t("nav.collection"), inventory: "🎒 " + t("nav.inventory"), quests: "🎯 " + t("nav.quests"),
+    fishshop: ICON("shop") + t("nav.shop"), decor: "🪸 " + t("deco.shop_title"), breeding: ICON("eggs") + t("breed.title"),
+    collection: ICON("collection") + t("nav.collection"), inventory: ICON("inventory") + t("nav.inventory"), quests: "🎯 " + t("nav.quests"),
     settings: "⚙️ " + t("settings.title"), minigame: "🎮 " + t("mg.title"), event: "🍂 " + t("event.title"),
     market: "💎 " + t("market.title"), chat: "💬 " + t("chat.title"),
   };
@@ -1119,11 +1120,7 @@ const UI = (() => {
     setCatalogs(f, d) { fishCatalog = f; decorCatalog = d; },
     get decorCatalog() { return decorCatalog; },
     refreshCurrent() {
-      if (!$("screen-overlay").hidden) {
-        const t = $("screen-title").textContent;
-        const name = Object.keys(TITLES).find((k) => TITLES[k] === t);
-        if (name && RENDER[name]) RENDER[name]();
-      }
+      if (currentScreen && !$("screen-overlay").hidden && RENDER[currentScreen]) RENDER[currentScreen]();
     },
   };
 })();

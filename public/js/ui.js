@@ -33,28 +33,11 @@ const UI = (() => {
     const filt = $("btn-filter");
     if (st.dirt.green) { filt.classList.remove("hidden"); filt.textContent = t("hud.filter_price", { price: DATA.FILTER_PRICE }); }
     else filt.classList.add("hidden");
-    renderTankTabs();
   }
 
-  /* ---------- tank quick-switch tabs (home screen) ---------- */
+  /* ---------- tank names ---------- */
   function tankName(k) { const key = "tank." + k; const v = t(key); return v === key ? (k || "") : v; }
   const TANK_LABELS = { small: t("tank.small"), medium: t("tank.medium"), large: t("tank.large") };
-  function renderTankTabs() {
-    const bar = $("tank-tabs");
-    if (!bar || !state || !state.tanks) return;
-    const owned = state.tanks.owned || [], active = state.tanks.active;
-    if (owned.length < 2) { bar.hidden = true; return; }
-    bar.hidden = false;
-    bar.innerHTML = owned.map((t) =>
-      `<button class="tank-tab${t === active ? " active" : ""}" data-tanktab="${t}">${TANK_LABELS[t] || t}</button>`
-    ).join("");
-    bar.querySelectorAll("[data-tanktab]").forEach((b) => b.onclick = async () => {
-      if (b.dataset.tanktab === state.tanks.active) return;
-      const r = await Api.switchTank(b.dataset.tanktab);
-      if (r.ok) { toast(t("toast.switched_tank")); await App.refresh(); }
-      else { AudioFX.error(); toast(r.error || t("toast.couldnt_switch")); }
-    });
-  }
 
   /* ---------- fish tap menu: status, feed, treat, pet / transfer / breed ---------- */
   function openFishMenu(fish) {
@@ -1170,7 +1153,7 @@ const UI = (() => {
 
   return {
     toast, updateHUD, open, close, showTankFullPopup, closeTankFullPopup,
-    openFishMenu, closeFishMenu, openBreedingWith, renderTankTabs,
+    openFishMenu, closeFishMenu, openBreedingWith,
     setCatalogs(f, d) { fishCatalog = f; decorCatalog = d; },
     get decorCatalog() { return decorCatalog; },
     refreshCurrent() {

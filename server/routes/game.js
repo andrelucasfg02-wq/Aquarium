@@ -982,5 +982,33 @@ module.exports = function gameRoutes(db) {
     res.json(out);
   }));
 
+  // ---------- public chat ----------
+  const CHAT_LIMIT = 50, CHAT_MAXLEN = 200, CHAT_COOLDOWN = 3;
+  // list recent messages; ?after=<id> returns only newer ones (for polling)
+  r.get('/chat', ah(async (req, res) => {
+    const after = Number(req.query.after) || 0;
+    const msgs = await db.all(
+      'SELECT id, user_id, name, text, created_at FROM chat_messages WHERE id>? ORDER BY id DESC LIMIT ?',
+      after, CHAT_LIMIT);
+    msgs.reverse();
+    res.json({ ok: true, messages: msgs });
+  }));
+  // send a message — short text, cooldown between sends
+  r.post('/chat/send', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    let text = String((req.body && req.body.text) || '').trim().replace(/\s+/g, ' ');
+    if (!text) return res.status(400).json({ ok: false, error: 'empty message' });
+    if (text.length > CHAT_MAXLEN) return res.status(400).json({ ok: false, error: 'message too long' });
+    const last = await db.get('SELECT created_at FROM chat_messages WHERE user_id=? ORDER BY id DESC LIMIT 1', uid);
+    if (last && t - last.created_at < CHAT_COOLDOWN)
+      return res.status(429).json({ ok: false, error: 'slow down' });
+    const name = req.user.name || ('Player' + uid);
+    const r2 = await db.run('INSERT INTO chat_messages(user_id,name,text,created_at) VALUES(?,?,?,?)',
+      uid, name, text, t);
+    // keep the table small: drop everything older than the newest 500
+    await db.run('DELETE FROM chat_messages WHERE id <= (SELECT MAX(id)-500 FROM chat_messages)');
+    res.json({ ok: true, id: Number(r2.lastInsertRowid) });
+  }));
+
   return r;
 };

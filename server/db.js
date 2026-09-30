@@ -54,6 +54,9 @@ const SCHEMA = `
       user_id INTEGER PRIMARY KEY, music INTEGER, sfx INTEGER, quality TEXT);
     CREATE TABLE IF NOT EXISTS daily_shell(
       user_id INTEGER PRIMARY KEY, last_played_at INTEGER);
+    CREATE TABLE IF NOT EXISTS chat_messages(
+      id INTEGER PRIMARY KEY, user_id INTEGER, name TEXT, text TEXT,
+      created_at INTEGER);
     CREATE TABLE IF NOT EXISTS event_progress(
       user_id INTEGER, event_id TEXT, run INTEGER NOT NULL DEFAULT 1,
       score INTEGER, level INTEGER, moves INTEGER,

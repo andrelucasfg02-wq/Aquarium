@@ -71,6 +71,8 @@ const Api = (() => {
     renameFish: (fish_id, name) => post("/api/fish/rename", { fish_id, name }),
     marketListings: () => get("/api/market/listings"),
     marketList: (fish_id, price_diamonds) => post("/api/market/list", { fish_id, price_diamonds }),
+    chatMessages: (after) => get("/api/chat" + (after ? "?after=" + after : "")),
+    chatSend: (text) => post("/api/chat/send", { text }),
     marketCancel: (listing_id) => post("/api/market/cancel", { listing_id }),
     marketBuy: (listing_id) => post("/api/market/buy", { listing_id }),
   };

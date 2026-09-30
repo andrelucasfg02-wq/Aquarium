@@ -228,6 +228,11 @@ const App = (() => {
       document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
       UI.open("minigame");
     };
+    $("btn-chat").onclick = () => {
+      cancelPlace();
+      document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
+      UI.open("chat");
+    };
     $("btn-event").onclick = () => {
       cancelPlace();
       document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));

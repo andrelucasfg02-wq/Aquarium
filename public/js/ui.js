@@ -349,15 +349,17 @@ const UI = (() => {
     if (window.EventCrush) EventCrush.unmount();
     $("screen-overlay").hidden = true;
     $("screen-body").innerHTML = "";
+    $("screen-body").classList.remove("chat-screen");
     currentScreen = null;
     if (eggTimer) { clearInterval(eggTimer); eggTimer = null; }
+    if (chatTimer) { clearInterval(chatTimer); chatTimer = null; }
     if (!silent && window.App) App.onScreenClosed();
   }
   const TITLES = {
     fishshop: "🐟 " + t("nav.shop"), decor: "🪸 " + t("deco.shop_title"), breeding: "🥚 " + t("breed.title"),
     collection: "📖 " + t("nav.collection"), inventory: "🎒 " + t("nav.inventory"), quests: "🎯 " + t("nav.quests"),
     settings: "⚙️ " + t("settings.title"), minigame: "🎮 " + t("mg.title"), event: "🍂 " + t("event.title"),
-    market: "💎 " + t("market.title"),
+    market: "💎 " + t("market.title"), chat: "💬 " + t("chat.title"),
   };
 
   /* ---------- helpers ---------- */
@@ -1044,11 +1046,70 @@ const UI = (() => {
     });
   }
 
+  // ---------- public chat ----------
+  let chatTimer = null, chatLastId = 0, chatBusy = false;
+  function chatMsgHtml(m) {
+    const mine = state.user && m.user_id === state.user.id;
+    const time = new Date(m.created_at * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    return `<div class="chat-msg${mine ? " mine" : ""}"><div class="chat-bubble">` +
+      `<div class="chat-name">${esc(m.name)}</div>` +
+      `<div class="chat-text">${esc(m.text)}</div>` +
+      `<div class="chat-time">${time}</div></div></div>`;
+  }
+  async function renderChat() {
+    const body = $("screen-body");
+    body.classList.add("chat-screen");
+    body.innerHTML = `<div id="chat-list" class="chat-list"><div class="empty">${t("chat.loading")}</div></div>
+      <div class="chat-input-row">
+        <input id="chat-input" maxlength="200" placeholder="${esc(t("chat.placeholder"))}" autocomplete="off" />
+        <button class="pill-btn pink" id="chat-send">➤</button>
+      </div>`;
+    const list = $("chat-list"), input = $("chat-input");
+    chatLastId = 0;
+    const scrollDown = () => { list.scrollTop = list.scrollHeight; };
+    const load = async (after) => {
+      if (chatBusy || $("screen-overlay").hidden) return;
+      chatBusy = true;
+      try {
+        const r = await Api.chatMessages(after);
+        if (r.ok && r.messages) {
+          if (!after) list.innerHTML = "";
+          let added = false;
+          for (const m of r.messages) {
+            if (m.id <= chatLastId) continue;
+            chatLastId = Math.max(chatLastId, m.id);
+            list.insertAdjacentHTML("beforeend", chatMsgHtml(m));
+            added = true;
+          }
+          if (!after && !added) list.innerHTML = `<div class="empty">${t("chat.empty")}</div>`;
+          if (added) scrollDown();
+        }
+      } catch (e) { /* keep polling */ }
+      chatBusy = false;
+    };
+    const send = async () => {
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = "";
+      const r = await Api.chatSend(text);
+      if (r.ok) load(chatLastId);
+      else {
+        toast(r.error === "slow down" ? t("chat.slow_down") : (r.error || t("toast.error")));
+        input.value = text;
+      }
+    };
+    $("chat-send").onclick = send;
+    input.onkeydown = (e) => { if (e.key === "Enter") send(); };
+    await load(0);
+    if (chatTimer) clearInterval(chatTimer);
+    chatTimer = setInterval(() => load(chatLastId), 3000);
+  }
+
   const RENDER = {
     fishshop: renderFishShop, decor: renderDecorShop, breeding: renderBreeding,
     collection: renderCollection, inventory: renderInventory, quests: renderQuests,
     settings: renderSettings, minigame: renderMinigame, event: renderEvent,
-    market: renderMarket,
+    market: renderMarket, chat: renderChat,
   };
 
   return {

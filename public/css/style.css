@@ -353,3 +353,18 @@ select.sel{padding:10px;border-radius:12px;border:2px solid var(--blue);font-siz
 /* ---------- fish market ---------- */
 .mk-price{font-size:17px;font-weight:800;color:#8a6d1f;margin-bottom:6px;white-space:nowrap}
 .fm-note{padding:8px 12px;font-size:13px;color:var(--ink-soft);text-align:center}
+
+/* ---------- public chat ---------- */
+.screen-body.chat-screen{display:flex;flex-direction:column;overflow:hidden;padding-bottom:calc(10px + var(--safe-b))}
+.chat-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:6px 2px;-webkit-overflow-scrolling:touch;min-height:30vh}
+.chat-msg{display:flex;justify-content:flex-start}
+.chat-msg.mine{justify-content:flex-end}
+.chat-bubble{max-width:82%;background:#eef3ff;border-radius:14px;padding:7px 11px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.chat-msg.mine .chat-bubble{background:#ffe4f1}
+.chat-name{font-size:11px;font-weight:800;color:#7b4f9e;margin-bottom:1px}
+.chat-text{font-size:14px;color:#2b2b3a;word-break:break-word;white-space:pre-wrap}
+.chat-time{font-size:10px;color:#999;text-align:right;margin-top:2px}
+.chat-input-row{display:flex;gap:8px;padding-top:8px}
+.chat-input-row input{flex:1;min-width:0;padding:12px 14px;border-radius:16px;border:2px solid var(--pink-d);background:#fff;font-size:15px;color:#2b2b3a}
+.chat-input-row input:focus{outline:none;border-color:var(--pink)}
+#chat-send{flex:none;width:52px;border-radius:16px;font-size:18px}

@@ -304,6 +304,28 @@ class TankView {
   addEmote(fx, fy, text, dur) {
     this.emotes.push({ fx, fy, text, t0: performance.now() / 1000, dur: dur || 1.5 });
   }
+  drawRichEmote(ctx, text, x, y, px) {
+    // "+50 🪙 +2 💎" -> text runs + currency icon images, drawn centered
+    const coinIm = loadImg("assets/icons/icon_gold.png");
+    const gemIm = loadImg("assets/icons/icon_diamond.png");
+    const parts = String(text).split(/([🪙💎])/g).filter(Boolean);
+    ctx.font = `${px}px serif`;
+    const prevAlign = ctx.textAlign; ctx.textAlign = "left";
+    const prevBase = ctx.textBaseline; ctx.textBaseline = "middle";
+    let total = 0;
+    for (const p of parts) {
+      total += (p === "🪙" || p === "💎") ? px * 1.15 : ctx.measureText(p).width;
+    }
+    let cx = x - total / 2;
+    for (const p of parts) {
+      const im = p === "🪙" ? coinIm : p === "💎" ? gemIm : null;
+      if (im) {
+        if (imgReady(im)) ctx.drawImage(im, cx, y - px * .575, px * 1.15, px * 1.15);
+        cx += px * 1.15;
+      } else { ctx.fillText(p, cx, y); cx += ctx.measureText(p).width; }
+    }
+    ctx.textAlign = prevAlign; ctx.textBaseline = prevBase;
+  }
   spawnBubble(fx, fy, scale) {
     this.particles.push({
       kind: "bubble", x: fx, y: fy,
@@ -411,8 +433,9 @@ Object.assign(TankView.prototype, {
       const [x, y] = fracToPx(m.fx, m.fy, v, T.w, T.h);
       const k = (now - m.t0) / m.dur;
       ctx.globalAlpha = 1 - k * k;
-      ctx.font = `${Math.max(14, .028 * T.w * v.s)}px serif`;
-      ctx.fillText(m.text, x, y - k * 26);
+      const px = Math.max(14, .028 * T.w * v.s);
+      if (/[🪙💎]/.test(m.text)) this.drawRichEmote(ctx, m.text, x, y - k * 26, px);
+      else { ctx.font = `${px}px serif`; ctx.fillText(m.text, x, y - k * 26); }
       ctx.globalAlpha = 1;
     }
 
@@ -502,24 +525,22 @@ Object.assign(TankView.prototype, {
     this.ctx.restore();
 
     // persistent coin badge: fish with coins ready keep a badge above them until collected
-    // (💎 for event fish with diamonds banked, 💰 otherwise)
+    // (diamond icon for event fish with diamonds banked, gold coin otherwise)
     if (f.coin_pending > 0) {
-      const badge = f.gem_pending > 0 ? "💎" : "💰";
+      const badgeImg = loadImg(f.gem_pending > 0 ? "assets/icons/icon_diamond.png" : "assets/icons/icon_gold.png");
       const bob = Math.sin((e.animT || 0) * 3) * 4;
       const cs = Math.max(16, .032 * T.w * v.s);
       const ctx2 = this.ctx;
+      const by = y - h / 2 - cs * .7 + bob;
       ctx2.save();
-      ctx2.font = `${cs}px serif`;
-      ctx2.textAlign = "center";
-      ctx2.textBaseline = "middle";
       // soft golden halo so it pops against any background
       ctx2.globalAlpha = .35 + .15 * Math.sin((e.animT || 0) * 3);
       ctx2.fillStyle = "#ffd75e";
       ctx2.beginPath();
-      ctx2.arc(x, y - h / 2 - cs * .7 + bob, cs * .62, 0, 7);
+      ctx2.arc(x, by, cs * .62, 0, 7);
       ctx2.fill();
       ctx2.globalAlpha = 1;
-      ctx2.fillText(badge, x, y - h / 2 - cs * .7 + bob);
+      if (imgReady(badgeImg)) ctx2.drawImage(badgeImg, x - cs * .55, by - cs * .55, cs * 1.1, cs * 1.1);
       ctx2.restore();
     }
 

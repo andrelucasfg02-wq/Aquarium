@@ -114,3 +114,13 @@ function esc(str) {
   return String(str == null ? "" : str).replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
+/* currency icons (inline <img>, usable in any innerHTML template) */
+const CUR_GOLD = `<img class="cur-ic" src="assets/icons/icon_gold.png" alt="">`;
+const CUR_GEM = `<img class="cur-ic" src="assets/icons/icon_diamond.png" alt="">`;
+/* native dialogs (confirm) can't render HTML: turn currency <img> back into text */
+function htmlToText(html) {
+  return String(html)
+    .replace(/<img[^>]*icon_gold\.png[^>]*>/g, "🪙")
+    .replace(/<img[^>]*icon_diamond\.png[^>]*>/g, "💎")
+    .replace(/<[^>]+>/g, "");
+}

@@ -267,7 +267,7 @@ const App = (() => {
     };
 
     $("btn-filter").onclick = async () => {
-      if (!confirm(`Filter the water for 🪙${DATA.FILTER_PRICE}? 🫧`)) return;
+      if (!confirm(htmlToText(`Filter the water for ${CUR_GOLD}${DATA.FILTER_PRICE}? 🫧`))) return;
       const r = await Api.filterDirt();
       if (r.ok) { tank.bubbleBurst(); UI.toast(t("app.water_clear")); AudioFX.coin(); }
       else { AudioFX.error(); UI.toast(r.error || r.message || t("app.err_filter")); }

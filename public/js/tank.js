@@ -308,7 +308,7 @@ class TankView {
     // "+50 🪙 +2 💎" -> text runs + currency icon images, drawn centered
     const coinIm = loadImg("assets/icons/icon_gold.png");
     const gemIm = loadImg("assets/icons/icon_diamond.png");
-    const parts = String(text).split(/([🪙💎])/g).filter(Boolean);
+    const parts = String(text).split(/([🪙💎])/gu).filter(Boolean);
     ctx.font = `${px}px serif`;
     const prevAlign = ctx.textAlign; ctx.textAlign = "left";
     const prevBase = ctx.textBaseline; ctx.textBaseline = "middle";
@@ -434,7 +434,7 @@ Object.assign(TankView.prototype, {
       const k = (now - m.t0) / m.dur;
       ctx.globalAlpha = 1 - k * k;
       const px = Math.max(14, .028 * T.w * v.s);
-      if (/[🪙💎]/.test(m.text)) this.drawRichEmote(ctx, m.text, x, y - k * 26, px);
+      if (/[🪙💎]/u.test(m.text)) this.drawRichEmote(ctx, m.text, x, y - k * 26, px);
       else { ctx.font = `${px}px serif`; ctx.fillText(m.text, x, y - k * 26); }
       ctx.globalAlpha = 1;
     }

@@ -23,7 +23,7 @@ const UI = (() => {
     state = st;
     const w = st.wallets, u = st.user;
     $("hud-player").textContent = `😊 ${u.name || t("hud.player")}`;
-    $("hud-level").textContent = `⭐ ${w.level || 1}`;
+    $("hud-level").innerHTML = `<img class="hud-ic" src="assets/icons/icon_level.png" alt=""> ${w.level || 1}`;
     const setChip = (id, val) => { const el = $(id); const s = el && el.querySelector("span"); if (s) s.textContent = val; };
     setChip("hud-coins", fmtCoins(w.coins));
     setChip("hud-gems", fmtCoins(w.gems));
@@ -85,7 +85,7 @@ const UI = (() => {
             <div class="hbar"><i style="width:${hunger}%;background:${hColor}"></i></div>
             <b>${hunger}%</b></div>
           <div class="stat-row"><span>${moodIcon} ${t("fishmenu.mood")}</span><b>${moodLabel}</b></div>
-          <div class="stat-row"><span>⭐ ${t("fishmenu.level")}</span><b>${t("fishmenu.level_val", { lvl, stage: stageLabel })}</b></div>
+          <div class="stat-row"><span><img class="ic-inline" src="assets/icons/icon_level.png" alt=""> ${t("fishmenu.level")}</span><b>${t("fishmenu.level_val", { lvl, stage: stageLabel })}</b></div>
           ${fish.stage !== "adult" ? `<div class="stat-row"><span>🌱 ${t("fishmenu.grows_at")}</span><b>${t("fishmenu.grows_val", { lvl: growAt })}</b></div>` : ""}
           ${fish.location === "tank" ? (fish.coin_pending > 0
             ? `<div class="stat-row"><span>${CUR_GOLD} ${t("fishmenu.coins")}</span><b>${t("fishmenu.coins_ready", { reward: rewardTxt })}</b></div>`
@@ -98,7 +98,7 @@ const UI = (() => {
         </div>` : `
         <div class="fish-menu-btns">
           <button class="pill-btn pink" id="fm-feed"><img class="btn-ic" src="assets/icons/icon_food.png" alt="">${t("fishmenu.feed")}</button>
-          ${fish.sick ? `<button class="pill-btn gold" id="fm-treat">💊 ${t("fishmenu.treat")}</button>` : ""}
+          ${fish.sick ? `<button class="pill-btn gold" id="fm-treat"><img class="btn-ic" src="assets/icons/icon_medicine.png" alt=""> ${t("fishmenu.treat")}</button>` : ""}
         </div>
         <div class="fish-menu-btns">
           <button class="pill-btn pink" id="fm-pet"><img class="btn-ic" src="assets/icons/icon_pet.png" alt="">${t("fishmenu.pet")}</button>
@@ -116,7 +116,7 @@ const UI = (() => {
         </div>` : `
         <div class="fm-note sub">${esc(fish.trade_lock || t("fishmenu.trade_lock"))}</div>`}`}
         <div class="fish-menu-btns">
-          <button class="pill-btn gold" id="fm-rename">${t("fishmenu.rename", { gems: DATA.RENAME_GEMS })}</button>
+          <button class="pill-btn gold" id="fm-rename"><img class="btn-ic" src="assets/icons/icon_edit.png" alt=""> ${t("fishmenu.rename", { gems: DATA.RENAME_GEMS })}</button>
         </div>
         <div id="fm-transfer-row" class="fish-menu-btns" hidden></div>
         <div id="fm-rename-row" class="fish-menu-btns" hidden>
@@ -471,7 +471,7 @@ const UI = (() => {
   async function renderLab() {
     const body = $("screen-body");
     body.innerHTML = `<h3><img class="title-ic" src="assets/icons/icon_lab.png" alt=""> ${t("shop.medicine")}</h3>
-      <div class="row-card"><div class="grow"><b>${t("shop.medicine")}</b>
+      <div class="row-card"><img src="assets/icons/icon_medicine.png" alt="" style="width:56px;height:56px;object-fit:contain;margin-right:10px;flex:none"><div class="grow"><b>${t("shop.medicine")}</b>
         <div class="sub">${t("shop.medicine_desc", { n: state.wallets.medicine || 0 })}</div></div>
         <button class="pill-btn gold" data-buymed="1">${CUR_GOLD} ${fmtCoins(DATA.MEDICINE_PRICE)}</button>
       </div>

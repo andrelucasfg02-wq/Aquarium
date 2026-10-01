@@ -154,10 +154,9 @@ function helpers(db) {
     const grp = C.speciesGroup(speciesId);
     const tank = opts.tank || await activeTank(uid);
     const pos = (opts.x != null) ? { x: opts.x, y: opts.y } : C.randomPointInGlass(tank);
-    // only the female betta species is always female; every other fish
-    // (bettas included) gets a random gender so all crosses can breed
-    const gender = opts.gender || (speciesId === 'female_betta'
-      ? 'female'
+    // only the female betta species is always female; every other betta is male
+    const gender = opts.gender || (speciesId === 'female_betta' ? 'female'
+      : grp === 'betta' ? 'male'
       : (Math.random() < 0.5 ? 'male' : 'female'));
     const lineage = opts.lineage || { mother: null, father: null, hybrid: 0, generation: 0 };
     const info = await db.run(

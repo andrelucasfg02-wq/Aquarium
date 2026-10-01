@@ -224,16 +224,10 @@ async function openDb() {
     if (!eggCols.rows.some((c) => c.name === 'species')) {
       await client.execute('ALTER TABLE eggs ADD COLUMN species TEXT');
     }
-    // 2026-10-01: the 29/09 betta gender rule made every non-female_betta betta
-    // male, which broke all betta breeding except X x female_betta. Re-roll
-    // genders once (self-heals too: runs again only if no female betta exists).
-    const fb = await client.execute(
-      `SELECT COUNT(*) AS n FROM fish WHERE grp='betta' AND species_id!='female_betta' AND gender='female'`);
-    if (fb.rows[0].n === 0) {
-      await client.execute(
-        `UPDATE fish SET gender=CASE WHEN (abs(random()) % 2)=0 THEN 'male' ELSE 'female' END
-         WHERE grp='betta' AND species_id!='female_betta'`);
-    }
+    // 2026-10-01: betta gender rule — only the female_betta species is female,
+    // every other betta is male. One-time: force existing non-female bettas male.
+    await client.execute(
+      `UPDATE fish SET gender='male' WHERE grp='betta' AND species_id!='female_betta' AND gender!='male'`);
     // dirt spawn billing: spawned_at marks up to when hourly dirt was generated,
     // so maintain() only ever spawns each hour's dirt once (no flood on refresh)
     const dsCols = await client.execute('PRAGMA table_info(dirt_state)');

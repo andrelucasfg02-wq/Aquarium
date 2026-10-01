@@ -682,11 +682,15 @@ const UI = (() => {
       const id = +el.dataset.id;
       const f = tf.find((x) => x.id === id);
       if (el.dataset.pick === "m") {
-        breedMale = f; breedFemale = null; partners = null;
+        breedMale = f; partners = null;
         if (f) {
           const r = await Api.breedingPartners(f.id);
-          if (r.ok) { partners = r.partners; partnersFor = f.id; }
-        }
+          if (r.ok) {
+            partners = r.partners; partnersFor = f.id;
+            // keep the chosen mother if she's still a valid partner for this male
+            if (breedFemale && !partners.some((p) => p.id === breedFemale.id)) breedFemale = null;
+          } else breedFemale = null;
+        } else breedFemale = null;
       } else breedFemale = f;
       renderBreeding();
     });

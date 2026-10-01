@@ -154,10 +154,10 @@ function helpers(db) {
     const grp = C.speciesGroup(speciesId);
     const tank = opts.tank || await activeTank(uid);
     const pos = (opts.x != null) ? { x: opts.x, y: opts.y } : C.randomPointInGlass(tank);
-    // bettas: only the female betta is female, every other betta is male;
-    // all other groups keep a random gender
-    const gender = opts.gender || (grp === 'betta'
-      ? (speciesId === 'female_betta' ? 'female' : 'male')
+    // only the female betta species is always female; every other fish
+    // (bettas included) gets a random gender so all crosses can breed
+    const gender = opts.gender || (speciesId === 'female_betta'
+      ? 'female'
       : (Math.random() < 0.5 ? 'male' : 'female'));
     const lineage = opts.lineage || { mother: null, father: null, hybrid: 0, generation: 0 };
     const info = await db.run(
@@ -638,6 +638,7 @@ module.exports = function gameRoutes(db) {
       egg: {
         id: egg.id, group: egg.grp, variant_a: egg.variant_a, variant_b: egg.variant_b,
         hybrid: !!egg.hybrid, generation: egg.generation, hatch_at: egg.hatch_at, created_at: egg.created_at,
+        species: egg.species || null,
       },
     });
   }));

@@ -351,6 +351,8 @@ const UI = (() => {
     market: `<img class="title-ic" src="assets/icons/icon_diamond.png" alt="">` + t("market.title"), chat: ICON("chat") + t("chat.title"),
     community: ICON("community") + t("nav.community"),
     gemshop: ICON("diamond") + t("gemshop.title"),
+    coinshop: ICON("gold") + t("coinshop.title"),
+    foodshop: ICON("food") + t("foodshop.title"),
   };
 
   /* ---------- helpers ---------- */
@@ -469,6 +471,51 @@ const UI = (() => {
   function buyGemPack(gems) {
     // real checkout (Stripe/Mercado Pago) plugs in here once the key is set
     toast(t("gemshop.soon"));
+  }
+
+  /* ================= COIN SHOP (via + on the coins HUD chip: diamonds -> coins) ================= */
+  async function renderCoinShop() {
+    const body = $("screen-body");
+    let html = `<div class="sub" style="margin:2px 0 12px">${t("coinshop.subtitle")}</div><div class="grid2">`;
+    DATA.COIN_PACKS.forEach((p, i) => {
+      html += `<div class="card"><img class="fish-prev" src="assets/icons/icon_gold.png" alt="" style="width:64px;height:64px">
+        <div class="nm">+${fmtCoins(p.coins)} ${t("coinshop.coins")}</div>
+        <button class="pill-btn" data-coinpack="${i}">${CUR_GEM}${p.gems}</button>
+      </div>`;
+    });
+    html += `</div>`;
+    body.innerHTML = html;
+    body.querySelectorAll("[data-coinpack]").forEach((b) => b.onclick = async () => {
+      b.disabled = true;
+      const r = await Api.buyCoins(+b.dataset.coinpack);
+      if (r.ok) { AudioFX.coin(); toast(t("coinshop.bought")); }
+      else { AudioFX.error(); toast(r.error === "not enough gems" ? t("coinshop.not_enough") : (r.error || t("toast.couldnt_buy_food"))); }
+      await App.refresh();
+      renderCoinShop();
+    });
+  }
+
+  /* ================= FOOD SHOP (via + on the food HUD chip: coin packs of food) ================= */
+  async function renderFoodShop() {
+    const body = $("screen-body");
+    const price = DATA.FOOD_PRICE || 10;
+    let html = `<div class="sub" style="margin:2px 0 12px">${t("foodshop.subtitle")}</div><div class="grid2">`;
+    for (const q of DATA.FOOD_PACKS) {
+      html += `<div class="card"><img class="fish-prev" src="assets/icons/icon_food.png" alt="" style="width:64px;height:64px">
+        <div class="nm">+${q} ${t("foodshop.food")}</div>
+        <button class="pill-btn" data-foodpack="${q}">${CUR_GOLD}${fmtCoins(price * q)}</button>
+      </div>`;
+    }
+    html += `</div>`;
+    body.innerHTML = html;
+    body.querySelectorAll("[data-foodpack]").forEach((b) => b.onclick = async () => {
+      b.disabled = true;
+      const r = await Api.buyFood(+b.dataset.foodpack);
+      if (r.ok) { AudioFX.coin(); toast(t("toast.food_bought", { qty: b.dataset.foodpack })); }
+      else { AudioFX.error(); toast(r.error || t("toast.couldnt_buy_food")); }
+      await App.refresh();
+      renderFoodShop();
+    });
   }
 
   /* ================= LAB (medicine) ================= */
@@ -1180,6 +1227,8 @@ const UI = (() => {
     settings: renderSettings, minigame: renderMinigame, event: renderEvent,
     market: renderMarket, chat: renderChat, community: renderCommunity,
     gemshop: renderGemShop,
+    coinshop: renderCoinShop,
+    foodshop: renderFoodShop,
   };
 
   return {

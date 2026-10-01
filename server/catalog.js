@@ -282,6 +282,15 @@ const QUEST_DEFS = [
   { id: 'own_8_fish',   title: 'Own 8 fish',             desc: 'Have 8 fish at once.',           period: 'weekly', target: 8, reward_coins: 300, reward_gems: 0 },
 ];
 
+// Diamond -> coin exchange packs (server-authoritative; bulk bonus grows with size)
+const COIN_PACKS = [
+  { gems: 10,  coins: 1200  },
+  { gems: 25,  coins: 3250  },
+  { gems: 50,  coins: 7000  },
+  { gems: 100, coins: 15000 },
+  { gems: 200, coins: 32000 },
+];
+
 function periodKey(period, nowSec) {
   const d = new Date(nowSec * 1000);
   const ymd = d.toISOString().slice(0, 10);
@@ -303,4 +312,5 @@ module.exports = {
   GLASS, clampDecor, randomPointInGlass,
   decorCatalog, decorItem,
   QUEST_DEFS, periodKey,
+  COIN_PACKS,
 };

@@ -70,6 +70,14 @@ const DATA = {
     { gems: 600, price: "R$ 44,99" },
     { gems: 1000, price: "R$ 69,99" },
   ],
+  COIN_PACKS: [
+    { gems: 10,  coins: 1200  },
+    { gems: 25,  coins: 3250  },
+    { gems: 50,  coins: 7000  },
+    { gems: 100, coins: 15000 },
+    { gems: 200, coins: 32000 },
+  ],
+  FOOD_PACKS: [1, 5, 10, 20, 50],
 };
 
 /** Frame roles: 0 idle, 1-4 swim, 5 eat (only while eating), 6 sleep, 7 rear/turn */

@@ -735,6 +735,20 @@ module.exports = function gameRoutes(db) {
     res.json({ ok: true, food });
   }));
 
+  r.post('/shop/coins/buy', ah(async (req, res) => {
+    const uid = req.user.id;
+    const pack = C.COIN_PACKS[Number(req.body && req.body.pack)];
+    if (!pack) return res.status(400).json({ ok: false, error: 'invalid pack' });
+    const w = await H.getWallet(uid);
+    if (w.gems < pack.gems) return res.status(400).json({ ok: false, error: 'not enough gems' });
+    const wallet = await db.tx(async (txDb) => {
+      const Ht = helpers(txDb);
+      await txDb.run('UPDATE wallets SET gems=gems-?, coins=coins+? WHERE user_id=?', pack.gems, pack.coins, uid);
+      return Ht.getWallet(uid);
+    });
+    res.json({ ok: true, coins: wallet.coins, gems: wallet.gems });
+  }));
+
   r.post('/settings', ah(async (req, res) => {
     const uid = req.user.id;
     const { music, sfx, quality } = req.body || {};

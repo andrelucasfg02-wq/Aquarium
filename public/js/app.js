@@ -230,6 +230,16 @@ const App = (() => {
       document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
       UI.open("gemshop");
     };
+    $("btn-coins-plus").onclick = () => {
+      cancelPlace();
+      document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
+      UI.open("coinshop");
+    };
+    $("btn-food-plus").onclick = () => {
+      cancelPlace();
+      document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
+      UI.open("foodshop");
+    };
 
     $("btn-feed").onclick = async () => {
       cancelPlace();

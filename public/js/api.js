@@ -60,6 +60,7 @@ const Api = (() => {
     removeDecor: (id) => post("/api/decor/remove", { id }),
     claimQuest: (quest_id) => post("/api/quests/claim", { quest_id }),
     buyFood: (qty) => post("/api/shop/food/buy", { qty }),
+    buyCoins: (pack) => post("/api/shop/coins/buy", { pack }),
     saveSettings: (music, sfx, quality) => post("/api/settings", { music, sfx, quality }),
     minigameFinish: (score) => post("/api/minigame/finish", { score }),
     shellStatus: () => get("/api/shell/status"),

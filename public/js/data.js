@@ -85,6 +85,20 @@ const DATA = {
 /** Frame roles: 0 idle, 1-4 swim, 5 eat (only while eating), 6 sleep, 7 rear/turn */
 // Bump SPRITE_V whenever shipped art changes so phones don't keep stale cached PNGs.
 const SPRITE_V = 25;
+// Species with a custom hybrid egg icon (assets/eggs/<species_id>.png).
+const EGG_V = 1;
+const EGG_ART = {
+  maple_rose_betta: 1, maple_ember_betta: 1, maple_dusk_betta: 1, maple_storm_betta: 1,
+  maple_lilac_betta: 1, maple_petal_betta: 1, maple_tide_betta: 1, maple_coral_betta: 1,
+  golden_veil_betta: 1, rose_halfmoon_betta: 1, ember_crown_betta: 1, bloom_maple_betta: 1,
+  azure_plakat_betta: 1,
+  twilight_goldfish: 1, sunset_goldfish: 1, tidepool_goldfish: 1, duskfin_goldfish: 1,
+  blaze_goldfish: 1, orchid_goldfish: 1, cinder_goldfish: 1, gilded_goldfish: 1,
+  nebula_goldfish: 1, ember_night_goldfish: 1,
+};
+function eggIcon(speciesId) {
+  return (speciesId && EGG_ART[speciesId]) ? `assets/eggs/${speciesId}.png?v=${EGG_V}` : null;
+}
 function spriteURL(speciesId, frame) {
   const s = DATA.SPECIES[speciesId];
   if (!s) return "";

@@ -711,11 +711,18 @@ const UI = (() => {
   function eggListHtml() {
     const eggs = state.eggs || [];
     if (!eggs.length) return `<div class="empty">${t("breed.no_eggs")}</div>`;
-    return eggs.map((e) => `
-      <div class="row-card egg-card"><div class="grow">
-        <b>🥚 ${esc(speciesName(e.variant_a) || e.group)} ${e.hybrid ? '<span class="tag hybrid">' + t("tag.hybrid") + "</span>" : ""}</b>
-        <div class="lineage">${t("tag.gen", { n: e.generation || 1 })} · ${esc(speciesName(e.variant_a) || "")} × ${esc(speciesName(e.variant_b) || "")}</div>
-      </div><div class="countdown" data-hatch="${e.hatch_at * 1000}">…</div></div>`).join("");
+    return eggs.map((e) => {
+      const sp = e.species || null;
+      const icon = (typeof eggIcon === "function") ? eggIcon(sp) : null;
+      const name = esc(speciesName(sp) || speciesName(e.variant_a) || e.group);
+      return `<div class="row-card egg-card">
+        <div class="egg-ic">${icon ? `<img src="${icon}" alt="">` : `🥚`}</div>
+        <div class="grow">
+          <div class="lineage">${t("tag.gen", { n: e.generation || 1 })} · ${esc(speciesName(e.variant_a) || "")} × ${esc(speciesName(e.variant_b) || "")} ${e.hybrid ? '<span class="tag hybrid">' + t("tag.hybrid") + "</span>" : ""}</div>
+        </div>
+        <div class="egg-right"><div class="egg-name">${name}</div><div class="countdown" data-hatch="${e.hatch_at * 1000}">…</div></div>
+      </div>`;
+    }).join("");
   }
   function startEggTimer() {
     if (eggTimer) clearInterval(eggTimer);
@@ -723,7 +730,7 @@ const UI = (() => {
       let anyExpired = false;
       document.querySelectorAll("[data-hatch]").forEach((el) => {
         const left = +el.dataset.hatch - Date.now();
-        el.textContent = "⏳ " + fmtCountdown(left);
+        el.textContent = "⏰ " + fmtCountdown(left);
         if (left <= 0) anyExpired = true;
       });
       if (anyExpired) {

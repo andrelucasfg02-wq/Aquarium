@@ -34,6 +34,28 @@ const fishTradeable = (fish, nowT) => {
   return { ok: true };
 };
 
+// Resolve what an egg will hatch into at breed time, so the egg card can show
+// its exact icon + name. Mirrors hatchEgg's logic; the maple 50/50 is rolled
+// here. Returns null for cross-variant inherits (still rolled at hatch).
+const resolveEggSpecies = (variant_a, variant_b) => {
+  if (variant_a === variant_b) return variant_a;
+  const pair = [variant_a, variant_b];
+  if (pair.includes('female_betta')) {
+    const other = pair[0] === 'female_betta' ? pair[1] : pair[0];
+    const v = (C.FEMALE_CROSSES || {})[other];
+    if (v) return v;
+  }
+  if (pair.includes('autumn_fish')) {
+    const other = pair[0] === 'autumn_fish' ? pair[1] : pair[0];
+    const hybs = (C.MAPLE_CROSSES || {})[other];
+    if (hybs) return hybs[Math.random() < 0.5 ? 0 : 1];
+  }
+  const mixKey = [variant_a, variant_b].sort().join('+');
+  const mix = (C.HYBRID_MIXES || {})[mixKey];
+  if (mix) return mix;
+  return null;
+};
+
 function helpers(db) {
   const getWallet = (uid) => db.get('SELECT * FROM wallets WHERE user_id=?', uid);
   const addCoins = (uid, n) => db.run('UPDATE wallets SET coins=coins+? WHERE user_id=?', n, uid);
@@ -156,7 +178,8 @@ function helpers(db) {
     // Maple Betta crosses produce true hybrid offspring (the blended look),
     // not just one parent's look: 50/50 between the cross's two variants.
     const pair = [egg.variant_a, egg.variant_b];
-    let variant;
+    let variant = egg.species || null; // resolved at breed time for new eggs
+    if (!variant) {
     // Female Betta crosses produce their own hybrid offspring (not a 50/50 inherit).
     // Checked before the Maple branch so maple x female yields the bloom hybrid.
     if (pair.includes('female_betta')) {
@@ -177,6 +200,7 @@ function helpers(db) {
       variant = egg.variant_a === egg.variant_b
         ? egg.variant_a
         : (Math.random() < 0.5 ? egg.variant_a : egg.variant_b); // cross-variant inherits one parent's look
+    }
     }
     const tank = await activeTank(uid);
     const location = await tankFishCount(uid, tank) < C.TANK_CAPACITY[tank] ? 'tank' : 'inventory';
@@ -276,6 +300,7 @@ module.exports = function gameRoutes(db) {
       .map((e) => ({
         id: e.id, group: e.grp, variant_a: e.variant_a, variant_b: e.variant_b,
         hybrid: !!e.hybrid, generation: e.generation, hatch_at: e.hatch_at, created_at: e.created_at,
+        species: e.species || null,
       }));
     const spots = await db.all('SELECT id,x,y FROM dirt_spots WHERE user_id=?', uid);
     const ds = await db.get('SELECT last_cleaned_at FROM dirt_state WHERE user_id=?', uid);
@@ -597,11 +622,12 @@ module.exports = function gameRoutes(db) {
     const eggId = await db.tx(async (txDb) => {
       const Ht = helpers(txDb);
       await txDb.run('UPDATE wallets SET gems=gems-2 WHERE user_id=?', uid);
+      const species = resolveEggSpecies(male.species_id, female.species_id);
       const info = await txDb.run(
-        `INSERT INTO eggs (user_id,grp,variant_a,variant_b,hybrid,generation,hatch_at,created_at,event_id)
-         VALUES (?,?,?,?,?,?,?,?,?)`,
+        `INSERT INTO eggs (user_id,grp,variant_a,variant_b,hybrid,generation,hatch_at,created_at,event_id,species)
+         VALUES (?,?,?,?,?,?,?,?,?,?)`,
         uid, male.grp, male.species_id, female.species_id, hybrid ? 1 : 0,
-        generation, t + hatchHours * 3600, t, male.event_id || female.event_id || null);
+        generation, t + hatchHours * 3600, t, male.event_id || female.event_id || null, species);
       await Ht.questProgressAdd(uid, 'breed_1', 1, t);
       await Ht.addXp(uid, 5);
       return info.lastInsertRowid;

@@ -301,6 +301,10 @@ select.sel{padding:10px;border-radius:12px;border:2px solid var(--green-border);
 .fish-pick .pick.sel{border-color:var(--green-d);background:#d7f4dd;box-shadow:0 0 0 2px var(--green-d)}
 .fish-pick .pick img{width:64px;height:48px;object-fit:contain}
 .egg-card{background:#edfaef;border:2px dashed var(--green-d)}
+.egg-ic{width:46px;height:46px;flex:0 0 46px;display:flex;align-items:center;justify-content:center;font-size:30px}
+.egg-ic img{width:46px;height:46px;object-fit:contain}
+.egg-right{text-align:right;flex:0 0 auto}
+.egg-name{font-weight:800;font-size:13px}
 .countdown{font-weight:800;color:#2f7a45;font-variant-numeric:tabular-nums}
 .lineage{font-size:11px;color:var(--ink-soft)}
 .hidden{display:none!important}

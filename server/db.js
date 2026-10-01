@@ -220,6 +220,10 @@ async function openDb() {
     if (!eggCols.rows.some((c) => c.name === 'event_id')) {
       await client.execute('ALTER TABLE eggs ADD COLUMN event_id TEXT');
     }
+    // egg icon+name: resolved species stored at breed time (maple 50/50 rolled here)
+    if (!eggCols.rows.some((c) => c.name === 'species')) {
+      await client.execute('ALTER TABLE eggs ADD COLUMN species TEXT');
+    }
     // dirt spawn billing: spawned_at marks up to when hourly dirt was generated,
     // so maintain() only ever spawns each hour's dirt once (no flood on refresh)
     const dsCols = await client.execute('PRAGMA table_info(dirt_state)');

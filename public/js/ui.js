@@ -250,6 +250,7 @@ const UI = (() => {
     closeFeedChoice();
     const overlay = document.createElement("div");
     overlay.id = "feed-choice-overlay";
+    overlay.className = "food-pop-overlay";
     overlay.innerHTML = `
       <div class="food-pop">
         <div style="text-align:center;font-weight:800;margin-bottom:10px">${t("feedchoice.title")}</div>

@@ -241,26 +241,28 @@ const App = (() => {
       UI.open("foodshop");
     };
 
-    $("btn-feed").onclick = async () => {
+    $("btn-feed").onclick = () => {
       cancelPlace();
       if (!state) return;
-      // feeding costs 1 food per fish in the active tank (special food for bottom fish)
+      // the feed button now asks which food to drop: normal or bottom food
       const tankFish = (state.fish || []).filter((f) => f.location === "tank" && f.tank === state.tanks.active);
       const nBottom = tankFish.filter((f) => f.group === "bottom_fish").length;
       const nNormal = tankFish.length - nBottom;
-      if ((state.wallets.food || 0) < nNormal) {
-        UI.toast(t("app.no_food")); AudioFX.error(); return;
-      }
-      if ((state.wallets.food_special || 0) < nBottom) {
-        UI.toast(t("toast.no_special_food")); AudioFX.error(); return;
-      }
-      const r = await Api.feed();
+      UI.openFeedChoice(nNormal, nBottom, feedKind);
+    };
+
+    const feedKind = async (kind) => {
+      cancelPlace();
+      if (!state) return;
+      const r = await Api.feed(kind);
       if (r.ok) {
-        tank.feedBurst(r.pellets || 1);
+        tank.feedBurst(r.pellets || 1, r.kind || kind);
         UI.toast(t("app.yum"));
       } else {
         AudioFX.error();
-        UI.toast(r.error === "no food" ? "No food left! Buy more in 🎒 Inventory 🍤" : (r.error || r.message || t("app.err_feed")));
+        UI.toast(r.error === "no food" || r.error === "no special food"
+          ? t("toast.no_food")
+          : (r.error || r.message || t("app.err_feed")));
       }
       await refresh();
     };
@@ -338,6 +340,16 @@ const App = (() => {
     tank.on("wiped", async (ids) => {
       const r = await Api.wipeDirt(ids);
       if (!r.ok && r.error !== "auth") UI.toast(r.error || r.message || t("app.err_wipe"));
+      await refresh();
+    });
+
+    tank.on("coryCleaned", async ({ spotId, fishId }) => {
+      // the cory already sucked the spot up locally; the server confirms it
+      // (1/hour per fish) and deletes the spot for real
+      try {
+        const r = await Api.coryClean(spotId, fishId);
+        if (!r.ok && r.error !== "spot gone") UI.toast(r.error || r.message || t("app.err_wipe"));
+      } catch (e) { /* offline: the spot comes back on next sync */ }
       await refresh();
     });
 

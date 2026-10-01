@@ -68,7 +68,7 @@ const SPECIES_NAMES = {
   cinder_goldfish: 'Cinder Goldfish', gilded_goldfish: 'Gilded Goldfish',
   nebula_goldfish: 'Nebula Goldfish', ember_night_goldfish: 'Ember Night Goldfish',
   red_shrimp: 'Red Shrimp', blue_shrimp: 'Blue Shrimp', yellow_shrimp: 'Yellow Shrimp',
-  snail: 'Snail', bottom_fish: 'Bottom Fish',
+  snail: 'Snail', bottom_fish: 'Cory Fish',
 };
 
 // price_coins / price_gems(null if not purchasable with gems)
@@ -80,7 +80,7 @@ const SPECIES_PRICES = {
   autumn_fish: { coins: null, gems: null },
   red_shrimp: { coins: 200, gems: null }, blue_shrimp: { coins: 200, gems: null },
   yellow_shrimp: { coins: 200, gems: null },
-  snail: { coins: 250, gems: null }, bottom_fish: { coins: 400, gems: null },
+  snail: { coins: 250, gems: null }, bottom_fish: { coins: 3000, gems: null },
   fullmoon_betta: { coins: 1000, gems: null }, crowntail_betta: { coins: 1000, gems: null },
   female_betta: { coins: 1000, gems: null },
   veiltail_betta: { coins: 1400, gems: 8 }, plakat_betta: { coins: 1400, gems: 8 },
@@ -186,7 +186,8 @@ const HUNGER_FULL_SECS = 6 * 3600;   // hunger stays 100% for 6h after feeding
 const HUNGER_EMPTY_SECS = 24 * 3600;  // hunger hits 0% 24h after feeding
 const SICK_AFTER_SECS = 36 * 3600;   // fish gets sick 36h after last feeding
 const MEDICINE_PRICE = 250;          // coins per medicine
-const SPECIAL_FOOD_PRICE = 10;       // coins per special food (bottom fish)
+const SPECIAL_FOOD_PRICE = 20;      // coins per special food (bottom fish)
+const SPECIAL_FOOD_PACKS = [1, 10];   // only packs sold for bottom food
 
 // ---- coin farming: fish earn coins over time; a finished cycle waits until
 // collected, then restarts. stage -> {coins, secs}
@@ -310,6 +311,7 @@ module.exports = {
   HATCH_HOURS, GROWTH_DAYS, HYBRID_HATCH_HOURS, HYBRID_GROWTH_DAYS, growthStage,
   GROW_LEVEL, growLevel,
   HUNGER_FULL_SECS, HUNGER_EMPTY_SECS, SICK_AFTER_SECS, MEDICINE_PRICE, SPECIAL_FOOD_PRICE,
+  SPECIAL_FOOD_PACKS,
   hungerPct, fishMood, fishLevel, COIN_FARM, EVENT_DIAMOND_DAILY, EVENT_DIAMOND_SECS,
   TANK_CAPACITY, DECOR_SLOTS, TANK_PRICES, DECOR_EXTRA_SLOT_MAX, DECOR_EXTRA_SLOT_COST,
   GLASS, clampDecor, randomPointInGlass,

@@ -53,13 +53,13 @@ const DATA = {
     blue_shrimp:           { group:"shrimp", name:"Blue Shrimp",  price:200 },
     yellow_shrimp:         { group:"shrimp", name:"Yellow Shrimp",price:200 },
     snail:                 { group:"snail",  name:"Snail",        price:250 },
-    bottom_fish:           { group:"bottom_fish", name:"Bottom Fish", price:400 },
+    bottom_fish:           { group:"bottom_fish", name:"Cory Fish", price:3000 },
   },
   GROUP_BASE_PX: { goldfish: 150, betta: 140, shrimp: 85, snail: 95, bottom_fish: 130 },
   GROUP_SPEED:  { goldfish: .055, betta: .05, shrimp: .05, snail: .008, bottom_fish: .035 }, // fractions/sec
   STAGE_SCALE: { baby: .4, juvenile: .7, adult: 1 },
   FOOD_PRICE: 10,
-  SPECIAL_FOOD_PRICE: 10,
+  SPECIAL_FOOD_PRICE: 20,
   MEDICINE_PRICE: 250,
   FILTER_PRICE: 100,
   BREED_GEMS: 2,
@@ -79,16 +79,17 @@ const DATA = {
     { gems: 200, coins: 32000 },
   ],
   FOOD_PACKS: [1, 5, 10, 20, 50],
+  SPECIAL_FOOD_PACKS: [1, 10],
 };
 
 /** Frame roles: 0 idle, 1-4 swim, 5 eat (only while eating), 6 sleep, 7 rear/turn */
 // Bump SPRITE_V whenever shipped art changes so phones don't keep stale cached PNGs.
-const SPRITE_V = 17;
+const SPRITE_V = 19;
 function spriteURL(speciesId, frame) {
   const s = DATA.SPECIES[speciesId];
   if (!s) return "";
   if (s.folder) return `assets/sprites/${s.folder}/frame${frame}.png?v=${SPRITE_V}`;
-  return `assets/new_critters/${speciesId}_0${frame + 1}.png?v=${SPRITE_V}`; // _01.._08 → frames 0..7
+  return `assets/new_critters/${speciesId}_${String(frame + 1).padStart(2, "0")}.png?v=${SPRITE_V}`; // _01.._10 → frames 0..9
 }
 function speciesName(id) { return (DATA.SPECIES[id] || {}).name || id; }
 function speciesGroup(id) { return (DATA.SPECIES[id] || {}).group || "goldfish"; }

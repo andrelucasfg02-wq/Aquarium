@@ -187,6 +187,10 @@ async function openDb() {
       const _t = Math.floor(Date.now() / 1000);
       await client.execute({ sql: 'UPDATE fish SET gem_at=? WHERE gem_at IS NULL', args: [_t] });
     }
+    // cory cleaning cooldown: last time this fish cleaned a dirt spot (1/hour)
+    if (!cols.rows.some((c) => c.name === 'clean_at')) {
+      await client.execute('ALTER TABLE fish ADD COLUMN clean_at INTEGER');
+    }
     const wcols = await client.execute('PRAGMA table_info(wallets)');
     if (!wcols.rows.some((c) => c.name === 'medicine')) {
       await client.execute('ALTER TABLE wallets ADD COLUMN medicine INTEGER NOT NULL DEFAULT 0');

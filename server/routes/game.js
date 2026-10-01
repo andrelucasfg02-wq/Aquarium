@@ -122,6 +122,7 @@ function helpers(db) {
       fed_at: row.fed_at, lineage,
       coin_pending, coin_in, coin_amount: coinRate ? coinRate.coins : 0,
       gem_pending, gem_amount,
+      clean_at: row.clean_at || 0,
       origin: row.origin || 'shop', event_id: row.event_id || null,
       tradeable: tr.ok, trade_lock: tr.ok ? null : tr.reason,
     };
@@ -358,23 +359,29 @@ module.exports = function gameRoutes(db) {
 
   r.post('/fish/feed', ah(async (req, res) => {
     const uid = req.user.id; const t = now();
+    // the feed button offers a choice: normal food feeds the swimmers,
+    // bottom food feeds only the bottom fish (1 food per fish of that kind)
+    const kind = (req.body && req.body.kind) === 'special' ? 'special' : 'normal';
     const tank = await H.activeTank(uid);
-    // feeding costs 1 food per fish in the active tank; bottom fish eat special food
     const tankFish = await db.all("SELECT id, grp FROM fish WHERE user_id=? AND tank=? AND location='tank'", uid, tank);
-    if (tankFish.length === 0) return res.json({ ok: true, pellets: 0 });
-    const nBottom = tankFish.filter((f) => f.grp === 'bottom_fish').length;
-    const nNormal = tankFish.length - nBottom;
+    const targets = tankFish.filter((f) => (kind === 'special') === (f.grp === 'bottom_fish'));
+    if (targets.length === 0) return res.json({ ok: true, pellets: 0, kind });
     const w = await H.getWallet(uid);
-    if (w.food < nNormal) return res.status(400).json({ ok: false, error: 'no food', need: nNormal, have: w.food });
-    if ((w.food_special || 0) < nBottom) return res.status(400).json({ ok: false, error: 'no special food', need: nBottom, have: w.food_special || 0 });
+    if (kind === 'special') {
+      if ((w.food_special || 0) < targets.length) return res.status(400).json({ ok: false, error: 'no special food', need: targets.length, have: w.food_special || 0 });
+    } else if (w.food < targets.length) {
+      return res.status(400).json({ ok: false, error: 'no food', need: targets.length, have: w.food });
+    }
     await db.tx(async (txDb) => {
       const Ht = helpers(txDb);
-      await txDb.run('UPDATE wallets SET food=food-?, food_special=food_special-? WHERE user_id=?', nNormal, nBottom, uid);
-      await txDb.run("UPDATE fish SET fed_at=? WHERE user_id=? AND tank=? AND location='tank'", t, uid, tank);
+      if (kind === 'special') await txDb.run('UPDATE wallets SET food_special=food_special-? WHERE user_id=?', targets.length, uid);
+      else await txDb.run('UPDATE wallets SET food=food-? WHERE user_id=?', targets.length, uid);
+      const ids = targets.map((f) => f.id);
+      await txDb.run(`UPDATE fish SET fed_at=? WHERE id IN (${ids.map(() => '?').join(',')})`, t, ...ids);
       await Ht.questProgressAdd(uid, 'feed_3', 1, t);
       await Ht.addXp(uid, 2);
     });
-    res.json({ ok: true, pellets: tankFish.length });
+    res.json({ ok: true, pellets: targets.length, kind });
   }));
 
   r.post('/fish/feed-one', ah(async (req, res) => {
@@ -633,6 +640,27 @@ module.exports = function gameRoutes(db) {
     res.json({ ok: true, remaining, green });
   }));
 
+  // cory cleaning: a bottom fish swims to a dirt spot and sucks it up (1/hour per fish)
+  r.post('/dirt/cory-clean', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const { spot_id, fish_id } = req.body || {};
+    const fish = await db.get('SELECT id, grp, clean_at, location, tank FROM fish WHERE id=? AND user_id=?', fish_id, uid);
+    if (!fish || fish.grp !== 'bottom_fish') return res.status(404).json({ ok: false, error: 'fish not found' });
+    if (fish.location !== 'tank') return res.status(400).json({ ok: false, error: 'fish not in tank' });
+    const active = await H.activeTank(uid);
+    if (fish.tank !== active) return res.status(400).json({ ok: false, error: 'fish not in active tank' });
+    if (fish.clean_at && t - fish.clean_at < 3600) {
+      return res.status(400).json({ ok: false, error: 'cleaning cooldown', retry_in: 3600 - (t - fish.clean_at) });
+    }
+    const spot = await db.get('SELECT id FROM dirt_spots WHERE id=? AND user_id=?', spot_id, uid);
+    if (!spot) return res.status(404).json({ ok: false, error: 'spot gone' });
+    await db.tx(async (txDb) => {
+      await txDb.run('DELETE FROM dirt_spots WHERE id=?', spot_id);
+      await txDb.run('UPDATE fish SET clean_at=? WHERE id=?', t, fish_id);
+    });
+    res.json({ ok: true });
+  }));
+
   r.post('/dirt/filter', ah(async (req, res) => {
     const uid = req.user.id; const t = now();
     const ds = await db.get('SELECT last_cleaned_at FROM dirt_state WHERE user_id=?', uid);
@@ -743,7 +771,10 @@ module.exports = function gameRoutes(db) {
     if (!qty || qty <= 0 || qty > 1000) return res.status(400).json({ ok: false, error: 'invalid qty' });
     // kind: 'normal' (default) or 'special' (for bottom fish)
     const special = (req.body && req.body.kind) === 'special';
-    const price = special ? (C.SPECIAL_FOOD_PRICE || 10) : 10;
+    if (special && !(C.SPECIAL_FOOD_PACKS || [1, 10]).includes(qty)) {
+      return res.status(400).json({ ok: false, error: 'invalid pack' });
+    }
+    const price = special ? (C.SPECIAL_FOOD_PRICE || 20) : 10;
     const cost = qty * price;
     const w = await H.getWallet(uid);
     if (w.coins < cost) return res.status(400).json({ ok: false, error: 'not enough coins' });

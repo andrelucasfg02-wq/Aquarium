@@ -146,7 +146,20 @@ class TankView {
       animT: Math.random() * 10,
       frame: 0, faceT: 0, eatT: 0, turnT: 0,
       emoteCd: 0,
+      // cory cleaning: 1 dirt spot per hour per fish
+      cleanCd: f.clean_at ? Math.max(0, 3600 - (Date.now() / 1000 - f.clean_at)) : 0,
+      cleanT: 0, cleanSpot: null,
     };
+  }
+
+  nearestSpot(e) {
+    let best = null, bd = 1e9;
+    for (const s of this.spots) {
+      if (s.dying) continue;
+      const d = Math.hypot(s.x - e.px, s.y - e.py);
+      if (d < bd) { bd = d; best = s; }
+    }
+    return best;
   }
 
   pickTarget(e) {
@@ -178,7 +191,21 @@ class TankView {
 
   update(dt) {
     const now = performance.now() / 1000;
-    for (const e of this.fish.values()) this.updateFish(e, dt, now);
+    for (const e of this.fish.values()) {
+      if (e.cleanCd > 0) e.cleanCd -= dt;
+      this.updateFish(e, dt, now);
+    }
+    // cory cleaning: when a dirt spot shows up, an off-duty cory hurries over
+    // and sucks it up (server enforces 1/hour per fish)
+    for (const e of this.fish.values()) {
+      if (e.group !== "bottom_fish" || e.cleanCd > 0) continue;
+      if (e.state !== "idle" && e.state !== "swim" && e.state !== "sleep") continue;
+      const spot = this.nearestSpot(e);
+      if (spot) {
+        e.state = "clean"; e.cleanSpot = spot; e.cleanT = 0;
+        e.tx = spot.x; e.ty = spot.y;
+      }
+    }
     // pellets sink
     for (const p of this.pellets) {
       p.y += p.vy * dt;
@@ -189,9 +216,12 @@ class TankView {
     // fish chase pellets
     if (this.pellets.length) {
       for (const e of this.fish.values()) {
-        if (e.state === "eat" || e.group === "snail") continue;
+        if (e.state === "eat" || e.state === "clean" || e.group === "snail") continue;
+        // corys only eat green bottom pellets; everyone else eats normal food
+        const wantKind = e.group === "bottom_fish" ? "special" : "normal";
         let best = null, bd = 1e9;
         for (const p of this.pellets) {
+          if ((p.kind || "normal") !== wantKind) continue;
           const d = Math.hypot(p.x - e.px, p.y - e.py);
           if (d < bd) { bd = d; best = p; }
         }
@@ -250,7 +280,8 @@ class TankView {
         if (e.stateT <= 0) { this.pickTarget(e); e.state = "swim"; }
         break;
       case "turn":
-        e.frame = e.group === "betta" ? 2 : 7; // bettas have no back (top) pose: keep a swim frame while turning
+        // cory curls around (7); bettas have no back pose (2); others show the top (7)
+        e.frame = e.group === "betta" ? 2 : 7;
         e.turnT -= dt;
         if (e.turnT <= 0) { e.dir = wantDir; e.state = "swim"; }
         break;
@@ -269,15 +300,44 @@ class TankView {
         break;
       }
       case "eat":
-        e.frame = 5; // munch frame
+        if (e.group === "bottom_fish") {
+          // the sand-digging pose only when munching at the very bottom
+          const g = this.glass();
+          e.frame = (e.py >= g.bottom - .035) ? 8 : 5;
+        } else e.frame = 5; // munch frame
         e.eatT -= dt;
         if (e.eatT <= 0) { e.state = "idle"; e.stateT = 1 + Math.random() * 2; }
         break;
+      case "clean": {
+        const s = e.cleanSpot;
+        if (!s || s.dying) { e.state = "swim"; this.pickTarget(e); break; }
+        e.tx = s.x; e.ty = s.y;
+        const cd = Math.hypot(s.x - e.px, s.y - e.py);
+        if (cd > .03) {
+          e.frame = 1 + Math.floor(e.animT * 10) % 4; // hurry over
+          if (wantDir !== e.dir) e.dir = wantDir;
+          this.moveToward(e, speed * 2.2, dt);
+        } else {
+          e.frame = 9; // sucking the dirt off the glass
+          e.cleanT += dt;
+          if (e.cleanT > 2.2) {
+            s.dying = 1;
+            this.popAt(s.x, s.y);
+            this.spots = this.spots.filter((o) => !o.dying);
+            this.emit("coryCleaned", { spotId: s.id, fishId: e.data.id });
+            e.cleanCd = 3600;
+            e.cleanSpot = null; e.cleanT = 0;
+            e.state = "idle"; e.stateT = 1 + Math.random() * 2;
+          }
+        }
+        break;
+      }
       case "swim":
       default:
         e.frame = 1 + Math.floor(e.animT * 7) % 4;
         if (dist > .004 && wantDir !== e.dir) {
-          e.state = "turn"; e.turnT = .32; e.frame = e.group === "betta" ? 2 : 7;
+          e.state = "turn"; e.turnT = .32;
+          e.frame = e.group === "betta" ? 2 : 7;
           break;
         }
         this.moveToward(e, speed, dt);
@@ -358,14 +418,14 @@ class TankView {
     for (let i = 0; i < 8; i++) AudioFX.bubble();
   }
 
-  feedBurst(n) {
+  feedBurst(n, kind) {
     const g = this.glass();
     for (let i = 0; i < n; i++) {
       this.pellets.push({
         x: g.left + .05 + Math.random() * (g.right - g.left - .1),
         y: g.top + .02 + Math.random() * .1,
         vy: .018 + Math.random() * .012,
-        age: 0, gone: false,
+        age: 0, gone: false, kind: kind || "normal",
       });
     }
     // wake sleepers — dinner time!
@@ -417,12 +477,18 @@ Object.assign(TankView.prototype, {
     }
 
     // pellets
+    const greenPelletIm = loadImg("assets/icons/pellet_green.png");
     for (const p of this.pellets) {
       const [x, y] = fracToPx(p.x, p.y, v, T.w, T.h);
       const fade = p.age > 13 ? Math.max(0, 1 - (p.age - 13) / 2) : 1;
       ctx.globalAlpha = fade;
-      ctx.fillStyle = "#c98a4b";
-      ctx.beginPath(); ctx.arc(x, y, Math.max(2.5, .006 * T.w * v.s), 0, 7); ctx.fill();
+      if ((p.kind || "normal") === "special" && imgReady(greenPelletIm)) {
+        const s = Math.max(9, .022 * T.w * v.s);
+        ctx.drawImage(greenPelletIm, x - s / 2, y - s / 2, s, s);
+      } else {
+        ctx.fillStyle = (p.kind || "normal") === "special" ? "#4d8a3f" : "#c98a4b";
+        ctx.beginPath(); ctx.arc(x, y, Math.max(2.5, .006 * T.w * v.s), 0, 7); ctx.fill();
+      }
       ctx.globalAlpha = 1;
     }
 

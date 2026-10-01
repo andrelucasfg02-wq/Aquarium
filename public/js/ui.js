@@ -245,6 +245,35 @@ const UI = (() => {
   }
   function closeFoodPop() { const o = $("food-pop-overlay"); if (o) o.remove(); }
 
+  /* ---------- feed button: choose normal or bottom food ---------- */
+  function openFeedChoice(nNormal, nBottom, onPick) {
+    closeFeedChoice();
+    const overlay = document.createElement("div");
+    overlay.id = "feed-choice-overlay";
+    overlay.innerHTML = `
+      <div class="food-pop">
+        <div style="text-align:center;font-weight:800;margin-bottom:10px">${t("feedchoice.title")}</div>
+        <div class="fish-menu-btns" style="flex-direction:column;gap:10px">
+          <button class="pill-btn" data-feedkind="normal" ${nNormal ? "" : "disabled"}>
+            <img src="assets/icons/icon_food.png" alt="" style="width:26px;height:26px;vertical-align:-6px;margin-right:6px">${t("feedchoice.normal")}
+            <span class="sub"> · ${t("feedchoice.fish", { n: nNormal })}</span>
+          </button>
+          <button class="pill-btn" data-feedkind="special" ${nBottom ? "" : "disabled"}>
+            <img src="assets/icons/food_bottom_jar.png" alt="" style="width:26px;height:26px;vertical-align:-6px;margin-right:6px">${t("feedchoice.bottom")}
+            <span class="sub"> · ${t("feedchoice.fish", { n: nBottom })}</span>
+          </button>
+        </div>
+      </div>`;
+    overlay.onclick = (e) => { if (e.target === overlay) closeFeedChoice(); };
+    document.body.appendChild(overlay);
+    overlay.querySelectorAll("[data-feedkind]").forEach((b) => b.onclick = () => {
+      const kind = b.dataset.feedkind;
+      closeFeedChoice();
+      onPick(kind);
+    });
+  }
+  function closeFeedChoice() { const o = $("feed-choice-overlay"); if (o) o.remove(); }
+
   /* ---------- tank full: offer extra slot (diamonds) or bigger tank (coins) ---------- */
   function showTankFullPopup({ deco_id, x, y }) {
     closeTankFullPopup();
@@ -501,7 +530,7 @@ const UI = (() => {
     const price = DATA.FOOD_PRICE || 10;
     const sprice = DATA.SPECIAL_FOOD_PRICE || 10;
     const w = (App.state && App.state.wallets) || {};
-    const packCard = (q, p, kind) => `<div class="card"><img class="fish-prev" src="assets/icons/icon_food.png" alt="" style="width:64px;height:64px">
+    const packCard = (q, p, kind) => `<div class="card"><img class="fish-prev" src="assets/icons/${kind === "special" ? "food_bottom_jar" : "icon_food"}.png" alt="" style="width:64px;height:64px">
         <div class="nm">+${q} ${t(kind === "special" ? "foodshop.special_food" : "foodshop.food")}</div>
         <button class="pill-btn" data-foodpack="${q}" data-kind="${kind}">${CUR_GOLD}${fmtCoins(p * q)}</button>
       </div>`;
@@ -510,7 +539,7 @@ const UI = (() => {
     for (const q of DATA.FOOD_PACKS) html += packCard(q, price, "normal");
     html += `</div>`;
     html += `<div class="sub" style="margin:14px 0 8px"><b>${t("foodshop.special_title")}</b> — ${t("foodshop.have")}: ${w.food_special || 0}</div><div class="grid2">`;
-    for (const q of DATA.FOOD_PACKS) html += packCard(q, sprice, "special");
+    for (const q of (DATA.SPECIAL_FOOD_PACKS || [1, 10])) html += packCard(q, sprice, "special");
     html += `</div>`;
     body.innerHTML = html;
     body.querySelectorAll("[data-foodpack]").forEach((b) => b.onclick = async () => {
@@ -1238,7 +1267,7 @@ const UI = (() => {
 
   return {
     toast, updateHUD, open, close, showTankFullPopup, closeTankFullPopup,
-    openFishMenu, closeFishMenu, openBreedingWith,
+    openFishMenu, closeFishMenu, openBreedingWith, openFeedChoice, closeFeedChoice,
     setCatalogs(f, d) { fishCatalog = f; decorCatalog = d; },
     get decorCatalog() { return decorCatalog; },
     refreshCurrent() {

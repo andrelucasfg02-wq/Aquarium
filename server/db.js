@@ -18,7 +18,8 @@ const SCHEMA = `
       created_at INTEGER, expires_at INTEGER);
     CREATE TABLE IF NOT EXISTS wallets(
       user_id INTEGER PRIMARY KEY, coins INTEGER, gems INTEGER,
-      food INTEGER, xp INTEGER, level INTEGER, medicine INTEGER NOT NULL DEFAULT 0);
+      food INTEGER, xp INTEGER, level INTEGER, medicine INTEGER NOT NULL DEFAULT 0,
+      food_special INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE IF NOT EXISTS user_tanks(
       user_id INTEGER PRIMARY KEY, small INTEGER, medium INTEGER,
       large INTEGER, active TEXT,
@@ -176,13 +177,23 @@ async function openDb() {
       const _t = Math.floor(Date.now() / 1000);
       await client.execute({ sql: 'UPDATE fish SET coin_at=? WHERE coin_at IS NULL', args: [_t] });
     }
-    // diamonds banked with coin cycles (adult event fish only)
+    // diamonds banked daily for event fish (1/day); cycle start for the daily timer
     if (!cols.rows.some((c) => c.name === 'gem_pending')) {
       await client.execute('ALTER TABLE fish ADD COLUMN gem_pending INTEGER NOT NULL DEFAULT 0');
+    }
+    if (!cols.rows.some((c) => c.name === 'gem_at')) {
+      await client.execute('ALTER TABLE fish ADD COLUMN gem_at INTEGER');
+      // existing fish start their first diamond cycle now
+      const _t = Math.floor(Date.now() / 1000);
+      await client.execute({ sql: 'UPDATE fish SET gem_at=? WHERE gem_at IS NULL', args: [_t] });
     }
     const wcols = await client.execute('PRAGMA table_info(wallets)');
     if (!wcols.rows.some((c) => c.name === 'medicine')) {
       await client.execute('ALTER TABLE wallets ADD COLUMN medicine INTEGER NOT NULL DEFAULT 0');
+    }
+    // special food for bottom-dwelling fish
+    if (!wcols.rows.some((c) => c.name === 'food_special')) {
+      await client.execute('ALTER TABLE wallets ADD COLUMN food_special INTEGER NOT NULL DEFAULT 0');
     }
     // decor slots: extra slots bought per tank with diamonds
     const tcols = await client.execute('PRAGMA table_info(user_tanks)');

@@ -142,7 +142,7 @@ const UI = (() => {
       $("fm-feed").onclick = async () => {
         const r = await Api.feedOne(fish.id);
         if (r.ok) { AudioFX.munch(); toast(t("toast.yummy")); }
-        else { AudioFX.error(); toast(r.error === "no food" ? t("toast.no_food") : (r.error || t("toast.couldnt_feed"))); }
+        else { AudioFX.error(); toast(r.error === "no food" ? t("toast.no_food") : r.error === "no special food" ? t("toast.no_special_food") : (r.error || t("toast.couldnt_feed"))); }
         await reopen();
       };
       const treatBtn = $("fm-treat");
@@ -499,18 +499,23 @@ const UI = (() => {
   async function renderFoodShop() {
     const body = $("screen-body");
     const price = DATA.FOOD_PRICE || 10;
-    let html = `<div class="sub" style="margin:2px 0 12px">${t("foodshop.subtitle")}</div><div class="grid2">`;
-    for (const q of DATA.FOOD_PACKS) {
-      html += `<div class="card"><img class="fish-prev" src="assets/icons/icon_food.png" alt="" style="width:64px;height:64px">
-        <div class="nm">+${q} ${t("foodshop.food")}</div>
-        <button class="pill-btn" data-foodpack="${q}">${CUR_GOLD}${fmtCoins(price * q)}</button>
+    const sprice = DATA.SPECIAL_FOOD_PRICE || 10;
+    const w = (App.state && App.state.wallets) || {};
+    const packCard = (q, p, kind) => `<div class="card"><img class="fish-prev" src="assets/icons/icon_food.png" alt="" style="width:64px;height:64px">
+        <div class="nm">+${q} ${t(kind === "special" ? "foodshop.special_food" : "foodshop.food")}</div>
+        <button class="pill-btn" data-foodpack="${q}" data-kind="${kind}">${CUR_GOLD}${fmtCoins(p * q)}</button>
       </div>`;
-    }
+    let html = `<div class="sub" style="margin:2px 0 12px">${t("foodshop.subtitle")}</div>`;
+    html += `<div class="sub" style="margin:8px 0 8px"><b>${t("foodshop.have")}:</b> ${w.food || 0} ${t("foodshop.food")}</div><div class="grid2">`;
+    for (const q of DATA.FOOD_PACKS) html += packCard(q, price, "normal");
+    html += `</div>`;
+    html += `<div class="sub" style="margin:14px 0 8px"><b>${t("foodshop.special_title")}</b> — ${t("foodshop.have")}: ${w.food_special || 0}</div><div class="grid2">`;
+    for (const q of DATA.FOOD_PACKS) html += packCard(q, sprice, "special");
     html += `</div>`;
     body.innerHTML = html;
     body.querySelectorAll("[data-foodpack]").forEach((b) => b.onclick = async () => {
       b.disabled = true;
-      const r = await Api.buyFood(+b.dataset.foodpack);
+      const r = await Api.buyFood(+b.dataset.foodpack, b.dataset.kind);
       if (r.ok) { AudioFX.coin(); toast(t("toast.food_bought", { qty: b.dataset.foodpack })); }
       else { AudioFX.error(); toast(r.error || t("toast.couldnt_buy_food")); }
       await App.refresh();

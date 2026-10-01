@@ -108,7 +108,7 @@ function helpers(db) {
     const coin_in = (coinRate && !coin_pending)
       ? Math.max(0, coinRate.secs - (now - (row.coin_at || now))) : 0;
     const gem_pending = row.gem_pending || 0;
-    const gem_amount = row.event_id ? (C.EVENT_DIAMONDS[stage] || 0) : 0;
+    const gem_amount = row.event_id ? C.EVENT_DIAMOND_DAILY : 0;
     return {
       id: row.id, species_id: row.species_id, group: row.grp, variant: row.variant,
       name: C.SPECIES_NAMES[row.species_id] || row.species_id,
@@ -235,22 +235,28 @@ module.exports = function gameRoutes(db) {
       t, uid, t, C.SICK_AFTER_SECS);
     // lazy coin farming: a finished cycle banks coins and waits for collection
     const coinFish = await db.all(
-      "SELECT id, species_id, grp, born_at, lineage, event_id, coin_pending, coin_at FROM fish WHERE user_id=? AND location='tank'", uid);
+      "SELECT id, species_id, grp, born_at, lineage, event_id, coin_pending, coin_at, gem_pending, gem_at FROM fish WHERE user_id=? AND location='tank'", uid);
     for (const fr of coinFish) {
+      // diamonds: event fish bank 1 per day on their own cycle (collecting restarts the clock)
+      if (fr.event_id) {
+        if (!fr.gem_at) { await db.run('UPDATE fish SET gem_at=? WHERE id=?', t, fr.id); }
+        else if (!fr.gem_pending && t - fr.gem_at >= C.EVENT_DIAMOND_SECS) {
+          await db.run('UPDATE fish SET gem_pending=?, gem_at=? WHERE id=?', C.EVENT_DIAMOND_DAILY, t, fr.id);
+        }
+      }
       if (fr.coin_pending > 0) continue;
       if (!fr.coin_at) { await db.run('UPDATE fish SET coin_at=? WHERE id=?', t, fr.id); continue; }
       const lin = fr.lineage ? JSON.parse(fr.lineage) : {};
       const lvl = C.fishLevel(fr.grp, !!lin.hybrid, fr.born_at, t);
       const stage = C.growthStage(fr.species_id, lvl);
       const rate = C.COIN_FARM[stage];
+      // gold: hourly like every other fish (event fish included)
       if (rate && t - fr.coin_at >= rate.secs) {
-        // event fish also bank diamonds with the coin cycle (1/1/2 by stage)
-        const gems = fr.event_id ? (C.EVENT_DIAMONDS[stage] || 0) : 0;
-        await db.run('UPDATE fish SET coin_pending=?, gem_pending=? WHERE id=?', rate.coins, gems, fr.id);
+        await db.run('UPDATE fish SET coin_pending=? WHERE id=?', rate.coins, fr.id);
       }
     }
     const user = await db.get(
-      `SELECT u.id,u.name,u.email,w.level,w.xp,w.coins,w.gems,w.food,w.medicine
+      `SELECT u.id,u.name,u.email,w.level,w.xp,w.coins,w.gems,w.food,w.food_special,w.medicine
        FROM users u JOIN wallets w ON w.user_id=u.id WHERE u.id=?`, uid);
     const tanks = await H.getTanks(uid);
     const fish = (await db.all('SELECT * FROM fish WHERE user_id=? ORDER BY id', uid))
@@ -282,7 +288,7 @@ module.exports = function gameRoutes(db) {
       ok: true,
       state: {
         user,
-        wallets: { coins: user.coins, gems: user.gems, food: user.food, xp: user.xp, level: user.level, medicine: user.medicine || 0 },
+        wallets: { coins: user.coins, gems: user.gems, food: user.food, xp: user.xp, level: user.level, medicine: user.medicine || 0, food_special: user.food_special || 0 },
         tanks: {
           owned: ['small', 'medium', 'large'].filter((k) => tanks[k]),
           active: tanks.active,
@@ -353,29 +359,37 @@ module.exports = function gameRoutes(db) {
   r.post('/fish/feed', ah(async (req, res) => {
     const uid = req.user.id; const t = now();
     const tank = await H.activeTank(uid);
-    const tankFish = await db.all("SELECT id FROM fish WHERE user_id=? AND tank=? AND location='tank'", uid, tank);
+    // feeding costs 1 food per fish in the active tank; bottom fish eat special food
+    const tankFish = await db.all("SELECT id, grp FROM fish WHERE user_id=? AND tank=? AND location='tank'", uid, tank);
+    if (tankFish.length === 0) return res.json({ ok: true, pellets: 0 });
+    const nBottom = tankFish.filter((f) => f.grp === 'bottom_fish').length;
+    const nNormal = tankFish.length - nBottom;
     const w = await H.getWallet(uid);
-    if (w.food <= 0) return res.status(400).json({ ok: false, error: 'no food' });
-    const n = Math.max(tankFish.length, 1);
+    if (w.food < nNormal) return res.status(400).json({ ok: false, error: 'no food', need: nNormal, have: w.food });
+    if ((w.food_special || 0) < nBottom) return res.status(400).json({ ok: false, error: 'no special food', need: nBottom, have: w.food_special || 0 });
     await db.tx(async (txDb) => {
       const Ht = helpers(txDb);
-      await txDb.run('UPDATE wallets SET food=food-1 WHERE user_id=?', uid);
+      await txDb.run('UPDATE wallets SET food=food-?, food_special=food_special-? WHERE user_id=?', nNormal, nBottom, uid);
       await txDb.run("UPDATE fish SET fed_at=? WHERE user_id=? AND tank=? AND location='tank'", t, uid, tank);
       await Ht.questProgressAdd(uid, 'feed_3', 1, t);
       await Ht.addXp(uid, 2);
     });
-    res.json({ ok: true, pellets: n });
+    res.json({ ok: true, pellets: tankFish.length });
   }));
 
   r.post('/fish/feed-one', ah(async (req, res) => {
     const uid = req.user.id; const t = now();
     const { fish_id } = req.body || {};
-    const fish = await db.get('SELECT id FROM fish WHERE id=? AND user_id=?', fish_id, uid);
+    const fish = await db.get('SELECT id, grp FROM fish WHERE id=? AND user_id=?', fish_id, uid);
     if (!fish) return res.status(404).json({ ok: false, error: 'fish not found' });
+    // bottom fish eat special food, everyone else eats normal food
+    const bottom = fish.grp === 'bottom_fish';
     const w = await H.getWallet(uid);
-    if (w.food < 1) return res.status(400).json({ ok: false, error: 'no food' });
+    if (bottom && (w.food_special || 0) < 1) return res.status(400).json({ ok: false, error: 'no special food' });
+    if (!bottom && w.food < 1) return res.status(400).json({ ok: false, error: 'no food' });
     await db.tx(async (txDb) => {
-      await txDb.run('UPDATE wallets SET food=food-1 WHERE user_id=?', uid);
+      if (bottom) await txDb.run('UPDATE wallets SET food_special=food_special-1 WHERE user_id=?', uid);
+      else await txDb.run('UPDATE wallets SET food=food-1 WHERE user_id=?', uid);
       await txDb.run('UPDATE fish SET fed_at=? WHERE id=?', t, fish_id);
     });
     res.json({ ok: true });
@@ -421,6 +435,9 @@ module.exports = function gameRoutes(db) {
     const gems = fish.gem_pending || 0;
     await db.tx(async (txDb) => {
       await txDb.run('UPDATE fish SET coin_pending=0, gem_pending=0, coin_at=? WHERE id=?', t, fish_id);
+      // the daily diamond clock restarts when the diamond is claimed (hourly coin
+      // collections must not disturb it)
+      if (gems > 0) await txDb.run('UPDATE fish SET gem_at=? WHERE id=?', t, fish_id);
       await txDb.run('UPDATE wallets SET coins=coins+?, gems=gems+? WHERE user_id=?', coins, gems, uid);
     });
     const w = await H.getWallet(uid);
@@ -724,15 +741,19 @@ module.exports = function gameRoutes(db) {
     const uid = req.user.id;
     const qty = Math.floor(Number(req.body && req.body.qty));
     if (!qty || qty <= 0 || qty > 1000) return res.status(400).json({ ok: false, error: 'invalid qty' });
-    const cost = qty * 10;
+    // kind: 'normal' (default) or 'special' (for bottom fish)
+    const special = (req.body && req.body.kind) === 'special';
+    const price = special ? (C.SPECIAL_FOOD_PRICE || 10) : 10;
+    const cost = qty * price;
     const w = await H.getWallet(uid);
     if (w.coins < cost) return res.status(400).json({ ok: false, error: 'not enough coins' });
-    const food = await db.tx(async (txDb) => {
+    const wallet = await db.tx(async (txDb) => {
       const Ht = helpers(txDb);
-      await txDb.run('UPDATE wallets SET coins=coins-?, food=food+? WHERE user_id=?', cost, qty, uid);
-      return (await Ht.getWallet(uid)).food;
+      if (special) await txDb.run('UPDATE wallets SET coins=coins-?, food_special=food_special+? WHERE user_id=?', cost, qty, uid);
+      else await txDb.run('UPDATE wallets SET coins=coins-?, food=food+? WHERE user_id=?', cost, qty, uid);
+      return Ht.getWallet(uid);
     });
-    res.json({ ok: true, food });
+    res.json({ ok: true, food: wallet.food, food_special: wallet.food_special || 0 });
   }));
 
   r.post('/shop/coins/buy', ah(async (req, res) => {

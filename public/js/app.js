@@ -244,10 +244,15 @@ const App = (() => {
     $("btn-feed").onclick = async () => {
       cancelPlace();
       if (!state) return;
-      if ((state.wallets.food || 0) <= 0) {
-        UI.toast(t("app.no_food"));
-        AudioFX.error();
-        return;
+      // feeding costs 1 food per fish in the active tank (special food for bottom fish)
+      const tankFish = (state.fish || []).filter((f) => f.location === "tank" && f.tank === state.tanks.active);
+      const nBottom = tankFish.filter((f) => f.group === "bottom_fish").length;
+      const nNormal = tankFish.length - nBottom;
+      if ((state.wallets.food || 0) < nNormal) {
+        UI.toast(t("app.no_food")); AudioFX.error(); return;
+      }
+      if ((state.wallets.food_special || 0) < nBottom) {
+        UI.toast(t("toast.no_special_food")); AudioFX.error(); return;
       }
       const r = await Api.feed();
       if (r.ok) {

@@ -59,7 +59,7 @@ const Api = (() => {
     moveDecor: (id, x, y) => post("/api/decor/move", { id, x, y }),
     removeDecor: (id) => post("/api/decor/remove", { id }),
     claimQuest: (quest_id) => post("/api/quests/claim", { quest_id }),
-    buyFood: (qty) => post("/api/shop/food/buy", { qty }),
+    buyFood: (qty, kind) => post("/api/shop/food/buy", { qty, kind }),
     buyCoins: (pack) => post("/api/shop/coins/buy", { pack }),
     saveSettings: (music, sfx, quality) => post("/api/settings", { music, sfx, quality }),
     minigameFinish: (score) => post("/api/minigame/finish", { score }),

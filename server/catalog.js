@@ -186,6 +186,7 @@ const HUNGER_FULL_SECS = 6 * 3600;   // hunger stays 100% for 6h after feeding
 const HUNGER_EMPTY_SECS = 24 * 3600;  // hunger hits 0% 24h after feeding
 const SICK_AFTER_SECS = 36 * 3600;   // fish gets sick 36h after last feeding
 const MEDICINE_PRICE = 250;          // coins per medicine
+const SPECIAL_FOOD_PRICE = 10;       // coins per special food (bottom fish)
 
 // ---- coin farming: fish earn coins over time; a finished cycle waits until
 // collected, then restarts. stage -> {coins, secs}
@@ -194,8 +195,10 @@ const COIN_FARM = {
   juvenile: { coins: 75,  secs: 60 * 60 },
   adult:    { coins: 100, secs: 60 * 60 },
 };
-// adult event fish also earn diamonds with each coin cycle (event fish only)
-const EVENT_DIAMONDS = { baby: 1, juvenile: 1, adult: 2 };
+// event fish: 1 diamond per day (banked on its own daily cycle, separate from coins);
+// gold farming stays hourly like every other fish (COIN_FARM above)
+const EVENT_DIAMOND_DAILY = 1;
+const EVENT_DIAMOND_SECS = 24 * 60 * 60;
 
 function hungerPct(fedAt, now) {
   if (!fedAt) return 100;
@@ -306,8 +309,8 @@ module.exports = {
   speciesGroup, fishCatalog,
   HATCH_HOURS, GROWTH_DAYS, HYBRID_HATCH_HOURS, HYBRID_GROWTH_DAYS, growthStage,
   GROW_LEVEL, growLevel,
-  HUNGER_FULL_SECS, HUNGER_EMPTY_SECS, SICK_AFTER_SECS, MEDICINE_PRICE,
-  hungerPct, fishMood, fishLevel, COIN_FARM, EVENT_DIAMONDS,
+  HUNGER_FULL_SECS, HUNGER_EMPTY_SECS, SICK_AFTER_SECS, MEDICINE_PRICE, SPECIAL_FOOD_PRICE,
+  hungerPct, fishMood, fishLevel, COIN_FARM, EVENT_DIAMOND_DAILY, EVENT_DIAMOND_SECS,
   TANK_CAPACITY, DECOR_SLOTS, TANK_PRICES, DECOR_EXTRA_SLOT_MAX, DECOR_EXTRA_SLOT_COST,
   GLASS, clampDecor, randomPointInGlass,
   decorCatalog, decorItem,

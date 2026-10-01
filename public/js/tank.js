@@ -576,10 +576,11 @@ Object.assign(TankView.prototype, {
     if (stage === "adult" && e.group === "goldfish") scale *= 0.85; // adult goldfish run a bit smaller
     const base0 = (DATA.GROUP_BASE_PX[e.group] || 130) * scale * (T.fishScale || 1);
     const frame = (e.faceT > 0) ? 0 : e.frame;
-    // betta front (0) and sleeping (6) frames render 15% smaller; goldfish sleeping (6) renders 20% smaller;
+    // betta front (0) renders 20% smaller and sleeping (6) 15% smaller; goldfish sleeping (6) renders 20% smaller;
     // cory eating (5) renders 30% smaller
     let base = base0;
-    if (e.group === "betta" && (frame === 0 || frame === 6)) base = base0 * 0.85;
+    if (e.group === "betta" && frame === 0) base = base0 * 0.8;
+    else if (e.group === "betta" && frame === 6) base = base0 * 0.85;
     else if (e.group === "goldfish" && frame === 6) base = base0 * 0.8;
     else if (e.group === "bottom_fish" && (frame === 0 || frame === 5)) base = base0 * 0.7;
     const im = loadImg(spriteURL(f.species_id, frame));
@@ -600,7 +601,7 @@ Object.assign(TankView.prototype, {
     this.ctx.save();
     this.ctx.translate(x, y);
     this.ctx.scale(e.dir, 1);
-    if (e.state === "swim" && (f.species_id === "veiltail_betta" || f.species_id === "fullmoon_betta" || f.species_id === "maple_rose_betta" || f.species_id === "maple_coral_betta")) {
+    if (e.state === "swim" && (f.species_id === "veiltail_betta" || f.species_id === "fullmoon_betta" || f.species_id === "maple_rose_betta" || f.species_id === "maple_coral_betta" || f.species_id === "maple_ember_betta")) {
       // tail-beat: a shear anchored at the head, so the tail and fins flex
       // side to side while the head stays steady — reads as natural swimming
       // instead of a rigid sprite sliding around.

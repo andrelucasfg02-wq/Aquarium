@@ -84,7 +84,7 @@ const DATA = {
 
 /** Frame roles: 0 idle, 1-4 swim, 5 eat (only while eating), 6 sleep, 7 rear/turn */
 // Bump SPRITE_V whenever shipped art changes so phones don't keep stale cached PNGs.
-const SPRITE_V = 25;
+const SPRITE_V = 26;
 // Species with a custom hybrid egg icon (assets/eggs/<species_id>.png).
 const EGG_V = 1;
 const EGG_ART = {
@@ -99,11 +99,13 @@ const EGG_ART = {
 function eggIcon(speciesId) {
   return (speciesId && EGG_ART[speciesId]) ? `assets/eggs/${speciesId}.png?v=${EGG_V}` : null;
 }
-function spriteURL(speciesId, frame) {
+function spriteURL(speciesId, frame, gender) {
   const s = DATA.SPECIES[speciesId];
   if (!s) return "";
+  // female Maple Bettas use their own art set
+  const sid = (speciesId === "autumn_fish" && gender === "female") ? "autumn_fish_female" : speciesId;
   if (s.folder) return `assets/sprites/${s.folder}/frame${frame}.png?v=${SPRITE_V}`;
-  return `assets/new_critters/${speciesId}_${String(frame + 1).padStart(2, "0")}.png?v=${SPRITE_V}`; // _01.._10 → frames 0..9
+  return `assets/new_critters/${sid}_${String(frame + 1).padStart(2, "0")}.png?v=${SPRITE_V}`; // _01.._10 → frames 0..9
 }
 function speciesName(id) { return (DATA.SPECIES[id] || {}).name || id; }
 function speciesGroup(id) { return (DATA.SPECIES[id] || {}).group || "goldfish"; }

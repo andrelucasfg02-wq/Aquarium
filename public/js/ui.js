@@ -58,7 +58,7 @@ const UI = (() => {
     overlay.id = "fish-menu-overlay";
     overlay.innerHTML = `
       <div class="fish-menu">
-        <div class="fish-menu-head">${fishImg(fish.species_id)}
+        <div class="fish-menu-head">${fishImg(fish.species_id, 0, fish.gender)}
           <div><b>${esc(fish.nickname || fish.name || speciesName(fish.species_id))}</b>
           <div class="sub">${fish.gender === "male" ? "♂" : "♀"} ${esc(speciesName(fish.species_id))}</div></div>
           <button class="hud-btn" id="fish-menu-x">\u2715</button>
@@ -387,8 +387,8 @@ const UI = (() => {
   };
 
   /* ---------- helpers ---------- */
-  function fishImg(speciesId, frame) {
-    return `<img class="fish-prev" src="${esc(spriteURL(speciesId, frame || 0))}" alt="" loading="lazy">`;
+  function fishImg(speciesId, frame, gender) {
+    return `<img class="fish-prev" src="${esc(spriteURL(speciesId, frame || 0, gender))}" alt="" loading="lazy">`;
   }
   function tankFish() {
     const active = state.tanks.active;
@@ -663,7 +663,7 @@ const UI = (() => {
       <h3>${title}</h3><div class="fish-pick">
       ${list.map((f) => `
         <div class="pick ${sel && sel.id === f.id ? "sel" : ""}" data-pick="${cls}" data-id="${f.id}">
-          ${fishImg(f.species_id)}
+          ${fishImg(f.species_id, 0, f.gender)}
           <div><b>${esc(f.name || speciesName(f.species_id))}</b></div>
           <div class="sub">${f.gender === "male" ? "♂" : "♀"} ${esc(speciesName(f.species_id))}</div>
         </div>`).join("") || `<div class="empty">${t("breed.no_fish")}</div>`}
@@ -766,7 +766,7 @@ const UI = (() => {
     const bred = (state.fish || []).filter((f) => f.lineage && (f.lineage.mother || f.lineage.father || f.lineage.hybrid));
     html += bred.length ? bred.map((f) => {
       const L = f.lineage;
-      return `<div class="row-card"><span style="display:flex;align-items:center">${fishImg(f.species_id)}</span><div class="grow">
+      return `<div class="row-card"><span style="display:flex;align-items:center">${fishImg(f.species_id, 0, f.gender)}</span><div class="grow">
         <b>${esc(f.nickname || f.name || speciesName(f.species_id))}</b>
         ${L.hybrid ? ' <span class="tag hybrid">' + t("tag.hybrid") + "</span>" : ""}
         <div class="lineage">♂ ${esc(speciesName(L.father) || "?")} × ♀ ${esc(speciesName(L.mother) || "?")} · gen ${L.generation || 1}</div>
@@ -807,7 +807,7 @@ const UI = (() => {
         ? t("inv.on_market", { price: f.listing_price })
         : f.location === "inventory" ? t("inv.in_storage") : "🏠 " + t("inv.in_tank", { tank: tankName(f.tank) });
       return `
-      <div class="row-card"><span data-fishmenu="${f.id}" style="cursor:pointer;display:flex;align-items:center">${fishImg(f.species_id)}</span><div class="grow">
+      <div class="row-card"><span data-fishmenu="${f.id}" style="cursor:pointer;display:flex;align-items:center">${fishImg(f.species_id, 0, f.gender)}</span><div class="grow">
         <b>${esc(f.nickname || f.name || speciesName(f.species_id))}</b>
         ${f.tradeable && f.location !== "market" ? ' <span class="tag">' + CUR_GEM + ' ' + t("inv.tradeable") + "</span>" : ""}
         <div class="sub">${f.gender === "male" ? "♂" : "♀"} · ${esc(f.stage || "adult")} · ${locSub}</div>
@@ -1143,7 +1143,7 @@ const UI = (() => {
       if (f.origin === "event") tags.push("🏆 " + t("tag.event"));
       if (f.origin === "bred" && !lin.hybrid) tags.push("🧬 " + t("tag.bred"));
       const own = l.seller_id === me;
-      html += `<div class="row-card">${fishImg(f.species_id, 0)}<div class="grow">
+      html += `<div class="row-card">${fishImg(f.species_id, 0, f.gender)}<div class="grow">
         <b>${esc(f.nickname || f.name)}</b>
         <span class="tag">${f.gender === "male" ? "♂" : "♀"}</span>${tags.map((t) => ` <span class="tag">${t}</span>`).join("")}
         <div class="sub">${esc(f.name)} · ${t("market.seller", { name: esc(l.seller_name || t("market.player")) })}</div></div>
@@ -1186,7 +1186,7 @@ const UI = (() => {
       const tags = [];
       if (f.origin === "event") tags.push("🏆 " + t("tag.event"));
       if (f.lineage && f.lineage.hybrid) tags.push("✨ " + t("tag.hybrid"));
-      html += `<div class="row-card">${fishImg(f.species_id, 0)}<div class="grow">
+      html += `<div class="row-card">${fishImg(f.species_id, 0, f.gender)}<div class="grow">
         <b>${esc(f.nickname || f.name)}</b>
         <span class="tag">${f.gender === "male" ? "♂" : "♀"}</span>${tags.map((t) => ` <span class="tag">${t}</span>`).join("")}
         <div class="sub">${esc(speciesName(f.species_id))}</div></div>

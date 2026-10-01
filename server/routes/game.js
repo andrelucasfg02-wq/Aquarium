@@ -154,8 +154,10 @@ function helpers(db) {
     const grp = C.speciesGroup(speciesId);
     const tank = opts.tank || await activeTank(uid);
     const pos = (opts.x != null) ? { x: opts.x, y: opts.y } : C.randomPointInGlass(tank);
-    // only the female betta species is always female; every other betta is male
+    // female_betta is always female; autumn_fish (event Maple) is 50/50;
+    // every other betta is male; other groups are 50/50
     const gender = opts.gender || (speciesId === 'female_betta' ? 'female'
+      : speciesId === 'autumn_fish' ? (Math.random() < 0.5 ? 'male' : 'female')
       : grp === 'betta' ? 'male'
       : (Math.random() < 0.5 ? 'male' : 'female'));
     const lineage = opts.lineage || { mother: null, father: null, hybrid: 0, generation: 0 };
@@ -961,8 +963,19 @@ module.exports = function gameRoutes(db) {
         return { ok: false, error: 'goal not reached yet' };
       await txDb.run('INSERT INTO event_rewards(user_id,event_id,run,claimed_at) VALUES(?,?,?,?)', uid, event, run, t);
       // prize goes to inventory — the player places it in the tank themselves
+      // Maple gender: first claim is 50/50; later claims are forced to the
+      // opposite of what the player already has, so finishing the event
+      // twice always yields one male and one female.
+      let mapleGender = null;
+      if (EVENT_FISH[event] === 'autumn_fish') {
+        const have = await txDb.all("SELECT gender FROM fish WHERE user_id=? AND species_id='autumn_fish'", uid);
+        const g = new Set(have.map((r) => r.gender));
+        if (g.has('male') && !g.has('female')) mapleGender = 'female';
+        else if (g.has('female') && !g.has('male')) mapleGender = 'male';
+      }
       const fish = await Ht.addFish(uid, EVENT_FISH[event], {
         location: 'inventory', origin: 'event', event_id: event,
+        ...(mapleGender ? { gender: mapleGender } : {}),
       }, t);
       return { ok: true, fish_id: fish.id, species_id: EVENT_FISH[event], run, runs_claimed: run, max_runs: mr };
     });

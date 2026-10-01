@@ -583,7 +583,7 @@ Object.assign(TankView.prototype, {
     else if (e.group === "betta" && frame === 6) base = base0 * 0.85;
     else if (e.group === "goldfish" && frame === 6) base = base0 * 0.8;
     else if (e.group === "bottom_fish" && (frame === 0 || frame === 5)) base = base0 * 0.7;
-    const im = loadImg(spriteURL(f.species_id, frame));
+    const im = loadImg(spriteURL(f.species_id, frame, f.gender));
     const [x, y] = fracToPx(e.px, e.py, v, T.w, T.h);
     const w = base * v.s;
     const h = imgReady(im) ? w * (im.naturalHeight / im.naturalWidth) : w * .7;

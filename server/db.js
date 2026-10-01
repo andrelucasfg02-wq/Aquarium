@@ -225,9 +225,30 @@ async function openDb() {
       await client.execute('ALTER TABLE eggs ADD COLUMN species TEXT');
     }
     // 2026-10-01: betta gender rule — only the female_betta species is female,
-    // every other betta is male. One-time: force existing non-female bettas male.
+    // every other betta is male (except autumn_fish, the event Maple, which is 50/50).
+    // One-time: force existing non-female bettas male.
     await client.execute(
-      `UPDATE fish SET gender='male' WHERE grp='betta' AND species_id!='female_betta' AND gender!='male'`);
+      `UPDATE fish SET gender='male' WHERE grp='betta' AND species_id NOT IN ('female_betta','autumn_fish') AND gender!='male'`);
+    // 2026-10-01: autumn_fish (event Maple Betta) is the only betta besides
+    // female_betta that can be female (50/50). Fix existing maples (idempotent):
+    // - 2+ maples, all male -> oldest becomes female (event "finish twice = both sexes")
+    // - 2+ maples, all female -> oldest becomes male
+    // - single maple -> deterministic 50/50 by id
+    await client.execute(
+      `UPDATE fish SET gender='female' WHERE id IN (
+         SELECT MIN(id) FROM fish WHERE species_id='autumn_fish'
+         GROUP BY user_id HAVING COUNT(*)>=2 AND SUM(CASE WHEN gender='female' THEN 1 ELSE 0 END)=0
+       )`);
+    await client.execute(
+      `UPDATE fish SET gender='male' WHERE id IN (
+         SELECT MIN(id) FROM fish WHERE species_id='autumn_fish'
+         GROUP BY user_id HAVING COUNT(*)>=2 AND SUM(CASE WHEN gender='male' THEN 1 ELSE 0 END)=0
+       )`);
+    await client.execute(
+      `UPDATE fish SET gender=CASE WHEN (id % 2)=0 THEN 'female' ELSE 'male' END
+       WHERE species_id='autumn_fish' AND user_id IN (
+         SELECT user_id FROM fish WHERE species_id='autumn_fish' GROUP BY user_id HAVING COUNT(*)=1
+       )`);
     // dirt spawn billing: spawned_at marks up to when hourly dirt was generated,
     // so maintain() only ever spawns each hour's dirt once (no flood on refresh)
     const dsCols = await client.execute('PRAGMA table_info(dirt_state)');

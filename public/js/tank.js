@@ -210,6 +210,11 @@ class TankView {
     for (const p of this.pellets) {
       p.y += p.vy * dt;
       p.age += dt;
+      // bottom food lands on the floor and waits for the cory
+      if ((p.kind || "normal") === "special") {
+        const g = this.glass();
+        if (p.y >= g.bottom - .02) { p.y = g.bottom - .02; p.vy = 0; }
+      }
       if (p.age > 15) p.gone = true;
     }
     this.pellets = this.pellets.filter((p) => !p.gone);
@@ -226,8 +231,13 @@ class TankView {
           if (d < bd) { bd = d; best = p; }
         }
         if (best && bd < .45) {
-          e.state = "chase"; e.chasePellet = best;
-          e.tx = best.x; e.ty = best.y;
+          // corys stay on the bottom: only chase pellets already near the floor
+          // (they still swim up for dirt spots — see the clean state)
+          if (e.group === "bottom_fish") {
+            const g = this.glass();
+            if (best.y < g.bottom - .1) best = null;
+          }
+          if (best) { e.state = "chase"; e.chasePellet = best; e.tx = best.x; e.ty = best.y; }
         }
       }
     }
@@ -421,10 +431,12 @@ class TankView {
   feedBurst(n, kind) {
     const g = this.glass();
     for (let i = 0; i < n; i++) {
+      // bottom food sinks fast so corys can eat it on the floor
+      const fast = kind === "special";
       this.pellets.push({
         x: g.left + .05 + Math.random() * (g.right - g.left - .1),
         y: g.top + .02 + Math.random() * .1,
-        vy: .018 + Math.random() * .012,
+        vy: fast ? .07 + Math.random() * .02 : .018 + Math.random() * .012,
         age: 0, gone: false, kind: kind || "normal",
       });
     }
@@ -569,7 +581,7 @@ Object.assign(TankView.prototype, {
     let base = base0;
     if (e.group === "betta" && (frame === 0 || frame === 6)) base = base0 * 0.85;
     else if (e.group === "goldfish" && frame === 6) base = base0 * 0.8;
-    else if (e.group === "bottom_fish" && frame === 5) base = base0 * 0.7;
+    else if (e.group === "bottom_fish" && (frame === 0 || frame === 5)) base = base0 * 0.7;
     const im = loadImg(spriteURL(f.species_id, frame));
     const [x, y] = fracToPx(e.px, e.py, v, T.w, T.h);
     const w = base * v.s;

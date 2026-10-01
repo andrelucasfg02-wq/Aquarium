@@ -371,7 +371,7 @@ const UI = (() => {
     const body = $("screen-body");
     const owned = state.tanks.owned, active = state.tanks.active;
     let html = `<button class="pill-btn blue" id="btn-view-tank" style="width:100%;padding:13px;margin-bottom:6px">🐠 ${t("aq.view_tank")}</button>
-      <h3><img class="title-ic" src="assets/icons/icon_aquariums.png" alt=""> ${t("shop.tanks")}</h3>`;
+      <h3>${t("shop.tanks")}</h3>`;
     for (const [tier, T] of Object.entries(DATA.TANKS)) {
       const isOwned = owned.includes(tier), isActive = active === tier;
       const need = tier === "large" && !owned.includes("medium");
@@ -428,7 +428,7 @@ const UI = (() => {
     }));
     const tf = tankFish();
     const active = state.tanks.active;
-    let html = `<h3><img class="title-ic" src="assets/icons/icon_fish.png" alt=""> ${t("shop.fish")} <span class="tag">${t("shop.in_tank", { n: tf.length, cap: DATA.TANKS[active].capacity, tank: tankName(active) })}</span></h3>
+    let html = `<h3>${t("shop.fish")} <span class="tag">${t("shop.in_tank", { n: tf.length, cap: DATA.TANKS[active].capacity, tank: tankName(active) })}</span></h3>
       <div class="grid2">`;
     for (const it of items) {
       html += `<div class="card">${fishImg(it.species_id)}

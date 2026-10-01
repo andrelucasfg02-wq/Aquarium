@@ -86,7 +86,7 @@ const UI = (() => {
         <div class="fish-menu-btns">
           <button class="pill-btn pink" id="fm-pet"><img class="btn-ic" src="assets/icons/icon_pet.png" alt="">${t("fishmenu.pet")}</button>
           <button class="pill-btn blue" id="fm-transfer">${fish.location === "inventory" ? "\uD83C\uDFE0 " + t("fishmenu.place_in_tank") : "\uD83D\uDD00 " + t("fishmenu.transfer")}</button>
-          <button class="pill-btn" id="fm-breed"><img class="btn-ic" src="assets/icons/icon_nav_eggs.png" alt="">${t("fishmenu.breed")}</button>
+          ${!(fish.lineage && fish.lineage.hybrid) ? `<button class="pill-btn" id="fm-breed"><img class="btn-ic" src="assets/icons/icon_nav_eggs.png" alt="">${t("fishmenu.breed")}</button>` : ""}
         </div>
         ${fish.tradeable ? `
         <div class="fish-menu-btns">
@@ -159,7 +159,8 @@ const UI = (() => {
         await reopen();
       };
       $("fm-pet").onclick = async () => { closeFishMenu(); await App.petFish(fish.id); };
-      $("fm-breed").onclick = () => { closeFishMenu(); openBreedingWith(fish); };
+      const fmBreed = $("fm-breed");
+      if (fmBreed) fmBreed.onclick = () => { closeFishMenu(); openBreedingWith(fish); };
       $("fm-transfer").onclick = () => {
         const row = $("fm-transfer-row");
         const inInv = fish.location === "inventory";
@@ -653,7 +654,8 @@ const UI = (() => {
   let breedMale = null, breedFemale = null, partners = null, partnersFor = null;
   async function renderBreeding() {
     const body = $("lab-body") || $("screen-body");
-    const tf = tankFish();
+    // hybrids cannot breed: keep them out of the pick lists entirely
+    const tf = tankFish().filter((f) => !(f.lineage && f.lineage.hybrid));
     breedMale = breedMale && tf.find((f) => f.id === breedMale.id) ? breedMale : null;
     breedFemale = breedFemale && tf.find((f) => f.id === breedFemale.id) ? breedFemale : null;
 

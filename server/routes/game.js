@@ -590,7 +590,7 @@ module.exports = function gameRoutes(db) {
     const rows = await db.all(
       "SELECT * FROM fish WHERE user_id=? AND location='tank' AND grp=? AND gender=? AND id!=? ORDER BY id",
       uid, fish.grp, other, fishId);
-    res.json({ ok: true, partners: rows.map((f) => H.fishJson(f, t)) });
+    res.json({ ok: true, partners: rows.map((f) => H.fishJson(f, t)).filter((p) => !(p.lineage && p.lineage.hybrid)) });
   }));
 
   r.post('/breeding/breed', ah(async (req, res) => {
@@ -610,12 +610,15 @@ module.exports = function gameRoutes(db) {
     if (male.grp !== female.grp) {
       return res.status(400).json({ ok: false, error: "These species can't breed together" });
     }
+    const lin = (f) => { try { return JSON.parse(f.lineage); } catch { return {}; } };
+    if (lin(male).hybrid || lin(female).hybrid) {
+      return res.status(400).json({ ok: false, error: 'hybrids cannot breed' });
+    }
     const w = await H.getWallet(uid);
     if (w.gems < 2) return res.status(400).json({ ok: false, error: 'not enough gems' });
 
     const hybrid = male.species_id !== female.species_id;
     const hatchHours = hybrid ? C.HYBRID_HATCH_HOURS : C.HATCH_HOURS[male.grp];
-    const lin = (f) => { try { return JSON.parse(f.lineage); } catch { return { generation: 0 }; } };
     const generation = Math.max(lin(male).generation || 0, lin(female).generation || 0) + 1;
 
     const eggId = await db.tx(async (txDb) => {

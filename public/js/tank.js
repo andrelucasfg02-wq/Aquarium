@@ -586,7 +586,7 @@ Object.assign(TankView.prototype, {
     this.ctx.save();
     this.ctx.translate(x, y);
     this.ctx.scale(e.dir, 1);
-    if (e.state === "swim" && (f.species_id === "veiltail_betta" || f.species_id === "fullmoon_betta")) {
+    if (e.state === "swim" && (f.species_id === "veiltail_betta" || f.species_id === "fullmoon_betta" || f.species_id === "maple_rose_betta")) {
       // tail-beat: a shear anchored at the head, so the tail and fins flex
       // side to side while the head stays steady — reads as natural swimming
       // instead of a rigid sprite sliding around.

@@ -225,6 +225,11 @@ const App = (() => {
       document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
       UI.open("event");
     };
+    $("btn-gems-plus").onclick = () => {
+      cancelPlace();
+      document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
+      UI.open("gemshop");
+    };
 
     $("btn-feed").onclick = async () => {
       cancelPlace();

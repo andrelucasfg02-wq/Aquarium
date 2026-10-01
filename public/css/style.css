@@ -127,6 +127,14 @@ input{font-family:inherit}
   display:inline-flex;align-items:center;gap:5px;
 }
 .hud-chip img.hud-ic{width:20px;height:20px;object-fit:contain;pointer-events:none}
+.hud-plus{
+  width:22px;height:22px;border-radius:50%;border:1.5px solid var(--green-border);
+  background:linear-gradient(180deg,#3fae5c,#2a8f46);color:#fff;
+  font-size:15px;font-weight:800;line-height:1;padding:0;margin-left:-4px;
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.15);
+}
+.hud-plus:active{transform:scale(.9)}
 .fab img.fab-ic{width:34px;height:34px;object-fit:contain;pointer-events:none}
 #hud-food{cursor:pointer}
 #hud-food:active{transform:scale(.94)}

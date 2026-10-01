@@ -63,6 +63,13 @@ const DATA = {
   FILTER_PRICE: 100,
   BREED_GEMS: 2,
   RENAME_GEMS: 3,
+  GEM_PACKS: [
+    { gems: 50, price: "R$ 4,99" },
+    { gems: 100, price: "R$ 8,99" },
+    { gems: 300, price: "R$ 24,99" },
+    { gems: 600, price: "R$ 44,99" },
+    { gems: 1000, price: "R$ 69,99" },
+  ],
 };
 
 /** Frame roles: 0 idle, 1-4 swim, 5 eat (only while eating), 6 sleep, 7 rear/turn */

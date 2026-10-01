@@ -350,6 +350,7 @@ const UI = (() => {
     settings: `<img class="title-ic" src="assets/icons/icon_settings.png" alt=""> ` + t("settings.title"), minigame: "🎮 " + t("mg.title"), event: "🍂 " + t("event.title"),
     market: `<img class="title-ic" src="assets/icons/icon_diamond.png" alt="">` + t("market.title"), chat: ICON("chat") + t("chat.title"),
     community: ICON("community") + t("nav.community"),
+    gemshop: ICON("diamond") + t("gemshop.title"),
   };
 
   /* ---------- helpers ---------- */
@@ -448,6 +449,26 @@ const UI = (() => {
       await App.refresh();
       renderShopFish(body);
     });
+  }
+
+  /* ================= DIAMOND SHOP (via + on the HUD) ================= */
+  async function renderGemShop() {
+    const body = $("screen-body");
+    let html = `<div class="sub" style="margin:2px 0 12px">${t("gemshop.subtitle")}</div><div class="grid2">`;
+    for (const p of DATA.GEM_PACKS) {
+      html += `<div class="card"><img class="fish-prev" src="assets/icons/icon_diamond.png" alt="" style="width:64px;height:64px">
+        <div class="nm">${p.gems} ${t("gemshop.diamonds")}</div>
+        <div class="price">${esc(p.price)}</div>
+        <button class="pill-btn" data-buypack="${p.gems}">${t("shop.buy")}</button>
+      </div>`;
+    }
+    html += `</div>`;
+    body.innerHTML = html;
+    body.querySelectorAll("[data-buypack]").forEach((b) => b.onclick = () => buyGemPack(+b.dataset.buypack));
+  }
+  function buyGemPack(gems) {
+    // real checkout (Stripe/Mercado Pago) plugs in here once the key is set
+    toast(t("gemshop.soon"));
   }
 
   /* ================= LAB (medicine) ================= */
@@ -1158,6 +1179,7 @@ const UI = (() => {
     collection: renderCollection, inventory: renderInventory, quests: renderQuestsScreen,
     settings: renderSettings, minigame: renderMinigame, event: renderEvent,
     market: renderMarket, chat: renderChat, community: renderCommunity,
+    gemshop: renderGemShop,
   };
 
   return {

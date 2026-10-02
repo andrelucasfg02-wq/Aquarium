@@ -285,13 +285,13 @@ class TankView {
     const dist = Math.hypot(dx, dy);
     const wantDir = dx >= 0 ? 1 : -1;
 
-    // Ember Goldfish has 8 swim frames (1-8); its eat/sleep/turn move to 9/10/11.
+    // Ember & Lemon Drop Goldfish have 8 swim frames (1-8); their eat/sleep/turn move to 9/10/11.
     // Every other goldfish keeps swim 1-4, eat 5, sleep 6, turn 7.
-    const isEmber8 = e.data && e.data.species_id === "ember_clownfish";
-    const swimN = isEmber8 ? 8 : 4;
-    const F_EAT = isEmber8 ? 9 : 5;
-    const F_SLEEP = isEmber8 ? 10 : 6;
-    const F_TURN = isEmber8 ? 11 : 7;
+    const isSwim8 = e.data && (e.data.species_id === "ember_clownfish" || e.data.species_id === "lemon_drop_goldfish");
+    const swimN = isSwim8 ? 8 : 4;
+    const F_EAT = isSwim8 ? 9 : 5;
+    const F_SLEEP = isSwim8 ? 10 : 6;
+    const F_TURN = isSwim8 ? 11 : 7;
     switch (e.state) {
       case "idle":
         e.frame = 0;
@@ -599,7 +599,7 @@ Object.assign(TankView.prototype, {
     let base = base0;
     if (e.group === "betta" && frame === 0) base = base0 * (f.species_id === "female_betta" ? 0.7 : 0.8);
     else if (e.group === "betta" && frame === 6) base = base0 * 0.85;
-    else if (e.group === "goldfish" && (frame === 6 || (f.species_id === "ember_clownfish" && frame === 10))) base = base0 * 0.8;
+    else if (e.group === "goldfish" && (frame === 6 || ((f.species_id === "ember_clownfish" || f.species_id === "lemon_drop_goldfish") && frame === 10))) base = base0 * 0.8;
     else if (e.group === "bottom_fish" && (frame === 0 || frame === 5)) base = base0 * 0.7;
     const im = loadImg(spriteURL(f.species_id, frame, f.gender));
     const [x, y] = fracToPx(e.px, e.py, v, T.w, T.h);

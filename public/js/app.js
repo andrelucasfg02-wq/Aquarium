@@ -417,9 +417,39 @@ const App = (() => {
     }
   }, true);
 
+  /* ---------- fast tank switching (optimistic) ---------- */
+  let switchingTank = false;
+  async function switchTankFast(tier) {
+    if (switchingTank) return { ok: false };
+    if (!state || !state.tanks || state.tanks.active === tier) return { ok: true };
+    if (!(state.tanks.owned || []).includes(tier)) return { ok: false };
+    switchingTank = true;
+    const prev = state.tanks.active;
+    state.tanks.active = tier; // optimistic: switch locally first
+    UI.updateHUD(state); // syncs UI state + HUD
+    if (tank) tank.syncState(state); // re-render the tank view immediately
+    UI.close();
+    try {
+      const r = await Api.switchTank(tier);
+      if (!r.ok) throw new Error(r.error || "switch failed");
+      UI.toast(t("toast.tank_switched"));
+      refresh(); // background reconcile; UI is already correct
+    } catch (e) {
+      state.tanks.active = prev; // revert on failure
+      UI.updateHUD(state);
+      if (tank) tank.syncState(state);
+      UI.toast(t("toast.couldnt_switch"));
+      return { ok: false };
+    } finally {
+      switchingTank = false;
+    }
+    return { ok: true };
+  }
+
   document.addEventListener("DOMContentLoaded", boot);
   return {
     refresh, applySettings, beginPlace, setDecoCatalog, onScreenClosed, petFish,
+    switchTankFast,
     get state() { return state; },
   };
 })();

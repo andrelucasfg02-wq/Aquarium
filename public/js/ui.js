@@ -427,11 +427,8 @@ const UI = (() => {
       else { AudioFX.error(); toast(r.error || t("toast.couldnt_buy_tank")); }
       await App.refresh(); renderAquariums();
     });
-    body.querySelectorAll("[data-switch]").forEach((b) => b.onclick = async () => {
-      const r = await Api.switchTank(b.dataset.switch);
-      if (r.ok) toast(t("toast.tank_switched"));
-      else toast(r.error || t("toast.couldnt_switch"));
-      await App.refresh(); close();
+    body.querySelectorAll("[data-switch]").forEach((b) => b.onclick = () => {
+      App.switchTankFast(b.dataset.switch); // optimistic: instant switch, server confirms in background
     });
   }
 

@@ -44,6 +44,11 @@ class TankView {
     this.resize();
     window.addEventListener("resize", () => this.resize());
     window.addEventListener("orientationchange", () => setTimeout(() => this.resize(), 200));
+    // Android Chrome's URL bar / gesture bar can resize the visual viewport
+    // without a window resize event — keep the tap mapping in sync.
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", () => this.resize());
+    }
     this.bindPointer();
     requestAnimationFrame((t) => this.loop(t));
   }
@@ -57,7 +62,13 @@ class TankView {
   resize() {
     const dprCap = this.quality === "low" ? 1 : this.quality === "medium" ? 1.5 : 2;
     const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
-    const w = Math.floor(window.innerWidth), h = Math.floor(window.innerHeight);
+    // Use the canvas's ACTUAL rendered size (not window.innerWidth/Height):
+    // on Android Chrome the URL bar / edge-to-edge gesture bar can make the
+    // layout viewport disagree with the element box, which would offset every
+    // tap mapping. Fall back to window dims when hidden (rect = 0).
+    const r = this.cv.getBoundingClientRect();
+    const w = Math.floor(r.width) || Math.floor(window.innerWidth);
+    const h = Math.floor(r.height) || Math.floor(window.innerHeight);
     this.cssW = w; this.cssH = h; this.dpr = dpr;
     this.cv.width = Math.floor(w * dpr);
     this.cv.height = Math.floor(h * dpr);
@@ -767,8 +778,9 @@ Object.assign(TankView.prototype, {
       return;
     }
 
-    // fish tap: nearest within threshold
-    let best = null, bd = .075;
+    // fish tap: nearest within threshold (generous: finger taps are imprecise,
+    // especially on Android where the touch centroid can sit off the visual target)
+    let best = null, bd = .10;
     for (const e of this.fish.values()) {
       const d = Math.hypot(e.px - fx, e.py - fy);
       if (d < bd) { bd = d; best = e; }

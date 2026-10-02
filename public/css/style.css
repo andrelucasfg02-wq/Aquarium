@@ -392,3 +392,39 @@ select.sel{padding:10px;border-radius:12px;border:2px solid var(--green-border);
 .chat-input-row input{flex:1;min-width:0;padding:12px 14px;border-radius:16px;border:2px solid var(--green-border);background:#f2fdf5;font-size:15px;color:#2b2b3a}
 .chat-input-row input:focus{outline:none;border-color:var(--green-d)}
 #chat-send{flex:none;width:52px;border-radius:16px;font-size:18px}
+
+/* ---------- grab machine ---------- */
+#grab-overlay{z-index:350}
+.grab-box{background:linear-gradient(180deg,#0e6b78,#0a4a55);border-radius:20px;border:2px solid #c9a227;
+  max-width:430px;width:calc(100vw - 24px);max-height:92vh;overflow-y:auto;padding:12px;
+  box-shadow:0 14px 40px rgba(0,0,0,.35)}
+.grab-head{display:flex;align-items:center;gap:8px;color:#ffe9a8;font-size:18px;margin-bottom:8px}
+.grab-head b{flex:1}
+.grab-tag{font-size:10px;background:rgba(255,255,255,.16);color:#dff3ff;border-radius:10px;padding:3px 8px}
+.grab-x{background:rgba(255,255,255,.14);border:none;color:#fff;border-radius:50%;width:30px;height:30px;font-size:14px}
+.grab-help{background:#2e9e5b;font-weight:900}
+#grab-canvas{display:block;margin:0 auto;border-radius:12px;touch-action:none;cursor:pointer}
+.grab-controls{display:flex;align-items:center;justify-content:center;gap:14px;margin:10px 0}
+.grab-cost{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.25);border-radius:14px;
+  padding:8px 14px;color:#fff;font-size:17px}
+.grab-cost img{width:22px;height:22px}
+.grab-btn{background:radial-gradient(circle at 35% 30%,#7de08a,#2e9e5b 70%);border:3px solid #c9a227;color:#fff;
+  font-weight:900;font-size:18px;border-radius:50%;width:92px;height:92px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.grab-btn:active{transform:scale(.93)}
+.grab-btn:disabled{filter:grayscale(.6);opacity:.6}
+.grab-prizes{background:rgba(0,0,0,.22);border-radius:14px;padding:10px}
+.grab-prize-title{color:#ffe9a8;font-weight:800;margin-bottom:6px;font-size:14px}
+.grab-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:300px;overflow-y:auto}
+.grab-cell{background:rgba(255,255,255,.92);border-radius:12px;padding:8px 4px;text-align:center;min-height:86px}
+.grab-cell img{width:44px;height:44px;object-fit:contain}
+.grab-eggdot{width:34px;height:42px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;margin:0 auto}
+.grab-cell-name{font-size:10px;margin-top:4px;color:#2b2b3a;line-height:1.2}
+.grab-won{text-align:center;min-width:260px}
+.grab-won-title{font-size:20px;font-weight:900;margin-bottom:10px}
+.grab-won img{width:90px;height:90px;object-fit:contain}
+.grab-won-egg{width:70px;height:88px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;margin:0 auto 8px;
+  background:radial-gradient(circle at 35% 30%,#fff,#ffb84d 55%,#e08a2d)}
+.grab-card{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#0e6b78,#0a4a55);
+  border:2px solid #c9a227;border-radius:16px;padding:12px;margin-bottom:10px;color:#ffe9a8}
+.grab-card .grow{flex:1}
+.grab-card .sub{color:#bfe3ea}

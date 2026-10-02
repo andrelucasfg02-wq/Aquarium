@@ -1,6 +1,6 @@
 {
   "pack": "furniture_sheet_1",
-  "count": 93,
+  "count": 118,
   "items": [
     {
       "id": "deco_sand_beige",
@@ -466,6 +466,156 @@
       "id": "deco_beam_light",
       "file": "beam_light.png",
       "name": "Light Beam"
+    },
+    {
+      "id": "deco_autumn_log_cave",
+      "file": "autumn_log_cave.png",
+      "name": "Autumn Log Cave",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_driftwood_log",
+      "file": "autumn_driftwood_log.png",
+      "name": "Autumn Driftwood Log",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_stone_arch",
+      "file": "autumn_stone_arch.png",
+      "name": "Autumn Stone Arch",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_stone_lantern",
+      "file": "autumn_stone_lantern.png",
+      "name": "Autumn Stone Lantern",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_mossy_cave",
+      "file": "autumn_mossy_cave.png",
+      "name": "Autumn Mossy Cave",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_barrel_cave",
+      "file": "autumn_barrel_cave.png",
+      "name": "Autumn Barrel Cave",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_pumpkin_cave",
+      "file": "autumn_pumpkin_cave.png",
+      "name": "Autumn Pumpkin Cave",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_stone_stack",
+      "file": "autumn_stone_stack.png",
+      "name": "Autumn Stone Stack",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_branch_perch",
+      "file": "autumn_branch_perch.png",
+      "name": "Autumn Branch Perch",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_signpost",
+      "file": "autumn_signpost.png",
+      "name": "Autumn Signpost",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_wood_bridge",
+      "file": "autumn_wood_bridge.png",
+      "name": "Autumn Wooden Bridge",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_maple_bush",
+      "file": "autumn_maple_bush.png",
+      "name": "Autumn Maple Bush",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_maple_tree",
+      "file": "autumn_maple_tree.png",
+      "name": "Autumn Maple Tree",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_mushrooms",
+      "file": "autumn_mushrooms.png",
+      "name": "Autumn Mushrooms",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_reeds",
+      "file": "autumn_reeds.png",
+      "name": "Autumn Reeds",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_leaf_pile",
+      "file": "autumn_leaf_pile.png",
+      "name": "Autumn Leaf Pile",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_stone_slabs",
+      "file": "autumn_stone_slabs.png",
+      "name": "Autumn Stone Slabs",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_stump_cave",
+      "file": "autumn_stump_cave.png",
+      "name": "Autumn Stump Cave",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_leaf_pond",
+      "file": "autumn_leaf_pond.png",
+      "name": "Autumn Leaf Pond",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_driftwood_roots",
+      "file": "autumn_driftwood_roots.png",
+      "name": "Autumn Driftwood Roots",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_pinecone",
+      "file": "autumn_pinecone.png",
+      "name": "Autumn Pinecone",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_leaf_arch",
+      "file": "autumn_leaf_arch.png",
+      "name": "Autumn Leaf Arch",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_clay_pot",
+      "file": "autumn_clay_pot.png",
+      "name": "Autumn Clay Pot",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_stone_ruin",
+      "file": "autumn_stone_ruin.png",
+      "name": "Autumn Stone Ruin",
+      "event": "grab"
+    },
+    {
+      "id": "deco_autumn_rocky_cave",
+      "file": "autumn_rocky_cave.png",
+      "name": "Autumn Rocky Cave",
+      "event": "grab"
     }
   ]
 }

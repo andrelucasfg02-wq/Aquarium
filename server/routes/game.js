@@ -715,6 +715,7 @@ module.exports = function gameRoutes(db) {
     const { deco_id } = req.body || {};
     const item = C.decorItem(deco_id);
     if (!item) return res.status(400).json({ ok: false, error: 'unknown decoration' });
+    if (item.event === 'grab') return res.status(400).json({ ok: false, error: 'grab exclusive' });
     const w = await H.getWallet(uid);
     if (w.coins < item.price) return res.status(400).json({ ok: false, error: 'not enough coins' });
     const qty = await db.tx(async (txDb) => {
@@ -883,6 +884,79 @@ module.exports = function gameRoutes(db) {
       await txDb.run('INSERT OR REPLACE INTO daily_shell(user_id,last_played_at) VALUES(?,?)', uid, t);
       if (win) await txDb.run('UPDATE wallets SET gems=gems+? WHERE user_id=?', SHELL_PRIZE, uid);
       return { ok: true, win, winning, gems: win ? SHELL_PRIZE : 0 };
+    });
+    if (!out.ok) return res.status(400).json(out);
+    res.json(out);
+  }));
+
+  // ---------- grab machine: 30 diamonds per play, win a decoration or an egg ----------
+  // Autumn event prize pool: 25 exclusive autumn decorations + 3 rare eggs.
+  const GRAB_COST = 30;
+  const GRAB_PRIZES = [
+    // autumn decorations (grab-exclusive)
+    { kind: 'decor', deco_id: 'deco_autumn_log_cave',      weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_driftwood_log', weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_stone_arch',    weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_stone_lantern', weight: 3 },
+    { kind: 'decor', deco_id: 'deco_autumn_mossy_cave',    weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_barrel_cave',   weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_pumpkin_cave',  weight: 3 },
+    { kind: 'decor', deco_id: 'deco_autumn_stone_stack',   weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_branch_perch',  weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_signpost',      weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_wood_bridge',   weight: 3 },
+    { kind: 'decor', deco_id: 'deco_autumn_maple_bush',    weight: 5 },
+    { kind: 'decor', deco_id: 'deco_autumn_maple_tree',    weight: 2 },
+    { kind: 'decor', deco_id: 'deco_autumn_mushrooms',     weight: 5 },
+    { kind: 'decor', deco_id: 'deco_autumn_reeds',         weight: 5 },
+    { kind: 'decor', deco_id: 'deco_autumn_leaf_pile',     weight: 5 },
+    { kind: 'decor', deco_id: 'deco_autumn_stone_slabs',   weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_stump_cave',    weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_leaf_pond',     weight: 3 },
+    { kind: 'decor', deco_id: 'deco_autumn_driftwood_roots', weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_pinecone',      weight: 5 },
+    { kind: 'decor', deco_id: 'deco_autumn_leaf_arch',     weight: 3 },
+    { kind: 'decor', deco_id: 'deco_autumn_clay_pot',      weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_stone_ruin',    weight: 3 },
+    { kind: 'decor', deco_id: 'deco_autumn_rocky_cave',    weight: 4 },
+    // eggs (rare) — hatch into a fish after a few hours
+    { kind: 'egg', grp: 'betta',    species_id: 'veiltail_betta', weight: 8 },
+    { kind: 'egg', grp: 'goldfish', species_id: 'sakura_goldfish', weight: 7 },
+    { kind: 'egg', grp: 'betta',    species_id: 'fullmoon_betta',  weight: 5 },
+  ];
+  const GRAB_TOTAL_W = GRAB_PRIZES.reduce((s, p) => s + p.weight, 0);
+  r.get('/grab/prizes', ah(async (req, res) => {
+    const items = GRAB_PRIZES.map((p) => {
+      if (p.kind === 'decor') {
+        const d = C.decorItem(p.deco_id);
+        return { kind: 'decor', deco_id: p.deco_id, name: d ? d.name : p.deco_id, file: d ? d.file : null, weight: p.weight };
+      }
+      return { kind: 'egg', grp: p.grp, species_id: p.species_id, name: C.SPECIES_NAMES[p.species_id] || p.species_id, weight: p.weight };
+    });
+    res.json({ ok: true, cost: GRAB_COST, prizes: items });
+  }));
+  r.post('/grab/play', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const roll = Math.random() * GRAB_TOTAL_W;
+    let acc = 0, prize = GRAB_PRIZES[0];
+    for (const p of GRAB_PRIZES) { acc += p.weight; if (roll < acc) { prize = p; break; } }
+    const out = await db.tx(async (txDb) => {
+      const w = await txDb.get('SELECT gems FROM wallets WHERE user_id=?', uid);
+      if (!w || w.gems < GRAB_COST) return { ok: false, error: 'not enough diamonds' };
+      await txDb.run('UPDATE wallets SET gems=gems-? WHERE user_id=?', GRAB_COST, uid);
+      if (prize.kind === 'decor') {
+        await txDb.run(`INSERT INTO decor_owned (user_id,deco_id,qty) VALUES (?,?,1)
+          ON CONFLICT(user_id,deco_id) DO UPDATE SET qty=qty+1`, uid, prize.deco_id);
+        const d = C.decorItem(prize.deco_id) || {};
+        return { ok: true, prize: { kind: 'decor', deco_id: prize.deco_id, name: d.name || prize.deco_id, file: d.file || null } };
+      }
+      const hatchAt = t + 6 * 3600; // eggs hatch in 6h
+      const info = await txDb.run(
+        `INSERT INTO eggs (user_id,grp,variant_a,variant_b,hybrid,generation,hatch_at,created_at,event_id,species)
+         VALUES (?,?,?,?,0,1,?,?,?,?)`,
+        uid, prize.grp, prize.species_id, prize.species_id, hatchAt, t, 'grab', prize.species_id);
+      return { ok: true, prize: { kind: 'egg', egg_id: Number(info.lastInsertRowid),
+        grp: prize.grp, species_id: prize.species_id, name: C.SPECIES_NAMES[prize.species_id] || prize.species_id, hatch_at: hatchAt } };
     });
     if (!out.ok) return res.status(400).json(out);
     res.json(out);

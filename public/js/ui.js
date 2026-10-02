@@ -595,7 +595,7 @@ const UI = (() => {
     const ownedMap = {};
     for (const o of (state.decor_owned || [])) ownedMap[o.deco_id] = o.qty;
     const q = (filter || "").toLowerCase();
-    const list = items.filter((it) => !q || it.name.toLowerCase().includes(q));
+    const list = items.filter((it) => it.event !== "grab" && (!q || it.name.toLowerCase().includes(q)));
 
     const activeTank = state.tanks.active;
     const baseSlots = DATA.TANKS[activeTank].decorSlots;
@@ -1046,6 +1046,13 @@ const UI = (() => {
     const body = root || $("screen-body");
     MG.round = 0; MG.times = []; MG.active = false;
     body.innerHTML = `
+      <div class="grab-card">
+        <div style="font-size:34px">🪝</div>
+        <div class="grow"><b>${t("grab.title")}</b>
+          <div class="sub">${t("grab.example")} · ${CUR_GEM}30</div>
+        </div>
+        <button class="pill-btn pink" id="mg-grab-open">${t("grab.play")}</button>
+      </div>
       <div class="shell-box">
         <div class="shell-title">🐚 ${t("mg.shell_title")}</div>
         <div class="sub">${t("mg.shell_desc")}</div>
@@ -1058,6 +1065,7 @@ const UI = (() => {
       <div class="big-score" id="mg-result"></div>
       <button class="pill-btn pink" id="mg-start" style="width:100%;padding:13px">▶ ${t("mg.start")}</button>`;
     renderShellGame($("shell-area"));
+    $("mg-grab-open").onclick = () => GrabMachine.open();
     const stage = $("mg-stage"), fish = $("mg-fish");
     const species = ["sakura_goldfish", "azure_tang", "ember_clownfish", "fullmoon_betta", "red_shrimp"];
 

@@ -59,9 +59,11 @@ const App = (() => {
     }
     await refresh();
     startPoll();
-    // first-run tutorial takes precedence over the promo this once
+    // first-run tutorial takes precedence over the promos this once
     const tutStarted = (typeof Tutorial !== "undefined") && Tutorial.maybeAutoStart();
     if (!tutStarted) showPromo();
+    // install-as-app promo (browser tab only, at most once a week)
+    if (!tutStarted && typeof InstallPromo !== "undefined") InstallPromo.maybeShow(4000);
   }
 
   /* ---------- state ---------- */

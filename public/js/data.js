@@ -84,9 +84,9 @@ const DATA = {
 
 /** Frame roles: 0 idle, 1-4 swim, 5 eat (only while eating), 6 sleep, 7 rear/turn */
 // Bump SPRITE_V whenever shipped art changes so phones don't keep stale cached PNGs.
-const SPRITE_V = 36;
+const SPRITE_V = 37;
 // Species with a custom hybrid egg icon (assets/eggs/<species_id>.png).
-const EGG_V = 2;
+const EGG_V = 3;
 const EGG_ART = {
   maple_rose_betta: 1, maple_ember_betta: 1, maple_dusk_betta: 1, maple_storm_betta: 1,
   maple_lilac_betta: 1, maple_petal_betta: 1, maple_tide_betta: 1, maple_coral_betta: 1,

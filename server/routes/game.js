@@ -252,9 +252,147 @@ module.exports = function gameRoutes(db) {
   const H = helpers(db);
   const now = () => Math.floor(Date.now() / 1000);
 
+  // ---------- offline-capable actions (explicit timestamp t) ----------
+  // Core game actions. Live routes call these with t=now(); POST /sync replays
+  // queued offline actions with validated t. They throw {status, message} on
+  // failure so both callers handle errors uniformly. Anti-cheat notes:
+  // - collect only pays coin_pending banked server-side (lazy, server clock)
+  // - breed RNG rolls here at sync time, never on the client
+  // - t is validated by /sync: base-120 <= t <= serverNow+30
+  const doFeed = async (uid, kind, t) => {
+    kind = kind === 'special' ? 'special' : 'normal';
+    const tank = await H.activeTank(uid);
+    const tankFish = await db.all("SELECT id, grp FROM fish WHERE user_id=? AND tank=? AND location='tank'", uid, tank);
+    const targets = tankFish.filter((f) => (kind === 'special') === (f.grp === 'bottom_fish'));
+    if (targets.length === 0) return { pellets: 0, kind };
+    const w = await H.getWallet(uid);
+    if (kind === 'special') {
+      if ((w.food_special || 0) < targets.length) throw { status: 400, message: 'no special food' };
+    } else if (w.food < targets.length) {
+      throw { status: 400, message: 'no food' };
+    }
+    await db.tx(async (txDb) => {
+      const Ht = helpers(txDb);
+      if (kind === 'special') await txDb.run('UPDATE wallets SET food_special=food_special-? WHERE user_id=?', targets.length, uid);
+      else await txDb.run('UPDATE wallets SET food=food-? WHERE user_id=?', targets.length, uid);
+      const ids = targets.map((f) => f.id);
+      await txDb.run(`UPDATE fish SET fed_at=? WHERE id IN (${ids.map(() => '?').join(',')})`, t, ...ids);
+      await Ht.questProgressAdd(uid, 'feed_3', 1, t);
+      await Ht.addXp(uid, 2);
+    });
+    return { pellets: targets.length, kind };
+  };
+
+  const doFeedOne = async (uid, fish_id, t) => {
+    const fish = await db.get('SELECT id, grp FROM fish WHERE id=? AND user_id=?', fish_id, uid);
+    if (!fish) throw { status: 404, message: 'fish not found' };
+    const bottom = fish.grp === 'bottom_fish';
+    const w = await H.getWallet(uid);
+    if (bottom && (w.food_special || 0) < 1) throw { status: 400, message: 'no special food' };
+    if (!bottom && w.food < 1) throw { status: 400, message: 'no food' };
+    await db.tx(async (txDb) => {
+      if (bottom) await txDb.run('UPDATE wallets SET food_special=food_special-1 WHERE user_id=?', uid);
+      else await txDb.run('UPDATE wallets SET food=food-1 WHERE user_id=?', uid);
+      await txDb.run('UPDATE fish SET fed_at=? WHERE id=?', t, fish_id);
+    });
+    return {};
+  };
+
+  const doTreat = async (uid, fish_id, t) => {
+    const fish = await db.get('SELECT id,sick_at FROM fish WHERE id=? AND user_id=?', fish_id, uid);
+    if (!fish) throw { status: 404, message: 'fish not found' };
+    if (!fish.sick_at) throw { status: 400, message: 'not sick' };
+    const w = await H.getWallet(uid);
+    if ((w.medicine || 0) < 1) throw { status: 400, message: 'no medicine' };
+    await db.tx(async (txDb) => {
+      await txDb.run('UPDATE wallets SET medicine=medicine-1 WHERE user_id=?', uid);
+      await txDb.run('UPDATE fish SET sick_at=NULL, fed_at=? WHERE id=?', t, fish_id);
+    });
+    return {};
+  };
+
+  const doCollect = async (uid, fish_id, t) => {
+    const fish = await db.get('SELECT id,coin_pending,gem_pending FROM fish WHERE id=? AND user_id=?', fish_id, uid);
+    if (!fish) throw { status: 404, message: 'fish not found' };
+    if (!fish.coin_pending || fish.coin_pending <= 0) {
+      throw { status: 400, message: 'nothing to collect' };
+    }
+    const coins = fish.coin_pending;
+    const gems = fish.gem_pending || 0;
+    await db.tx(async (txDb) => {
+      await txDb.run('UPDATE fish SET coin_pending=0, gem_pending=0, coin_at=? WHERE id=?', t, fish_id);
+      if (gems > 0) await txDb.run('UPDATE fish SET gem_at=? WHERE id=?', t, fish_id);
+      await txDb.run('UPDATE wallets SET coins=coins+?, gems=gems+? WHERE user_id=?', coins, gems, uid);
+    });
+    const w = await H.getWallet(uid);
+    return { collected: coins, collected_gems: gems, coins: w.coins, gems: w.gems };
+  };
+
+  const doTap = async (uid, fish_id, t) => {
+    const fish = await db.get('SELECT id FROM fish WHERE id=? AND user_id=?', fish_id, uid);
+    if (!fish) throw { status: 404, message: 'fish not found' };
+    await db.tx(async (txDb) => {
+      const Ht = helpers(txDb);
+      await Ht.addXp(uid, 1);
+    });
+    return {};
+  };
+
+  const doBreed = async (uid, male_id, female_id, t) => {
+    const maleId = Number(male_id);
+    const femaleId = Number(female_id);
+    const male = await db.get('SELECT * FROM fish WHERE id=? AND user_id=?', maleId, uid);
+    const female = await db.get('SELECT * FROM fish WHERE id=? AND user_id=?', femaleId, uid);
+    if (!male || !female) throw { status: 404, message: 'fish not found' };
+    if (male.location === 'market' || female.location === 'market') {
+      throw { status: 400, message: 'cancel the market listing first 💎' };
+    }
+    if (maleId === femaleId) throw { status: 400, message: 'pick two different fish' };
+    if (male.gender !== 'male' || female.gender !== 'female') {
+      throw { status: 400, message: 'breeding needs one male and one female' };
+    }
+    if (male.grp !== female.grp) {
+      throw { status: 400, message: "These species can't breed together" };
+    }
+    const lin = (f) => { try { return JSON.parse(f.lineage); } catch { return {}; } };
+    if (lin(male).hybrid || lin(female).hybrid) {
+      throw { status: 400, message: 'hybrids cannot breed' };
+    }
+    const w = await H.getWallet(uid);
+    if (w.gems < 2) throw { status: 400, message: 'not enough gems' };
+
+    const hybrid = male.species_id !== female.species_id;
+    const hatchHours = hybrid ? C.HYBRID_HATCH_HOURS : C.HATCH_HOURS[male.grp];
+    const generation = Math.max(lin(male).generation || 0, lin(female).generation || 0) + 1;
+
+    const eggId = await db.tx(async (txDb) => {
+      const Ht = helpers(txDb);
+      await txDb.run('UPDATE wallets SET gems=gems-2 WHERE user_id=?', uid);
+      const species = resolveEggSpecies(male.species_id, female.species_id);
+      const info = await txDb.run(
+        `INSERT INTO eggs (user_id,grp,variant_a,variant_b,hybrid,generation,hatch_at,created_at,event_id,species)
+         VALUES (?,?,?,?,?,?,?,?,?,?)`,
+        uid, male.grp, male.species_id, female.species_id, hybrid ? 1 : 0,
+        generation, t + hatchHours * 3600, t, male.event_id || female.event_id || null, species);
+      await Ht.questProgressAdd(uid, 'breed_1', 1, t);
+      await Ht.addXp(uid, 5);
+      return info.lastInsertRowid;
+    });
+    const egg = await db.get('SELECT * FROM eggs WHERE id=?', eggId);
+    return {
+      egg: {
+        id: egg.id, group: egg.grp, variant_a: egg.variant_a, variant_b: egg.variant_b,
+        hybrid: !!egg.hybrid, generation: egg.generation, hatch_at: egg.hatch_at, created_at: egg.created_at,
+        species: egg.species || null,
+      },
+    };
+  };
+
   // ---------- state ----------
-  r.get('/state', ah(async (req, res) => {
-    const uid = req.user.id; const t = now();
+  // Full game state with lazy time-based mechanics (sickness, coin banking,
+  // egg hatching, dirt). Extracted so POST /sync can reuse it after replaying
+  // the offline queue. Returns {server_time, state}.
+  const getStateJson = async (uid, t) => {
     const { green } = await H.maintain(uid, t);
     // lazy sickness: unfed for SICK_AFTER_SECS -> sick
     await db.run('UPDATE fish SET sick_at=? WHERE user_id=? AND sick_at IS NULL AND fed_at IS NOT NULL AND ? - fed_at > ?',
@@ -311,8 +449,8 @@ module.exports = function gameRoutes(db) {
       .map((c) => ({ species_id: c.species_id, seen: 1, count: c.count }));
     const settings = await db.get('SELECT music,sfx,quality FROM settings WHERE user_id=?', uid);
 
-    res.json({
-      ok: true,
+    return {
+      server_time: t,
       state: {
         user,
         wallets: { coins: user.coins, gems: user.gems, food: user.food, xp: user.xp, level: user.level, medicine: user.medicine || 0, food_special: user.food_special || 0 },
@@ -330,7 +468,59 @@ module.exports = function gameRoutes(db) {
         collection,
         settings: { music: !!settings.music, sfx: !!settings.sfx, quality: settings.quality },
       },
-    });
+    };
+  };
+
+  r.get('/state', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const out = await getStateJson(uid, t);
+    res.json({ ok: true, server_time: out.server_time, state: out.state });
+  }));
+
+  // ---------- offline sync ----------
+  // Replays actions queued while the device was offline, then returns fresh
+  // state. Anti-cheat:
+  // - each action timestamp t must satisfy base_time-120 <= t <= serverNow+30,
+  //   where base_time is the last server time the client observed
+  // - client timestamps come from a monotonic clock (performance.now anchor),
+  //   so changing the phone's wall clock doesn't forge time
+  // - coin collect only pays coin_pending banked server-side (server clock)
+  // - breed RNG rolls here at sync time, never on the client
+  // - max 200 actions per sync; every action re-runs live validation
+  r.post('/sync', ah(async (req, res) => {
+    const uid = req.user.id;
+    const serverNow = now();
+    const { base_time, actions } = req.body || {};
+    const base = Math.floor(Number(base_time) || 0);
+    if (!base || base > serverNow + 30) {
+      return res.status(400).json({ ok: false, error: 'bad base_time' });
+    }
+    const list = Array.isArray(actions) ? actions.slice(0, 200) : [];
+    const results = [];
+    for (const a of list) {
+      const t = Math.floor(Number(a && a.t) || 0);
+      if (!t || t < base - 120 || t > serverNow + 30) {
+        results.push({ ok: false, type: a && a.type, error: 'bad timestamp' });
+        continue;
+      }
+      try {
+        let out;
+        switch (a.type) {
+          case 'feed': out = await doFeed(uid, a.kind, t); break;
+          case 'feed-one': out = await doFeedOne(uid, a.fish_id, t); break;
+          case 'treat': out = await doTreat(uid, a.fish_id, t); break;
+          case 'collect': out = await doCollect(uid, a.fish_id, t); break;
+          case 'tap': out = await doTap(uid, a.fish_id, t); break;
+          case 'breed': out = await doBreed(uid, a.male_id, a.female_id, t); break;
+          default: throw { status: 400, message: 'unknown action' };
+        }
+        results.push({ ok: true, type: a.type, ...out });
+      } catch (e) {
+        results.push({ ok: false, type: a.type, error: (e && e.message) || 'failed' });
+      }
+    }
+    const out = await getStateJson(uid, serverNow);
+    res.json({ ok: true, results, server_time: out.server_time, state: out.state });
   }));
 
   // ---------- fish shop ----------
@@ -385,47 +575,18 @@ module.exports = function gameRoutes(db) {
 
   r.post('/fish/feed', ah(async (req, res) => {
     const uid = req.user.id; const t = now();
-    // the feed button offers a choice: normal food feeds the swimmers,
-    // bottom food feeds only the bottom fish (1 food per fish of that kind)
-    const kind = (req.body && req.body.kind) === 'special' ? 'special' : 'normal';
-    const tank = await H.activeTank(uid);
-    const tankFish = await db.all("SELECT id, grp FROM fish WHERE user_id=? AND tank=? AND location='tank'", uid, tank);
-    const targets = tankFish.filter((f) => (kind === 'special') === (f.grp === 'bottom_fish'));
-    if (targets.length === 0) return res.json({ ok: true, pellets: 0, kind });
-    const w = await H.getWallet(uid);
-    if (kind === 'special') {
-      if ((w.food_special || 0) < targets.length) return res.status(400).json({ ok: false, error: 'no special food', need: targets.length, have: w.food_special || 0 });
-    } else if (w.food < targets.length) {
-      return res.status(400).json({ ok: false, error: 'no food', need: targets.length, have: w.food });
-    }
-    await db.tx(async (txDb) => {
-      const Ht = helpers(txDb);
-      if (kind === 'special') await txDb.run('UPDATE wallets SET food_special=food_special-? WHERE user_id=?', targets.length, uid);
-      else await txDb.run('UPDATE wallets SET food=food-? WHERE user_id=?', targets.length, uid);
-      const ids = targets.map((f) => f.id);
-      await txDb.run(`UPDATE fish SET fed_at=? WHERE id IN (${ids.map(() => '?').join(',')})`, t, ...ids);
-      await Ht.questProgressAdd(uid, 'feed_3', 1, t);
-      await Ht.addXp(uid, 2);
-    });
-    res.json({ ok: true, pellets: targets.length, kind });
+    try {
+      const out = await doFeed(uid, req.body && req.body.kind, t);
+      res.json({ ok: true, pellets: out.pellets, kind: out.kind });
+    } catch (e) { res.status(e.status || 500).json({ ok: false, error: e.message || 'feed failed' }); }
   }));
 
   r.post('/fish/feed-one', ah(async (req, res) => {
     const uid = req.user.id; const t = now();
-    const { fish_id } = req.body || {};
-    const fish = await db.get('SELECT id, grp FROM fish WHERE id=? AND user_id=?', fish_id, uid);
-    if (!fish) return res.status(404).json({ ok: false, error: 'fish not found' });
-    // bottom fish eat special food, everyone else eats normal food
-    const bottom = fish.grp === 'bottom_fish';
-    const w = await H.getWallet(uid);
-    if (bottom && (w.food_special || 0) < 1) return res.status(400).json({ ok: false, error: 'no special food' });
-    if (!bottom && w.food < 1) return res.status(400).json({ ok: false, error: 'no food' });
-    await db.tx(async (txDb) => {
-      if (bottom) await txDb.run('UPDATE wallets SET food_special=food_special-1 WHERE user_id=?', uid);
-      else await txDb.run('UPDATE wallets SET food=food-1 WHERE user_id=?', uid);
-      await txDb.run('UPDATE fish SET fed_at=? WHERE id=?', t, fish_id);
-    });
-    res.json({ ok: true });
+    try {
+      await doFeedOne(uid, req.body && req.body.fish_id, t);
+      res.json({ ok: true });
+    } catch (e) { res.status(e.status || 500).json({ ok: false, error: e.message || 'feed failed' }); }
   }));
 
   r.post('/shop/medicine/buy', ah(async (req, res) => {
@@ -442,52 +603,27 @@ module.exports = function gameRoutes(db) {
 
   r.post('/fish/treat', ah(async (req, res) => {
     const uid = req.user.id; const t = now();
-    const { fish_id } = req.body || {};
-    const fish = await db.get('SELECT id,sick_at FROM fish WHERE id=? AND user_id=?', fish_id, uid);
-    if (!fish) return res.status(404).json({ ok: false, error: 'fish not found' });
-    if (!fish.sick_at) return res.status(400).json({ ok: false, error: 'not sick' });
-    const w = await H.getWallet(uid);
-    if ((w.medicine || 0) < 1) return res.status(400).json({ ok: false, error: 'no medicine' });
-    await db.tx(async (txDb) => {
-      await txDb.run('UPDATE wallets SET medicine=medicine-1 WHERE user_id=?', uid);
-      await txDb.run('UPDATE fish SET sick_at=NULL, fed_at=? WHERE id=?', t, fish_id);
-    });
-    res.json({ ok: true });
+    try {
+      await doTreat(uid, req.body && req.body.fish_id, t);
+      res.json({ ok: true });
+    } catch (e) { res.status(e.status || 500).json({ ok: false, error: e.message || 'treat failed' }); }
   }));
 
   // ---------- collect farmed coins (fish stops earning until collected) ----------
   r.post('/fish/collect', ah(async (req, res) => {
     const uid = req.user.id; const t = now();
-    const { fish_id } = req.body || {};
-    const fish = await db.get('SELECT id,coin_pending,gem_pending FROM fish WHERE id=? AND user_id=?', fish_id, uid);
-    if (!fish) return res.status(404).json({ ok: false, error: 'fish not found' });
-    if (!fish.coin_pending || fish.coin_pending <= 0) {
-      return res.status(400).json({ ok: false, error: 'nothing to collect' });
-    }
-    const coins = fish.coin_pending;
-    const gems = fish.gem_pending || 0;
-    await db.tx(async (txDb) => {
-      await txDb.run('UPDATE fish SET coin_pending=0, gem_pending=0, coin_at=? WHERE id=?', t, fish_id);
-      // the daily diamond clock restarts when the diamond is claimed (hourly coin
-      // collections must not disturb it)
-      if (gems > 0) await txDb.run('UPDATE fish SET gem_at=? WHERE id=?', t, fish_id);
-      await txDb.run('UPDATE wallets SET coins=coins+?, gems=gems+? WHERE user_id=?', coins, gems, uid);
-    });
-    const w = await H.getWallet(uid);
-    res.json({ ok: true, collected: coins, collected_gems: gems, coins: w.coins, gems: w.gems });
+    try {
+      const out = await doCollect(uid, req.body && req.body.fish_id, t);
+      res.json({ ok: true, collected: out.collected, collected_gems: out.collected_gems, coins: out.coins, gems: out.gems });
+    } catch (e) { res.status(e.status || 500).json({ ok: false, error: e.message || 'collect failed' }); }
   }));
 
   r.post('/fish/tap', ah(async (req, res) => {
-    const uid = req.user.id;
-    const { fish_id } = req.body || {};
-    const fish = await db.get('SELECT id FROM fish WHERE id=? AND user_id=?', fish_id, uid);
-    if (!fish) return res.status(404).json({ ok: false, error: 'fish not found' });
-    // petting is affection only (XP) — it no longer feeds; use Feed for hunger
-    await db.tx(async (txDb) => {
-      const Ht = helpers(txDb);
-      await Ht.addXp(uid, 1);
-    });
-    res.json({ ok: true });
+    const uid = req.user.id; const t = now();
+    try {
+      await doTap(uid, req.body && req.body.fish_id, t);
+      res.json({ ok: true });
+    } catch (e) { res.status(e.status || 500).json({ ok: false, error: e.message || 'tap failed' }); }
   }));
 
   // ---------- rename a pet (3 gems) ----------
@@ -597,54 +733,10 @@ module.exports = function gameRoutes(db) {
 
   r.post('/breeding/breed', ah(async (req, res) => {
     const uid = req.user.id; const t = now();
-    const maleId = Number(req.body && req.body.male_id);
-    const femaleId = Number(req.body && req.body.female_id);
-    const male = await db.get('SELECT * FROM fish WHERE id=? AND user_id=?', maleId, uid);
-    const female = await db.get('SELECT * FROM fish WHERE id=? AND user_id=?', femaleId, uid);
-    if (!male || !female) return res.status(404).json({ ok: false, error: 'fish not found' });
-    if (male.location === 'market' || female.location === 'market') {
-      return res.status(400).json({ ok: false, error: 'cancel the market listing first 💎' });
-    }
-    if (maleId === femaleId) return res.status(400).json({ ok: false, error: 'pick two different fish' });
-    if (male.gender !== 'male' || female.gender !== 'female') {
-      return res.status(400).json({ ok: false, error: 'breeding needs one male and one female' });
-    }
-    if (male.grp !== female.grp) {
-      return res.status(400).json({ ok: false, error: "These species can't breed together" });
-    }
-    const lin = (f) => { try { return JSON.parse(f.lineage); } catch { return {}; } };
-    if (lin(male).hybrid || lin(female).hybrid) {
-      return res.status(400).json({ ok: false, error: 'hybrids cannot breed' });
-    }
-    const w = await H.getWallet(uid);
-    if (w.gems < 2) return res.status(400).json({ ok: false, error: 'not enough gems' });
-
-    const hybrid = male.species_id !== female.species_id;
-    const hatchHours = hybrid ? C.HYBRID_HATCH_HOURS : C.HATCH_HOURS[male.grp];
-    const generation = Math.max(lin(male).generation || 0, lin(female).generation || 0) + 1;
-
-    const eggId = await db.tx(async (txDb) => {
-      const Ht = helpers(txDb);
-      await txDb.run('UPDATE wallets SET gems=gems-2 WHERE user_id=?', uid);
-      const species = resolveEggSpecies(male.species_id, female.species_id);
-      const info = await txDb.run(
-        `INSERT INTO eggs (user_id,grp,variant_a,variant_b,hybrid,generation,hatch_at,created_at,event_id,species)
-         VALUES (?,?,?,?,?,?,?,?,?,?)`,
-        uid, male.grp, male.species_id, female.species_id, hybrid ? 1 : 0,
-        generation, t + hatchHours * 3600, t, male.event_id || female.event_id || null, species);
-      await Ht.questProgressAdd(uid, 'breed_1', 1, t);
-      await Ht.addXp(uid, 5);
-      return info.lastInsertRowid;
-    });
-    const egg = await db.get('SELECT * FROM eggs WHERE id=?', eggId);
-    res.json({
-      ok: true,
-      egg: {
-        id: egg.id, group: egg.grp, variant_a: egg.variant_a, variant_b: egg.variant_b,
-        hybrid: !!egg.hybrid, generation: egg.generation, hatch_at: egg.hatch_at, created_at: egg.created_at,
-        species: egg.species || null,
-      },
-    });
+    try {
+      const out = await doBreed(uid, req.body && req.body.male_id, req.body && req.body.female_id, t);
+      res.json({ ok: true, egg: out.egg });
+    } catch (e) { res.status(e.status || 500).json({ ok: false, error: e.message || 'breed failed' }); }
   }));
 
   // ---------- dirt ----------
@@ -715,6 +807,7 @@ module.exports = function gameRoutes(db) {
     const { deco_id } = req.body || {};
     const item = C.decorItem(deco_id);
     if (!item) return res.status(400).json({ ok: false, error: 'unknown decoration' });
+    if (item.event === 'grab') return res.status(400).json({ ok: false, error: 'grab exclusive' });
     const w = await H.getWallet(uid);
     if (w.coins < item.price) return res.status(400).json({ ok: false, error: 'not enough coins' });
     const qty = await db.tx(async (txDb) => {
@@ -883,6 +976,79 @@ module.exports = function gameRoutes(db) {
       await txDb.run('INSERT OR REPLACE INTO daily_shell(user_id,last_played_at) VALUES(?,?)', uid, t);
       if (win) await txDb.run('UPDATE wallets SET gems=gems+? WHERE user_id=?', SHELL_PRIZE, uid);
       return { ok: true, win, winning, gems: win ? SHELL_PRIZE : 0 };
+    });
+    if (!out.ok) return res.status(400).json(out);
+    res.json(out);
+  }));
+
+  // ---------- grab machine: 30 diamonds per play, win a decoration or an egg ----------
+  // Autumn event prize pool: 25 exclusive autumn decorations + 3 rare eggs.
+  const GRAB_COST = 30;
+  const GRAB_PRIZES = [
+    // autumn decorations (grab-exclusive)
+    { kind: 'decor', deco_id: 'deco_autumn_log_cave',      weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_driftwood_log', weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_stone_arch',    weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_stone_lantern', weight: 3 },
+    { kind: 'decor', deco_id: 'deco_autumn_mossy_cave',    weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_barrel_cave',   weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_pumpkin_cave',  weight: 3 },
+    { kind: 'decor', deco_id: 'deco_autumn_stone_stack',   weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_branch_perch',  weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_signpost',      weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_wood_bridge',   weight: 3 },
+    { kind: 'decor', deco_id: 'deco_autumn_maple_bush',    weight: 5 },
+    { kind: 'decor', deco_id: 'deco_autumn_maple_tree',    weight: 2 },
+    { kind: 'decor', deco_id: 'deco_autumn_mushrooms',     weight: 5 },
+    { kind: 'decor', deco_id: 'deco_autumn_reeds',         weight: 5 },
+    { kind: 'decor', deco_id: 'deco_autumn_leaf_pile',     weight: 5 },
+    { kind: 'decor', deco_id: 'deco_autumn_stone_slabs',   weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_stump_cave',    weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_leaf_pond',     weight: 3 },
+    { kind: 'decor', deco_id: 'deco_autumn_driftwood_roots', weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_pinecone',      weight: 5 },
+    { kind: 'decor', deco_id: 'deco_autumn_leaf_arch',     weight: 3 },
+    { kind: 'decor', deco_id: 'deco_autumn_clay_pot',      weight: 4 },
+    { kind: 'decor', deco_id: 'deco_autumn_stone_ruin',    weight: 3 },
+    { kind: 'decor', deco_id: 'deco_autumn_rocky_cave',    weight: 4 },
+    // eggs (rare) — hatch into a fish after a few hours
+    { kind: 'egg', grp: 'betta',    species_id: 'veiltail_betta', weight: 8 },
+    { kind: 'egg', grp: 'goldfish', species_id: 'sakura_goldfish', weight: 7 },
+    { kind: 'egg', grp: 'betta',    species_id: 'fullmoon_betta',  weight: 5 },
+  ];
+  const GRAB_TOTAL_W = GRAB_PRIZES.reduce((s, p) => s + p.weight, 0);
+  r.get('/grab/prizes', ah(async (req, res) => {
+    const items = GRAB_PRIZES.map((p) => {
+      if (p.kind === 'decor') {
+        const d = C.decorItem(p.deco_id);
+        return { kind: 'decor', deco_id: p.deco_id, name: d ? d.name : p.deco_id, file: d ? d.file : null, weight: p.weight };
+      }
+      return { kind: 'egg', grp: p.grp, species_id: p.species_id, name: C.SPECIES_NAMES[p.species_id] || p.species_id, weight: p.weight };
+    });
+    res.json({ ok: true, cost: GRAB_COST, prizes: items });
+  }));
+  r.post('/grab/play', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const roll = Math.random() * GRAB_TOTAL_W;
+    let acc = 0, prize = GRAB_PRIZES[0];
+    for (const p of GRAB_PRIZES) { acc += p.weight; if (roll < acc) { prize = p; break; } }
+    const out = await db.tx(async (txDb) => {
+      const w = await txDb.get('SELECT gems FROM wallets WHERE user_id=?', uid);
+      if (!w || w.gems < GRAB_COST) return { ok: false, error: 'not enough diamonds' };
+      await txDb.run('UPDATE wallets SET gems=gems-? WHERE user_id=?', GRAB_COST, uid);
+      if (prize.kind === 'decor') {
+        await txDb.run(`INSERT INTO decor_owned (user_id,deco_id,qty) VALUES (?,?,1)
+          ON CONFLICT(user_id,deco_id) DO UPDATE SET qty=qty+1`, uid, prize.deco_id);
+        const d = C.decorItem(prize.deco_id) || {};
+        return { ok: true, prize: { kind: 'decor', deco_id: prize.deco_id, name: d.name || prize.deco_id, file: d.file || null } };
+      }
+      const hatchAt = t + 6 * 3600; // eggs hatch in 6h
+      const info = await txDb.run(
+        `INSERT INTO eggs (user_id,grp,variant_a,variant_b,hybrid,generation,hatch_at,created_at,event_id,species)
+         VALUES (?,?,?,?,0,1,?,?,?,?)`,
+        uid, prize.grp, prize.species_id, prize.species_id, hatchAt, t, 'grab', prize.species_id);
+      return { ok: true, prize: { kind: 'egg', egg_id: Number(info.lastInsertRowid),
+        grp: prize.grp, species_id: prize.species_id, name: C.SPECIES_NAMES[prize.species_id] || prize.species_id, hatch_at: hatchAt } };
     });
     if (!out.ok) return res.status(400).json(out);
     res.json(out);

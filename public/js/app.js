@@ -74,6 +74,8 @@ const App = (() => {
     state = r.state;
     UI.updateHUD(state);
     tank.syncState(state);
+    if (r.synced) UI.toast(t("app.synced") + (r.failed ? ` (${r.failed} ⚠️)` : ""));
+    if (typeof Offline !== "undefined") Offline.updateBadge();
     applySettings(state.settings, true);
     // daily shell game badge on the quests nav tab (games live under Quests now)
     Api.shellStatus().then((s) => {

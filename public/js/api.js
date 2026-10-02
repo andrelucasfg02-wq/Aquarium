@@ -14,6 +14,13 @@ const Api = (() => {
         body: body === undefined ? undefined : JSON.stringify(body),
       });
     } catch (e) {
+      // possibly offline: queueable actions / cached state via Offline module
+      if (typeof Offline !== "undefined") {
+        try {
+          const off = await Offline.onNetworkFail(method, path, body);
+          if (off) return off;
+        } catch (e2) { /* fall through to network error */ }
+      }
       return { ok: false, error: "network", message: "No connection to the server 🛜" };
     }
     if (res.status === 401) { onAuthFail(); return { ok: false, error: "auth" }; }
@@ -23,7 +30,15 @@ const Api = (() => {
       const msg = (data && (data.error || data.message)) || `Server error ${res.status}`;
       return { ok: false, error: msg, status: res.status };
     }
-    return data || { ok: true };
+    const out = data || { ok: true };
+    // offline support: anchor the monotonic clock + cache full state
+    if (typeof Offline !== "undefined") {
+      try {
+        if (out.server_time) Offline.setAnchor(out.server_time);
+        if (path === "/api/state" && out.state) Offline.saveState(out.state);
+      } catch (e) { /* non-fatal */ }
+    }
+    return out;
   }
   const get = (p) => req("GET", p);
   const post = (p, b) => req("POST", p, b || {});
@@ -36,7 +51,17 @@ const Api = (() => {
     passwordReset: (token, password) => post("/api/password/reset", { token, password }),
     logout: () => post("/api/logout"),
     me: () => get("/api/me"),
-    state: () => get("/api/state"),
+    state: async () => {
+      // flush any queued offline actions first (sync returns fresh state)
+      if (typeof Offline !== "undefined") {
+        try {
+          const s = await Offline.syncIfNeeded();
+          if (s && s.ok) return s;
+          if (s && s.error === "auth") return s;
+        } catch (e) { /* fall through to normal state */ }
+      }
+      return get("/api/state");
+    },
     fishCatalog: () => post("/api/shop/fish"),
     buyFish: (species_id) => post("/api/shop/fish/buy", { species_id }),
     sellFish: (fish_id) => post("/api/fish/sell", { fish_id }),
@@ -66,6 +91,8 @@ const Api = (() => {
     minigameFinish: (score) => post("/api/minigame/finish", { score }),
     shellStatus: () => get("/api/shell/status"),
     shellPlay: (pick) => post("/api/shell/play", { pick }),
+    grabPrizes: () => get("/api/grab/prizes"),
+    grabPlay: () => post("/api/grab/play"),
     eventProgress: (event) => get(`/api/event/progress?event=${encodeURIComponent(event)}`),
     eventSave: (event, score, level, moves) => post("/api/event/progress", { event, score, level, moves }),
     eventClaim: (event) => post("/api/event/claim", { event }),

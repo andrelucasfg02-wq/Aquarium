@@ -269,7 +269,6 @@ function decorCatalog() {
     file: `assets/furniture/${it.file}`,
     price: idx <= 30 ? 120 : idx <= 61 ? 300 : 600,
     index: idx,
-    event: it.event || null,
   }));
   return _decorCache;
 }

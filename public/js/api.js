@@ -66,8 +66,6 @@ const Api = (() => {
     minigameFinish: (score) => post("/api/minigame/finish", { score }),
     shellStatus: () => get("/api/shell/status"),
     shellPlay: (pick) => post("/api/shell/play", { pick }),
-    grabPrizes: () => get("/api/grab/prizes"),
-    grabPlay: () => post("/api/grab/play"),
     eventProgress: (event) => get(`/api/event/progress?event=${encodeURIComponent(event)}`),
     eventSave: (event, score, level, moves) => post("/api/event/progress", { event, score, level, moves }),
     eventClaim: (event) => post("/api/event/claim", { event }),

@@ -35,8 +35,8 @@ const InstallPromo = (() => {
     } catch (e) { /* ignore */ }
   }
 
-  function show() {
-    if (!shouldShow()) return;
+  function show(force) {
+    if (!force && !shouldShow()) return;
     let ov = document.getElementById("install-overlay");
     if (!ov) { ov = build(); document.body.appendChild(ov); }
     // iOS gets instructions; Android/others get the one-tap button (enabled

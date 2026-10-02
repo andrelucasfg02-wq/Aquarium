@@ -944,6 +944,7 @@ const UI = (() => {
       <h3>👤 ${t("settings.account")}</h3>
       <div class="row-card"><div class="grow"><b>${esc(state.user.name)}</b><div class="sub">${esc(state.user.email)}</div></div></div>
       <button class="pill-btn" id="btn-tutorial" style="width:100%;padding:13px;background:linear-gradient(135deg,#7fb8e8,#4a7fc9);margin-bottom:10px">🎓 ${t("settings.replay_tutorial")}</button>
+      ${typeof InstallPromo !== "undefined" && !InstallPromo.isStandalone() ? `<button class="pill-btn" id="btn-install-app" style="width:100%;padding:13px;background:linear-gradient(135deg,#5ccb52,#2f9e44);margin-bottom:10px">📲 ${t("settings.install_app")}</button>` : ""}
       <button class="pill-btn" id="btn-logout" style="width:100%;padding:13px;background:linear-gradient(135deg,#e08a9b,#c05a7a)">🚪 ${t("settings.logout")}</button>
       <div class="empty">${t("settings.footer")}</div>
     `;
@@ -967,6 +968,10 @@ const UI = (() => {
     };
     $("btn-tutorial").onclick = () => {
       if (typeof Tutorial !== "undefined") Tutorial.start();
+    };
+    const btnInstall = $("btn-install-app");
+    if (btnInstall) btnInstall.onclick = () => {
+      if (typeof InstallPromo !== "undefined") InstallPromo.show(true);
     };
   }
 

@@ -285,6 +285,13 @@ class TankView {
     const dist = Math.hypot(dx, dy);
     const wantDir = dx >= 0 ? 1 : -1;
 
+    // Ember Goldfish has 8 swim frames (1-8); its eat/sleep/turn move to 9/10/11.
+    // Every other goldfish keeps swim 1-4, eat 5, sleep 6, turn 7.
+    const isEmber8 = e.data && e.data.species_id === "ember_clownfish";
+    const swimN = isEmber8 ? 8 : 4;
+    const F_EAT = isEmber8 ? 9 : 5;
+    const F_SLEEP = isEmber8 ? 10 : 6;
+    const F_TURN = isEmber8 ? 11 : 7;
     switch (e.state) {
       case "idle":
         e.frame = 0;
@@ -295,14 +302,14 @@ class TankView {
         }
         break;
       case "sleep":
-        e.frame = 6;
+        e.frame = F_SLEEP;
         e.stateT -= dt;
         if (e.emoteCd <= 0) { this.addEmote(e.px, e.py - .03, "💤", 2.2); e.emoteCd = 2.4; }
         if (e.stateT <= 0) { this.pickTarget(e); e.state = "swim"; }
         break;
       case "turn":
-        // cory curls around (7); bettas have no back pose (2); others show the top (7)
-        e.frame = e.group === "betta" ? 2 : 7;
+        // cory curls around (7); bettas have no back pose (2); others show the top (7/11)
+        e.frame = e.group === "betta" ? 2 : F_TURN;
         e.turnT -= dt;
         if (e.turnT <= 0) { e.dir = wantDir; e.state = "swim"; }
         break;
@@ -310,7 +317,7 @@ class TankView {
         const p = e.chasePellet;
         if (!p || p.gone) { e.state = "swim"; this.pickTarget(e); break; }
         e.tx = p.x; e.ty = p.y;
-        e.frame = 1 + Math.floor(e.animT * 10) % 4;
+        e.frame = 1 + Math.floor(e.animT * 10) % swimN;
         if (wantDir !== e.dir) { e.dir = wantDir; }
         this.moveToward(e, speed * 2.4, dt);
         if (Math.hypot(p.x - e.px, p.y - e.py) < .028) {
@@ -325,7 +332,7 @@ class TankView {
           // the sand-digging pose only when munching at the very bottom
           const g = this.glass();
           e.frame = (e.py >= g.bottom - .035) ? 8 : 5;
-        } else e.frame = 5; // munch frame
+        } else e.frame = F_EAT; // munch frame
         e.eatT -= dt;
         if (e.eatT <= 0) { e.state = "idle"; e.stateT = 1 + Math.random() * 2; }
         break;
@@ -335,7 +342,7 @@ class TankView {
         e.tx = s.x; e.ty = s.y;
         const cd = Math.hypot(s.x - e.px, s.y - e.py);
         if (cd > .03) {
-          e.frame = 1 + Math.floor(e.animT * 10) % 4; // hurry over
+          e.frame = 1 + Math.floor(e.animT * 10) % swimN; // hurry over
           if (wantDir !== e.dir) e.dir = wantDir;
           this.moveToward(e, speed * 2.2, dt);
         } else {
@@ -355,10 +362,10 @@ class TankView {
       }
       case "swim":
       default:
-        e.frame = 1 + Math.floor(e.animT * 7) % 4;
+        e.frame = 1 + Math.floor(e.animT * 7) % swimN;
         if (dist > .004 && wantDir !== e.dir) {
           e.state = "turn"; e.turnT = .32;
-          e.frame = e.group === "betta" ? 2 : 7;
+          e.frame = e.group === "betta" ? 2 : F_TURN;
           break;
         }
         this.moveToward(e, speed, dt);
@@ -592,7 +599,7 @@ Object.assign(TankView.prototype, {
     let base = base0;
     if (e.group === "betta" && frame === 0) base = base0 * (f.species_id === "female_betta" ? 0.7 : 0.8);
     else if (e.group === "betta" && frame === 6) base = base0 * 0.85;
-    else if (e.group === "goldfish" && frame === 6) base = base0 * 0.8;
+    else if (e.group === "goldfish" && (frame === 6 || (f.species_id === "ember_clownfish" && frame === 10))) base = base0 * 0.8;
     else if (e.group === "bottom_fish" && (frame === 0 || frame === 5)) base = base0 * 0.7;
     const im = loadImg(spriteURL(f.species_id, frame, f.gender));
     const [x, y] = fracToPx(e.px, e.py, v, T.w, T.h);

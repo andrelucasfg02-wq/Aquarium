@@ -576,10 +576,10 @@ Object.assign(TankView.prototype, {
     if (stage === "adult" && e.group === "goldfish") scale *= 0.85; // adult goldfish run a bit smaller
     const base0 = (DATA.GROUP_BASE_PX[e.group] || 130) * scale * (T.fishScale || 1);
     const frame = (e.faceT > 0) ? 0 : e.frame;
-    // betta front (0) renders 20% smaller and sleeping (6) 15% smaller; goldfish sleeping (6) renders 20% smaller;
+    // betta front (0) renders 20% smaller (female_betta 30% smaller) and sleeping (6) 15% smaller; goldfish sleeping (6) renders 20% smaller;
     // cory eating (5) renders 30% smaller
     let base = base0;
-    if (e.group === "betta" && frame === 0) base = base0 * 0.8;
+    if (e.group === "betta" && frame === 0) base = base0 * (f.species_id === "female_betta" ? 0.7 : 0.8);
     else if (e.group === "betta" && frame === 6) base = base0 * 0.85;
     else if (e.group === "goldfish" && frame === 6) base = base0 * 0.8;
     else if (e.group === "bottom_fish" && (frame === 0 || frame === 5)) base = base0 * 0.7;

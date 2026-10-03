@@ -1141,6 +1141,7 @@ module.exports = function gameRoutes(db) {
       }
       const fish = await Ht.addFish(uid, EVENT_FISH[event], {
         location: 'inventory', origin: 'event', event_id: event,
+        born_at: t - 10 * 86400, // event prize arrives as an adult
         ...(mapleGender ? { gender: mapleGender } : {}),
       }, t);
       return { ok: true, fish_id: fish.id, species_id: EVENT_FISH[event], run, runs_claimed: run, max_runs: mr };

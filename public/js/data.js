@@ -12,9 +12,9 @@ const DATA = {
   },
   // measured glass rectangles, fractions of artwork (per API_CONTRACT.md §Glass)
   GLASS: {
-    small:  { left: .165, right: .835, top: .375, bottom: .70 },
-    medium: { left: .04,  right: .96,  top: .31,  bottom: .65 },
-    large:  { left: .04,  right: .96,  top: .33,  bottom: .70 },
+    small:  { left: .130, right: .870, top: .390, bottom: .790 },
+    medium: { left: .060, right: .930, top: .290, bottom: .800 },
+    large:  { left: .055, right: .940, top: .320, bottom: .800 },
   },
   // species → {group, name, folder sprite path builder, price fallback, base size in artwork px}
   SPECIES: {

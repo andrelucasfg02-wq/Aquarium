@@ -92,7 +92,7 @@ class TankView {
   ensureBlur() {
     if (this.bgBlur || !imgReady(this.bg)) return;
     const c = document.createElement("canvas");
-    c.width = 160; c.height = 140;
+    c.width = 96; c.height = 84;
     const x = c.getContext("2d");
     x.drawImage(this.bg, 0, 0, c.width, c.height);
     this.bgBlur = c;
@@ -512,7 +512,7 @@ Object.assign(TankView.prototype, {
         const bs = Math.max(cssW / this.bgBlur.width, cssH / this.bgBlur.height);
         const bw = this.bgBlur.width * bs, bh = this.bgBlur.height * bs;
         ctx.drawImage(this.bgBlur, (cssW - bw) / 2, (cssH - bh) / 2, bw, bh);
-        ctx.fillStyle = "rgba(0,0,0,.28)";
+        ctx.fillStyle = "rgba(2,8,16,.62)";
         ctx.fillRect(0, 0, cssW, cssH);
       } else {
         ctx.fillStyle = "#000";

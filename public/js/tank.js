@@ -15,7 +15,7 @@ function imgReady(im) { return im && im.complete && im.naturalWidth > 0; }
 
 /* Goldfish species with 8 swim frames (1-8); eat/sleep/turn live at 9/10/11.
    All other goldfish: swim 1-4, eat 5, sleep 6, turn 7. */
-const SWIM8_IDS = new Set(["ember_clownfish", "lemon_drop_goldfish", "sakura_goldfish", "azure_tang"]);
+const SWIM8_IDS = new Set(["ember_clownfish", "lemon_drop_goldfish", "sakura_goldfish", "azure_tang", "midnight_moor"]);
 
 class TankView {
   constructor(canvas) {

@@ -11,9 +11,19 @@ const App = (() => {
   let decorCatalogLoaded = false;
 
   /* ---------- boot ---------- */
+  function hideLoading() {
+    const el = document.getElementById("loading-screen");
+    if (el) el.classList.add("hidden");
+  }
+
   async function boot() {
     // translate static HTML (auth screen etc.) before first paint
     if (typeof I18N !== "undefined") I18N.applyI18n();
+    // if the server is cold (Render wake-up), show a hint after 8s
+    const wakeTimer = setTimeout(() => {
+      const sub = document.getElementById("loading-sub");
+      if (sub) sub.classList.add("show");
+    }, 8000);
     // iOS Safari ignores viewport user-scalable=no — block pinch zoom explicitly
     document.addEventListener("gesturestart", (e) => e.preventDefault());
     document.addEventListener("gesturechange", (e) => e.preventDefault());
@@ -26,6 +36,8 @@ const App = (() => {
     bindHomeButtons();
 
     const me = await Api.me();
+    clearTimeout(wakeTimer);
+    hideLoading();
     if (!me.ok || !me.user) { showAuth(); return; }
     // opened from a password-reset email: show the reset form, not the game
     if (new URLSearchParams(location.search).get("reset")) { showAuth(); return; }

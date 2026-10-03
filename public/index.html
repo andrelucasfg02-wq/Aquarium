@@ -17,6 +17,18 @@
 </head>
 <body>
 
+<!-- ============ LOADING (while server wakes up) ============ -->
+<div id="loading-screen" class="loading-screen">
+  <div class="loading-bubbles">
+    <span></span><span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <img class="loading-art" src="assets/loading/betta-bubble.png" alt="AquaNim">
+  <div class="loading-bar"><div class="loading-bar-fill" id="loading-bar-fill"></div></div>
+  <div class="loading-text" data-i18n="loading.text">Loading your aquarium…</div>
+  <div class="loading-sub" id="loading-sub" data-i18n="loading.waking">Waking up the server, one moment…</div>
+</div>
+
 <!-- ============ AUTH ============ -->
 <div id="auth-screen" class="auth-screen" hidden>
   <div class="auth-card">

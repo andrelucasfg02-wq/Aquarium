@@ -84,6 +84,18 @@ class TankView {
     this.camX = 0; this.camY = 0;
     const T = DATA.TANKS[tier];
     this.bg = loadImg(T.file);
+    this.bgBlur = null; // rebuilt lazily once the art loads
+  }
+
+  /* Low-res blurred copy of the tank art, used as a full-screen backdrop for
+     contain-fit tanks so the letterbox area feels complete instead of empty. */
+  ensureBlur() {
+    if (this.bgBlur || !imgReady(this.bg)) return;
+    const c = document.createElement("canvas");
+    c.width = 160; c.height = 140;
+    const x = c.getContext("2d");
+    x.drawImage(this.bg, 0, 0, c.width, c.height);
+    this.bgBlur = c;
   }
 
   view() {
@@ -492,10 +504,20 @@ Object.assign(TankView.prototype, {
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     ctx.clearRect(0, 0, cssW, cssH);
 
-    // tank artwork: cover fills edge-to-edge; contain letterboxes on black
+    // tank artwork: cover fills edge-to-edge; contain shows the whole tank
+    // over a blurred full-screen backdrop (no empty black bars)
     if ((T.fit || "cover") === "contain") {
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, cssW, cssH);
+      this.ensureBlur();
+      if (this.bgBlur) {
+        const bs = Math.max(cssW / this.bgBlur.width, cssH / this.bgBlur.height);
+        const bw = this.bgBlur.width * bs, bh = this.bgBlur.height * bs;
+        ctx.drawImage(this.bgBlur, (cssW - bw) / 2, (cssH - bh) / 2, bw, bh);
+        ctx.fillStyle = "rgba(0,0,0,.28)";
+        ctx.fillRect(0, 0, cssW, cssH);
+      } else {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, cssW, cssH);
+      }
     }
     if (imgReady(this.bg)) {
       ctx.drawImage(this.bg, v.ox, v.oy, T.w * v.s, T.h * v.s);

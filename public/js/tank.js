@@ -89,6 +89,13 @@ class TankView {
   view() {
     const T = DATA.TANKS[this.tier];
     const v = fitView(this.cssW, this.cssH, T.w, T.h, T.fit || "cover");
+    // per-tank zoom (e.g. small contain-fit would look too far otherwise)
+    if (T.zoom && T.zoom !== 1) {
+      const cx = this.cssW / 2, cy = this.cssH / 2;
+      v.s *= T.zoom;
+      v.ox = cx - (cx - v.ox) * T.zoom;
+      v.oy = cy - (cy - v.oy) * T.zoom;
+    }
     v.ox += this.camX; v.oy += this.camY;
     return v;
   }
@@ -96,6 +103,12 @@ class TankView {
   panLimits() {
     const T = DATA.TANKS[this.tier];
     const v = fitView(this.cssW, this.cssH, T.w, T.h, T.fit || "cover");
+    if (T.zoom && T.zoom !== 1) {
+      const cx = this.cssW / 2, cy = this.cssH / 2;
+      v.s *= T.zoom;
+      v.ox = cx - (cx - v.ox) * T.zoom;
+      v.oy = cy - (cy - v.oy) * T.zoom;
+    }
     return { x: Math.max(0, -v.ox), y: Math.max(0, -v.oy) };
   }
   setCam(x, y) {

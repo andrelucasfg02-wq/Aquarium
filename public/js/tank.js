@@ -192,17 +192,17 @@ class TankView {
 
   pickTarget(e) {
     const g = this.glass();
-    const pad = .04;
+    const padX = .025, padY = .04;
     if (e.group === "snail") {
-      e.tx = g.left + pad + Math.random() * (g.right - g.left - pad * 2);
+      e.tx = g.left + padX + Math.random() * (g.right - g.left - padX * 2);
       e.ty = g.bottom - .012 - Math.random() * .02;
     } else if (e.group === "bottom_fish") {
-      e.tx = g.left + pad + Math.random() * (g.right - g.left - pad * 2);
+      e.tx = g.left + padX + Math.random() * (g.right - g.left - padX * 2);
       const band = (g.bottom - g.top) * .22;
       e.ty = g.bottom - .02 - Math.random() * band;
     } else {
-      e.tx = g.left + pad + Math.random() * (g.right - g.left - pad * 2);
-      e.ty = g.top + pad + Math.random() * (g.bottom - g.top - pad * 2);
+      e.tx = g.left + padX + Math.random() * (g.right - g.left - padX * 2);
+      e.ty = g.top + padY + Math.random() * (g.bottom - g.top - padY * 2);
       // keep swimmers off the floor a bit
       e.ty = Math.min(e.ty, g.bottom - .06);
     }

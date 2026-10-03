@@ -232,9 +232,9 @@ const DECOR_EXTRA_SLOT_COST = 10; // diamonds per extra slot
 
 // Glass bounds (fractions of artwork)
 const GLASS = {
-  small:  { left: 0.130, right: 0.870, top: 0.390, bottom: 0.790 },
-  medium: { left: 0.060, right: 0.930, top: 0.290, bottom: 0.800 },
-  large:  { left: 0.055, right: 0.940, top: 0.320, bottom: 0.800 },
+  small:  { left: 0.171, right: 0.821, top: 0.380, bottom: 0.800 },
+  medium: { left: 0.040, right: 0.960, top: 0.290, bottom: 0.710 },
+  large:  { left: 0.036, right: 0.964, top: 0.320, bottom: 0.690 },
 };
 
 function clamp01(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }

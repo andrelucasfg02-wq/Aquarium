@@ -1,5 +1,5 @@
 // AquaNim service worker — app shell offline, API sempre da rede.
-const SW_VERSION = 'aquanim-v1';
+const SW_VERSION = 'aquanim-v2';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -43,7 +43,7 @@ self.addEventListener('fetch', (event) => {
   // Só GET.
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request, { ignoreSearch: true }).then((cached) => {
+    caches.match(event.request).then((cached) => {
       const network = fetch(event.request).then((res) => {
         if (res.ok && url.origin === self.location.origin) {
           const copy = res.clone();

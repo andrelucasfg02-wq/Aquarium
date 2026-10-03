@@ -88,14 +88,14 @@ class TankView {
 
   view() {
     const T = DATA.TANKS[this.tier];
-    const v = fitView(this.cssW, this.cssH, T.w, T.h, T.fit || "cover");
+    const v = coverView(this.cssW, this.cssH, T.w, T.h);
     v.ox += this.camX; v.oy += this.camY;
     return v;
   }
   /* max pan (css px) that still keeps the artwork covering the screen */
   panLimits() {
     const T = DATA.TANKS[this.tier];
-    const v = fitView(this.cssW, this.cssH, T.w, T.h, T.fit || "cover");
+    const v = coverView(this.cssW, this.cssH, T.w, T.h);
     return { x: Math.max(0, -v.ox), y: Math.max(0, -v.oy) };
   }
   setCam(x, y) {
@@ -479,11 +479,7 @@ Object.assign(TankView.prototype, {
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     ctx.clearRect(0, 0, cssW, cssH);
 
-    // tank artwork: cover fills edge-to-edge; contain letterboxes on black
-    if ((T.fit || "cover") === "contain") {
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, cssW, cssH);
-    }
+    // tank artwork, cover
     if (imgReady(this.bg)) {
       ctx.drawImage(this.bg, v.ox, v.oy, T.w * v.s, T.h * v.s);
     } else {

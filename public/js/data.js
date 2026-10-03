@@ -1,17 +1,20 @@
 /* data.js — static catalog, glass bounds, remap math. No DOM here. */
 "use strict";
 
+// Bump TANK_V whenever shipped tank art changes so phones don't keep stale cached JPGs.
+const TANK_V = 2;
+
 const DATA = {
   TANKS: {
-    small:  { file: "assets/tanks/tank_small.jpg",  w: 1125, h: 1125, price: 0,     capacity: 12, decorSlots: 10, fishScale: 1 },
-    medium: { file: "assets/tanks/tank_medium.jpg",  w: 1125, h: 634,  price: 5000,  capacity: 22, decorSlots: 20, fishScale: .7 },
-    large:  { file: "assets/tanks/tank_large.jpg",   w: 1125, h: 750,  price: 10000, capacity: 35, decorSlots: 30, fishScale: .5 },
+    small:  { file: "assets/tanks/tank_small.jpg?v=" + TANK_V,  w: 1125, h: 970, price: 0,     capacity: 12, decorSlots: 10, fishScale: 1, fit: "contain" },
+    medium: { file: "assets/tanks/tank_medium.jpg?v=" + TANK_V,  w: 1125, h: 750,  price: 5000,  capacity: 22, decorSlots: 20, fishScale: .7 },
+    large:  { file: "assets/tanks/tank_large.jpg?v=" + TANK_V,   w: 1125, h: 563,  price: 10000, capacity: 35, decorSlots: 30, fishScale: .5 },
   },
   // measured glass rectangles, fractions of artwork (per API_CONTRACT.md §Glass)
   GLASS: {
-    small:  { left: .1076, right: .8924, top: .0951, bottom: .8978 },
-    medium: { left: .0880, right: .9156, top: .1230, bottom: .8959 },
-    large:  { left: .1378, right: .8622, top: .2387, bottom: .8293 },
+    small:  { left: .165, right: .835, top: .375, bottom: .70 },
+    medium: { left: .04,  right: .96,  top: .31,  bottom: .65 },
+    large:  { left: .04,  right: .96,  top: .33,  bottom: .70 },
   },
   // species → {group, name, folder sprite path builder, price fallback, base size in artwork px}
   SPECIES: {
@@ -115,7 +118,17 @@ function speciesGroup(id) { return (DATA.SPECIES[id] || {}).group || "goldfish";
  * Returns {s, ox, oy} so fraction→css-px is  x = ox + fx*artW*s.
  */
 function coverView(cssW, cssH, artW, artH) {
-  const s = Math.max(cssW / artW, cssH / artH);
+  return fitView(cssW, cssH, artW, artH, "cover");
+}
+/**
+ * Fit modes: "cover" fills the viewport edge-to-edge (crops sides/top);
+ * "contain" shows the whole artwork (letterboxes). Returns {s, ox, oy} so
+ * fraction→css-px is  x = ox + fx*artW*s.
+ */
+function fitView(cssW, cssH, artW, artH, mode) {
+  const s = mode === "contain"
+    ? Math.min(cssW / artW, cssH / artH)
+    : Math.max(cssW / artW, cssH / artH);
   return { s, ox: (cssW - artW * s) / 2, oy: (cssH - artH * s) / 2 };
 }
 function fracToPx(fx, fy, view, artW, artH) {

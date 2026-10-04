@@ -356,8 +356,9 @@ select.sel{padding:10px;border-radius:12px;border:2px solid var(--green-border);
   border:2px solid var(--green-border);box-shadow:var(--shadow);margin-bottom:4px}
 .shell-title{font-weight:800;font-size:16px;margin-bottom:2px}
 #shell-row{display:flex;justify-content:center;gap:16px;margin:10px 0 4px;min-height:76px}
-.shell{font-size:58px;line-height:1;padding:4px;transition:transform .18s;
+.shell{font-size:58px;line-height:1;padding:4px;transition:transform .18s;background:none;border:none;cursor:pointer;
   filter:drop-shadow(0 4px 6px rgba(0,0,0,.2))}
+.shell img{width:72px;height:72px;object-fit:contain;pointer-events:none}
 .shell.shuffling{animation:shellshuffle .38s ease-in-out 4}
 .shell:disabled{cursor:default}
 .shell.picked{transform:translateY(-10px) scale(1.15)}

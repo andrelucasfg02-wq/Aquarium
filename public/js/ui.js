@@ -1013,7 +1013,7 @@ const UI = (() => {
         <div class="shell-result" id="shell-msg"></div>`;
       const row = $("shell-row"), msg = $("shell-msg");
       row.innerHTML = [0, 1, 2].map((i) =>
-        `<button class="shell shuffling" data-i="${i}" disabled>🐚</button>`).join("");
+        `<button class="shell shuffling" data-i="${i}" disabled><img src="assets/minigame/shell_closed.png" alt="🐚"></button>`).join("");
       const shells = [...row.querySelectorAll(".shell")];
       AudioFX.pop();
       // pure theater: the pearl's hiding spot is decided server-side on tap
@@ -1036,9 +1036,14 @@ const UI = (() => {
         }
         shells.forEach((x, i) => {
           x.classList.remove("picked");
+          const img = x.querySelector("img");
           if (i === r.winning) {
-            x.textContent = "🦪"; x.classList.add("reveal");
-          } else { x.classList.add("dim"); }
+            if (img) img.src = "assets/minigame/shell_open_pearl.png";
+            x.classList.add("reveal");
+          } else {
+            if (img) img.src = "assets/minigame/shell_open_empty.png";
+            x.classList.add("dim");
+          }
         });
         if (r.win) {
           AudioFX.coin();

@@ -22,7 +22,7 @@ FG_FILE = os.path.join(TANKS, "tank_small_fg.png")
 OUT_FILE = os.path.join(TANKS, "tank_small.jpg")
 
 # Tank placement (tuned with user)
-TANK_W = 750
+TANK_W = 850
 TANK_BOTTOM_Y = 1365  # middle of table
 
 def main():

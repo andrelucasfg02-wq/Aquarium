@@ -2,17 +2,17 @@
 "use strict";
 
 // Bump TANK_V whenever shipped tank art changes so phones don't keep stale cached JPGs.
-const TANK_V = 2;
+const TANK_V = 3;
 
 const DATA = {
   TANKS: {
-    small:  { file: "assets/tanks/tank_small.jpg?v=" + TANK_V,  w: 1125, h: 970, price: 0,     capacity: 12, decorSlots: 10, fishScale: 1, fit: "contain", zoom: 1.75 },
+    small:  { file: "assets/tanks/tank_small.jpg?v=" + TANK_V,  w: 1125, h: 1688, price: 0,     capacity: 12, decorSlots: 10, fishScale: 1, fit: "contain", zoom: 1.0 },
     medium: { file: "assets/tanks/tank_medium.jpg?v=" + TANK_V,  w: 1125, h: 750,  price: 5000,  capacity: 22, decorSlots: 20, fishScale: .7 },
     large:  { file: "assets/tanks/tank_large.jpg?v=" + TANK_V,   w: 1125, h: 563,  price: 10000, capacity: 35, decorSlots: 30, fishScale: .5 },
   },
   // measured glass rectangles, fractions of artwork (per API_CONTRACT.md §Glass)
   GLASS: {
-    small:  { left: .171, right: .821, top: .380, bottom: .800 },
+    small:  { left: .220, right: .780, top: .515, bottom: .780 },
     medium: { left: .040, right: .960, top: .290, bottom: .800 },
     large:  { left: .036, right: .964, top: .320, bottom: .790 },
   },

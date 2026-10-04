@@ -118,7 +118,7 @@ module.exports = function authRoutes(db) {
       await db.run(
         'INSERT INTO password_resets(user_id,token_hash,expires_at,used,created_at) VALUES(?,?,?,?,?)',
         user.id, tokenHash, now + 3600, 0, now);
-      const base = (process.env.APP_URL || 'https://aquarium-game.onrender.com').replace(/\/$/, '');
+      const base = (process.env.APP_URL || 'https://www.aquanimgame.com').replace(/\/$/, '');
       const resetUrl = `${base}/?reset=${token}`;
       sendEmail({
         to: user.email,

@@ -2,7 +2,7 @@
 // Env:
 //   RESEND_API_KEY — required to actually send; if missing, emails are logged
 //                    server-side and skipped (forgot-password still returns ok).
-//   EMAIL_FROM     — sender address, e.g. "AquaNim <noreply@aquarium-game.onrender.com>".
+//   EMAIL_FROM     — sender address, e.g. "AquaNim <noreply@aquanimgame.com>".
 //                    Must be a verified sender in Resend.
 //   APP_URL        — public base URL used to build reset links.
 

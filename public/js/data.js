@@ -13,7 +13,7 @@ const DATA = {
   // measured glass rectangles, fractions of artwork (per API_CONTRACT.md §Glass)
   // small: two-layer composite (tank_small_bg.jpg + tank_small_fg.png via build_small_tank.py)
   GLASS: {
-    small:  { left: .225, right: .774, top: .511, bottom: .774 },
+    small:  { left: .177, right: .822, top: .459, bottom: .768 },
     medium: { left: .040, right: .960, top: .290, bottom: .800 },
     large:  { left: .036, right: .964, top: .320, bottom: .790 },
   },

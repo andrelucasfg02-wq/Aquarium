@@ -114,7 +114,7 @@ class TankView {
       const cx = this.cssW / 2, cy = this.cssH / 2;
       // tank center in artwork fractions (for each tier)
       const focus = {
-        small:  { fx: 0.5, fy: 0.605 },  // tank at (137,661) 850x719 on 1125x1688
+        small:  { fx: 0.5, fy: 0.661 },  // tank at (137,851) 850x529 on 1125x1688
         medium: { fx: 0.5, fy: 0.588 },  // tank at (62,635) 1000x715 on 1125x1688
         large:  { fx: 0.5, fy: 0.604 },  // tank at (2,690) 1120x660 on 1125x1688
         xl:     { fx: 0.5, fy: 0.551 },  // tank at (2,510) 1120x840 on 1125x1688

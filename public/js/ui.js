@@ -40,17 +40,21 @@ const UI = (() => {
   function updateTankSwitcher() {
     const sw = $("tank-switcher");
     if (!sw) return;
-    const owned = (state.tanks && state.tanks.owned) || ["small"];
+    const instances = (state.tanks && state.tanks.instances) || [{ tier: "small", num: 1 }];
     const active = (state.tanks && state.tanks.active) || "small";
+    const activeNum = (state.tanks && state.tanks.activeNum) || 1;
     // Only show on home screen with multiple tanks
     const onHome = !$("screen-home") || !$("screen-home").hidden;
-    if (!onHome || owned.length < 2) {
+    if (!onHome || instances.length < 2) {
       sw.hidden = true;
       return;
     }
     sw.hidden = false;
     const T = DATA.TANKS[active];
-    $("tank-name").textContent = tankName(active);
+    const name = tankName(active);
+    // Show instance number if multiple of same tier (e.g., "Small 2")
+    const tierCount = instances.filter((t) => t.tier === active).length;
+    $("tank-name").textContent = tierCount > 1 ? `${name} ${activeNum}` : name;
     $("tank-cap").textContent = T ? T.capacity : "?";
   }
 
@@ -183,14 +187,18 @@ const UI = (() => {
       $("fm-transfer").onclick = () => {
         const row = $("fm-transfer-row");
         const inInv = fish.location === "inventory";
-        const owned = (state.tanks.owned || []).filter((t) => inInv || t !== fish.tank);
-        if (!owned.length) { toast(inInv ? t("toast.no_tank_yet") : t("toast.no_other_tank")); return; }
+        const instances = (state.tanks.instances || []).filter((t) =>
+          inInv || !(t.tier === fish.tank && t.num === (fish.tank_num || 1)));
+        if (!instances.length) { toast(inInv ? t("toast.no_tank_yet") : t("toast.no_other_tank")); return; }
         row.hidden = false;
-        row.innerHTML = owned.map((t) =>
-          `<button class="pill-btn blue" data-fmto="${t}">\u2192 ${TANK_LABELS[t] || t}</button>`).join("");
+        row.innerHTML = instances.map((t) => {
+          const tierCount = instances.filter((x) => x.tier === t.tier).length;
+          const label = tierCount > 1 ? `${TANK_LABELS[t.tier] || t.tier} ${t.num}` : (TANK_LABELS[t.tier] || t.tier);
+          return `<button class="pill-btn blue" data-fmto="${t.tier}" data-fmnum="${t.num}">\u2192 ${label}</button>`;
+        }).join("");
         row.querySelectorAll("[data-fmto]").forEach((b) => b.onclick = async () => {
           b.disabled = true;
-          const r = await Api.transferFish(fish.id, b.dataset.fmto);
+          const r = await Api.transferFish(fish.id, b.dataset.fmto, parseInt(b.dataset.fmnum) || 1);
           if (r.ok) { AudioFX.coin(); toast(inInv ? t("toast.placed", { tank: tankName(b.dataset.fmto) }) : t("toast.moved", { tank: tankName(b.dataset.fmto) })); }
           else { AudioFX.error(); toast(r.error || t("toast.couldnt_transfer")); }
           closeFishMenu();
@@ -422,20 +430,27 @@ const UI = (() => {
   /* ================= AQUARIUMS ================= */
   async function renderAquariums() {
     const body = $("screen-body");
-    const owned = state.tanks.owned, active = state.tanks.active;
+    const counts = state.tanks.counts || {}, active = state.tanks.active, activeNum = state.tanks.activeNum || 1;
+    const instances = state.tanks.instances || [];
     let html = `<button class="pill-btn blue" id="btn-view-tank" style="width:100%;padding:13px;margin-bottom:6px">🐠 ${t("aq.view_tank")}</button>
       <h3>${t("shop.tanks")}</h3>`;
     for (const [tier, T] of Object.entries(DATA.TANKS)) {
-      const isOwned = owned.includes(tier), isActive = active === tier;
-      const need = (tier === "large" && !owned.includes("medium")) || (tier === "xl" && !owned.includes("large"));
+      const count = counts[tier] || 0;
+      const need = (tier === "large" && !(counts.medium > 0)) || (tier === "xl" && !(counts.large > 0));
       const needTank = tier === "xl" ? "large" : "medium";
       const extraT = (state.tanks.extra && state.tanks.extra[tier]) || 0;
       html += `<div class="row-card"><div class="grow">
-        <b style="text-transform:capitalize">${tankName(tier)}</b>
-        <div class="sub">${t("shop.tank_info", { fish: T.capacity, decor: T.decorSlots + extraT })}</div></div>
-        ${isActive ? `<span class="tag">${t("shop.active")}</span>`
-          : isOwned ? `<button class="pill-btn blue" data-switch="${tier}">${t("shop.use")}</button>`
-          : `<button class="pill-btn" data-buytank="${tier}" ${need ? "disabled" : ""}>${CUR_GOLD} ${fmtCoins(T.price)}</button>`}
+        <b style="text-transform:capitalize">${tankName(tier)} <span class="sub">(${count}/3)</span></b>
+        <div class="sub">${t("shop.tank_info", { fish: T.capacity, decor: T.decorSlots + extraT })}</div>`;
+      // Show each owned instance with switch button
+      for (let n = 1; n <= count; n++) {
+        const isActive = active === tier && activeNum === n;
+        html += `<div style="margin-top:6px">${isActive ? `<span class="tag">${t("shop.active")}</span>`
+          : `<button class="pill-btn blue" data-switch="${tier}" data-num="${n}">${tankName(tier)} ${n} — ${t("shop.use")}</button>`}</div>`;
+      }
+      html += `</div>
+        ${count < 3 ? `<button class="pill-btn" data-buytank="${tier}" ${need ? "disabled" : ""}>${CUR_GOLD} ${fmtCoins(T.price)}</button>`
+          : `<span class="tag">${t("shop.maxed")}</span>`}
       </div>`;
       if (need) html += `<div class="sub" style="margin:-4px 0 8px">${t("shop.needs_first", { tank: tankName(needTank) })}</div>`;
     }
@@ -448,7 +463,7 @@ const UI = (() => {
       await App.refresh(); renderAquariums();
     });
     body.querySelectorAll("[data-switch]").forEach((b) => b.onclick = () => {
-      App.switchTankFast(b.dataset.switch); // optimistic: instant switch, server confirms in background
+      App.switchTankFast(b.dataset.switch, parseInt(b.dataset.num) || 1); // optimistic: instant switch, server confirms in background
     });
   }
 

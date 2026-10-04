@@ -17,6 +17,8 @@ async function seedStarterKit(db, userId, now) {
     userId, 500, 10, 5, 0, 1);
   await db.run('INSERT INTO user_tanks (user_id,small,medium,large,active) VALUES (?,?,?,?,?)',
     userId, 1, 0, 0, 'small');
+  // New players start with a nursery too
+  await db.run('UPDATE user_tanks SET nursery=1 WHERE user_id=?', userId);
   await db.run('INSERT INTO dirt_state (user_id,last_cleaned_at) VALUES (?,?)', userId, now);
   await db.run('INSERT INTO settings (user_id,music,sfx,quality) VALUES (?,?,?,?)',
     userId, 1, 1, 'high');

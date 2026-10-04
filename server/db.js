@@ -206,6 +206,18 @@ async function openDb() {
         await client.execute(`ALTER TABLE user_tanks ADD COLUMN ${col} INTEGER NOT NULL DEFAULT 0`);
       }
     }
+    // Multiple tanks per tier (up to 3 each): tier columns become counts,
+    // fish.tank_num (1-3) identifies the instance, user_tanks.active_num the active one.
+    // Existing 0/1 values work as counts; default instance is 1.
+    const fcols = await client.execute('PRAGMA table_info(fish)');
+    if (!fcols.rows.some((c) => c.name === 'tank_num')) {
+      await client.execute('ALTER TABLE fish ADD COLUMN tank_num INTEGER NOT NULL DEFAULT 1');
+    }
+    if (!tcols.rows.some((c) => c.name === 'active_num')) {
+      await client.execute('ALTER TABLE user_tanks ADD COLUMN active_num INTEGER NOT NULL DEFAULT 1');
+    }
+    // New players start with small + nursery
+    // (handled in user creation; existing users keep their tanks)
     // grace start is a one-time migration: see the sick_at block above.
     // backfill origin for fish created before the marketplace:
     // event fish first, then bred (has parents in lineage) vs shop-bought.

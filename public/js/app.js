@@ -247,14 +247,15 @@ const App = (() => {
       tank.userZoom = tank.userZoom === 1 ? 2.2 : 1;
       tank.camX = 0; tank.camY = 0;
     };
-    // tank switcher arrows (table edge)
+    // tank switcher arrows (table edge) — cycles through all tank instances
     const cycleTank = (dir) => {
-      const owned = (state.tanks && state.tanks.owned) || ["small"];
+      const instances = (state.tanks && state.tanks.instances) || [{ tier: "small", num: 1 }];
       const active = (state.tanks && state.tanks.active) || "small";
-      if (owned.length < 2) return;
-      const idx = owned.indexOf(active);
-      const next = owned[(idx + dir + owned.length) % owned.length];
-      switchTankFast(next);
+      const activeNum = (state.tanks && state.tanks.activeNum) || 1;
+      if (instances.length < 2) return;
+      const idx = instances.findIndex((t) => t.tier === active && t.num === activeNum);
+      const next = instances[(idx + dir + instances.length) % instances.length];
+      switchTankFast(next.tier, next.num);
     };
     $("tank-prev").onclick = () => cycleTank(-1);
     $("tank-next").onclick = () => cycleTank(1);
@@ -448,23 +449,28 @@ const App = (() => {
 
   /* ---------- fast tank switching (optimistic) ---------- */
   let switchingTank = false;
-  async function switchTankFast(tier) {
+  async function switchTankFast(tier, num) {
+    const tankNum = num || 1;
     if (switchingTank) return { ok: false };
-    if (!state || !state.tanks || state.tanks.active === tier) return { ok: true };
-    if (!(state.tanks.owned || []).includes(tier)) return { ok: false };
+    if (!state || !state.tanks) return { ok: false };
+    if (state.tanks.active === tier && (state.tanks.activeNum || 1) === tankNum) return { ok: true };
+    const instances = state.tanks.instances || [];
+    if (!instances.some((t) => t.tier === tier && t.num === tankNum)) return { ok: false };
     switchingTank = true;
-    const prev = state.tanks.active;
+    const prev = state.tanks.active, prevNum = state.tanks.activeNum || 1;
     state.tanks.active = tier; // optimistic: switch locally first
+    state.tanks.activeNum = tankNum;
     UI.updateHUD(state); // syncs UI state + HUD
     if (tank) tank.syncState(state); // re-render the tank view immediately
     UI.close();
     try {
-      const r = await Api.switchTank(tier);
+      const r = await Api.switchTank(tier, tankNum);
       if (!r.ok) throw new Error(r.error || "switch failed");
       UI.toast(t("toast.tank_switched"));
       refresh(); // background reconcile; UI is already correct
     } catch (e) {
       state.tanks.active = prev; // revert on failure
+      state.tanks.activeNum = prevNum;
       UI.updateHUD(state);
       if (tank) tank.syncState(state);
       UI.toast(t("toast.couldnt_switch"));

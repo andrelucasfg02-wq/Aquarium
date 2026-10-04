@@ -70,8 +70,9 @@ function helpers(db) {
 
   const getTanks = (uid) => db.get('SELECT * FROM user_tanks WHERE user_id=?', uid);
   const activeTank = async (uid) => (await getTanks(uid)).active;
-  const tankFishCount = async (uid, tank) =>
-    (await db.get("SELECT COUNT(*) c FROM fish WHERE user_id=? AND tank=? AND location='tank'", uid, tank)).c;
+  const activeTankNum = async (uid) => (await getTanks(uid)).active_num || 1;
+  const tankFishCount = async (uid, tier, num) =>
+    (await db.get("SELECT COUNT(*) c FROM fish WHERE user_id=? AND tank=? AND tank_num=? AND location='tank'", uid, tier, num || 1)).c;
   const totalFishCount = async (uid) =>
     (await db.get('SELECT COUNT(*) c FROM fish WHERE user_id=?', uid)).c;
 
@@ -162,10 +163,10 @@ function helpers(db) {
       : (Math.random() < 0.5 ? 'male' : 'female'));
     const lineage = opts.lineage || { mother: null, father: null, hybrid: 0, generation: 0 };
     const info = await db.run(
-      `INSERT INTO fish (user_id,species_id,grp,variant,gender,location,tank,x,y,born_at,fed_at,lineage,origin,event_id,coin_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO fish (user_id,species_id,grp,variant,gender,location,tank,tank_num,x,y,born_at,fed_at,lineage,origin,event_id,coin_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       uid, speciesId, grp, opts.variant || speciesId, gender,
-      opts.location || 'tank', tank, pos.x, pos.y,
+      opts.location || 'tank', tank, opts.tank_num || 1, pos.x, pos.y,
       opts.born_at || now, opts.fed_at || now, JSON.stringify(lineage),
       opts.origin || 'shop', opts.event_id || null, now);
     await db.run(`INSERT INTO collection (user_id,species_id,count) VALUES (?,?,1)
@@ -203,15 +204,20 @@ function helpers(db) {
         : (Math.random() < 0.5 ? egg.variant_a : egg.variant_b); // cross-variant inherits one parent's look
     }
     }
-    // Newborns go to the nursery if owned and has space, otherwise active tank
+    // Newborns go to a nursery with space; if all nurseries full, go to inventory
     const tanks = await getTanks(uid);
-    let tank = await activeTank(uid);
-    if (tanks.nursery && await tankFishCount(uid, 'nursery') < C.TANK_CAPACITY['nursery']) {
-      tank = 'nursery';
+    let tank = 'nursery', tankNum = 1, location = 'inventory';
+    const nurseryCount = tanks.nursery || 0;
+    for (let n = 1; n <= nurseryCount; n++) {
+      if (await tankFishCount(uid, 'nursery', n) < C.TANK_CAPACITY['nursery']) {
+        tankNum = n;
+        location = 'tank';
+        break;
+      }
     }
-    const location = await tankFishCount(uid, tank) < C.TANK_CAPACITY[tank] ? 'tank' : 'inventory';
+    // No nursery space (or no nursery): babies go to inventory
     const fish = await addFish(uid, variant, {
-      variant, tank, location, born_at: now,
+      variant, tank, tank_num: tankNum, location, born_at: now,
       lineage: { mother: egg.variant_b, father: egg.variant_a, hybrid: hybrid ? 1 : 0, generation: egg.generation },
       origin: 'bred', event_id: egg.event_id || null,
     }, now);
@@ -461,7 +467,12 @@ module.exports = function gameRoutes(db) {
         wallets: { coins: user.coins, gems: user.gems, food: user.food, xp: user.xp, level: user.level, medicine: user.medicine || 0, food_special: user.food_special || 0 },
         tanks: {
           owned: ['small', 'medium', 'large', 'xl', 'nursery'].filter((k) => tanks[k]),
+          // instances: list of {tier, num} for all owned tanks (up to 3 per tier)
+          instances: ['small', 'medium', 'large', 'xl', 'nursery'].flatMap((k) =>
+            Array.from({ length: tanks[k] || 0 }, (_, i) => ({ tier: k, num: i + 1 }))),
+          counts: { small: tanks.small || 0, medium: tanks.medium || 0, large: tanks.large || 0, xl: tanks.xl || 0, nursery: tanks.nursery || 0 },
           active: tanks.active,
+          activeNum: tanks.active_num || 1,
           extra: { small: tanks.small_extra || 0, medium: tanks.medium_extra || 0, large: tanks.large_extra || 0, xl: tanks.xl_extra || 0, nursery: tanks.nursery_extra || 0 },
           extraMax: C.DECOR_EXTRA_SLOT_MAX,
           extraCost: C.DECOR_EXTRA_SLOT_COST,
@@ -652,43 +663,51 @@ module.exports = function gameRoutes(db) {
   // ---------- transfer a fish to another owned tank (or place from inventory) ----------
   r.post('/fish/transfer', ah(async (req, res) => {
     const uid = req.user.id;
-    const { fish_id, tier } = req.body || {};
+    const { fish_id, tier, num } = req.body || {};
+    const tankNum = Math.min(3, Math.max(1, parseInt(num) || 1));
     if (!['small', 'medium', 'large', 'xl', 'nursery'].includes(tier)) {
       return res.status(400).json({ ok: false, error: 'invalid tank' });
     }
     const fish = await db.get(
-      "SELECT id, tank, location, grp, born_at, lineage FROM fish WHERE id=? AND user_id=?", fish_id, uid);
+      "SELECT id, tank, tank_num, location, grp, born_at, lineage FROM fish WHERE id=? AND user_id=?", fish_id, uid);
     if (!fish) return res.status(404).json({ ok: false, error: 'fish not found' });
     if (fish.location === 'market')
       return res.status(400).json({ ok: false, error: 'cancel the market listing first 💎' });
-    if (fish.location === 'tank' && fish.tank === tier)
+    if (fish.location === 'tank' && fish.tank === tier && (fish.tank_num || 1) === tankNum)
       return res.status(400).json({ ok: false, error: 'already in that tank' });
-    // Nursery accepts baby and young fish (level 1-9), only adults (10) are rejected
+    // Fish level determines where it can go
+    let hybrid = false;
+    try { hybrid = !!(JSON.parse(fish.lineage || '{}').hybrid); } catch(e) {}
+    const lvl = C.fishLevel(fish.grp, hybrid, fish.born_at, now());
     if (tier === 'nursery') {
-      let hybrid = false;
-      try { hybrid = !!(JSON.parse(fish.lineage || '{}').hybrid); } catch(e) {}
-      const lvl = C.fishLevel(fish.grp, hybrid, fish.born_at, now());
+      // Nursery accepts baby and young fish (level 1-9), only adults (10) are rejected
       if (lvl >= 10) {
         return res.status(400).json({ ok: false, error: 'nursery only accepts young fish' });
       }
+    } else {
+      // Regular tanks only accept adults (level 10) — babies stay in nursery
+      if (lvl < 10) {
+        return res.status(400).json({ ok: false, error: 'young fish must stay in the nursery' });
+      }
     }
     const tanks = await H.getTanks(uid);
-    if (!tanks[tier]) return res.status(400).json({ ok: false, error: 'tank not owned' });
-    if (await H.tankFishCount(uid, tier) >= C.TANK_CAPACITY[tier]) {
+    if (!(tanks[tier] >= tankNum)) return res.status(400).json({ ok: false, error: 'tank not owned' });
+    if (await H.tankFishCount(uid, tier, tankNum) >= C.TANK_CAPACITY[tier]) {
       return res.status(400).json({ ok: false, error: 'target tank is full' });
     }
-    await db.run("UPDATE fish SET tank=?, location='tank', x=?, y=? WHERE id=? AND user_id=?",
-      tier, Math.random(), 0.2 + Math.random() * 0.6, fish_id, uid);
-    res.json({ ok: true, tier });
+    await db.run("UPDATE fish SET tank=?, tank_num=?, location='tank', x=?, y=? WHERE id=? AND user_id=?",
+      tier, tankNum, Math.random(), 0.2 + Math.random() * 0.6, fish_id, uid);
+    res.json({ ok: true, tier, num: tankNum });
   }));
 
   // ---------- tanks ----------
   r.post('/tanks/buy', ah(async (req, res) => {
     const uid = req.user.id;
     const { tier } = req.body || {};
-    if (tier !== 'medium' && tier !== 'large' && tier !== 'xl' && tier !== 'nursery') return res.status(400).json({ ok: false, error: 'invalid tier' });
+    if (!['small', 'medium', 'large', 'xl', 'nursery'].includes(tier)) return res.status(400).json({ ok: false, error: 'invalid tier' });
     const tanks = await H.getTanks(uid);
-    if (tanks[tier]) return res.status(400).json({ ok: false, error: 'already owned' });
+    const count = tanks[tier] || 0;
+    if (count >= 3) return res.status(400).json({ ok: false, error: 'max 3 per tier' });
     if (tier === 'large' && !tanks.medium) return res.status(400).json({ ok: false, error: 'buy medium first' });
     if (tier === 'xl' && !tanks.large) return res.status(400).json({ ok: false, error: 'buy large first' });
     const price = C.TANK_PRICES[tier];
@@ -696,18 +715,19 @@ module.exports = function gameRoutes(db) {
     if (w.coins < price) return res.status(400).json({ ok: false, error: 'not enough coins' });
     await db.tx(async (txDb) => {
       await txDb.run('UPDATE wallets SET coins=coins-? WHERE user_id=?', price, uid);
-      await txDb.run(`UPDATE user_tanks SET ${tier}=1 WHERE user_id=?`, uid);
+      await txDb.run(`UPDATE user_tanks SET ${tier}=${tier}+1 WHERE user_id=?`, uid);
     });
-    res.json({ ok: true });
+    res.json({ ok: true, count: count + 1 });
   }));
 
   r.post('/tanks/switch', ah(async (req, res) => {
     const uid = req.user.id;
-    const { tier } = req.body || {};
+    const { tier, num } = req.body || {};
+    const tankNum = Math.min(3, Math.max(1, parseInt(num) || 1));
     if (!['small', 'medium', 'large', 'xl', 'nursery'].includes(tier)) return res.status(400).json({ ok: false, error: 'invalid tier' });
     const tanks = await H.getTanks(uid);
-    if (!tanks[tier]) return res.status(400).json({ ok: false, error: 'tank not owned' });
-    await db.run('UPDATE user_tanks SET active=? WHERE user_id=?', tier, uid);
+    if (!(tanks[tier] >= tankNum)) return res.status(400).json({ ok: false, error: 'tank not owned' });
+    await db.run('UPDATE user_tanks SET active=?, active_num=? WHERE user_id=?', tier, tankNum, uid);
     res.json({ ok: true });
   }));
 

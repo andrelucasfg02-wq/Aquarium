@@ -247,6 +247,17 @@ const App = (() => {
       tank.userZoom = tank.userZoom === 1 ? 2.2 : 1;
       tank.camX = 0; tank.camY = 0;
     };
+    // tank switcher arrows (table edge)
+    const cycleTank = (dir) => {
+      const owned = (state.tanks && state.tanks.owned) || ["small"];
+      const active = (state.tanks && state.tanks.active) || "small";
+      if (owned.length < 2) return;
+      const idx = owned.indexOf(active);
+      const next = owned[(idx + dir + owned.length) % owned.length];
+      switchTankFast(next);
+    };
+    $("tank-prev").onclick = () => cycleTank(-1);
+    $("tank-next").onclick = () => cycleTank(1);
     $("btn-gems-plus").onclick = () => {
       cancelPlace();
       document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));

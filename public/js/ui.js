@@ -33,6 +33,25 @@ const UI = (() => {
     const filt = $("btn-filter");
     if (st.dirt.green) { filt.classList.remove("hidden"); filt.textContent = t("hud.filter_price", { price: DATA.FILTER_PRICE }); }
     else filt.classList.add("hidden");
+    updateTankSwitcher();
+  }
+
+  /* ---------- tank switcher (table edge) ---------- */
+  function updateTankSwitcher() {
+    const sw = $("tank-switcher");
+    if (!sw) return;
+    const owned = (state.tanks && state.tanks.owned) || ["small"];
+    const active = (state.tanks && state.tanks.active) || "small";
+    // Only show on home screen with multiple tanks
+    const onHome = !$("screen-home") || !$("screen-home").hidden;
+    if (!onHome || owned.length < 2) {
+      sw.hidden = true;
+      return;
+    }
+    sw.hidden = false;
+    const T = DATA.TANKS[active];
+    $("tank-name").textContent = tankName(active);
+    $("tank-cap").textContent = T ? T.capacity : "?";
   }
 
   /* ---------- tank names ---------- */
@@ -1284,7 +1303,7 @@ const UI = (() => {
   };
 
   return {
-    toast, updateHUD, open, close, showTankFullPopup, closeTankFullPopup,
+    toast, updateHUD, updateTankSwitcher, open, close, showTankFullPopup, closeTankFullPopup,
     openFishMenu, closeFishMenu, openBreedingWith, openFeedChoice, closeFeedChoice,
     setCatalogs(f, d) { fishCatalog = f; decorCatalog = d; },
     get decorCatalog() { return decorCatalog; },

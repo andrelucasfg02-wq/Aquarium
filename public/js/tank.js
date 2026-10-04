@@ -808,7 +808,10 @@ Object.assign(TankView.prototype, {
       } else if (this.mode === "edit") {
         if (this.dragging) {
           const d = this.dragging; this.dragging = null;
-          this.emit("decoMoved", { id: d.id, x: d.x, y: d.y });
+          // Only emit decoMoved if actually dragged (not a simple tap to select)
+          if (moved) {
+            this.emit("decoMoved", { id: d.id, x: d.x, y: d.y });
+          }
         }
       } else if (quick) {
         this.tapAt(x, y);

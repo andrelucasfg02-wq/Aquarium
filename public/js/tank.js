@@ -206,8 +206,9 @@ class TankView {
   newFish(f) {
     const group = f.group || speciesGroup(f.species_id);
     const g = this.glass();
-    const px = (f.x != null ? f.x : g.left + Math.random() * (g.right - g.left));
-    const py = (f.y != null ? f.y : g.top + Math.random() * (g.bottom - g.top));
+    // If server position is outside the glass (stale from old tank art), use random inside
+    const px = (f.x != null && f.x >= g.left && f.x <= g.right) ? f.x : g.left + Math.random() * (g.right - g.left);
+    const py = (f.y != null && f.y >= g.top && f.y <= g.bottom) ? f.y : g.top + Math.random() * (g.bottom - g.top);
     return {
       data: f, group,
       px, py, tx: px, ty: py,

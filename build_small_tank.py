@@ -22,8 +22,8 @@ FG_FILE = os.path.join(TANKS, "tank_small_fg.png")
 OUT_FILE = os.path.join(TANKS, "tank_small.jpg")
 
 # Tank placement (tuned with user)
-TANK_W = 700
-TANK_BOTTOM_Y = 1350  # sitting on table  # middle of table
+TANK_W = 850
+TANK_BOTTOM_Y = 1380  # sitting on table, lil down  # middle of table
 
 def main():
     bg = Image.open(BG_FILE).convert("RGB")

@@ -64,7 +64,7 @@ const DATA = {
     bottom_fish:           { group:"bottom_fish", name:"Cory Fish", price:3000 },
     pleco:                  { group:"bottom_fish", name:"Pleco", priceGems:500, desc:"Cleans 4 dirt per hour. The tank he's in stays clean!" },
   },
-  GROUP_BASE_PX: { goldfish: 150, betta: 140, shrimp: 85, snail: 95, bottom_fish: 130 },
+  GROUP_BASE_PX: { goldfish: 195, betta: 140, shrimp: 85, snail: 95, bottom_fish: 130 },
   GROUP_SPEED:  { goldfish: .055, betta: .05, shrimp: .05, snail: .008, bottom_fish: .035 }, // fractions/sec
   STAGE_SCALE: { baby: .4, juvenile: .7, adult: 1 },
   FOOD_PRICE: 10,

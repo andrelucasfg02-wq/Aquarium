@@ -699,6 +699,7 @@ Object.assign(TankView.prototype, {
     if (e.group === "betta" && frame === 0) base = base0 * (f.species_id === "female_betta" ? 0.7 : 0.8);
     else if (e.group === "betta" && frame === 6) base = base0 * 0.85;
     else if (e.group === "goldfish" && (frame === 6 || (SWIM8_IDS.has(f.species_id) && frame === 10))) base = base0 * 0.8;
+    else if (e.group === "goldfish" && (frame === 11 || (!SWIM8_IDS.has(f.species_id) && frame === 7))) base = base0 * 0.8;
     else if (e.group === "bottom_fish" && (frame === 0 || frame === 5)) base = base0 * 0.7;
     const im = loadImg(spriteURL(f.species_id, frame, f.gender));
     const [x, y] = fracToPx(e.px, e.py, v, T.w, T.h);

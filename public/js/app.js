@@ -38,9 +38,10 @@ const App = (() => {
     const me = await Api.me();
     clearTimeout(wakeTimer);
     hideLoading();
-    if (!me.ok || !me.user) { showAuth(); return; }
     // opened from a password-reset email: show the reset form, not the game
+    // (check before the session, so it works even if already logged in)
     if (new URLSearchParams(location.search).get("reset")) { showAuth(); return; }
+    if (!me.ok || !me.user) { showAuth(); return; }
     enterGame();
   }
 

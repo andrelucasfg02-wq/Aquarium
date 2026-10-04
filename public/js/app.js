@@ -244,7 +244,7 @@ const App = (() => {
     $("btn-zoom").onclick = () => {
       cancelPlace();
       // toggle zoom into the aquarium (small tank only)
-      tank.userZoom = tank.userZoom === 1 ? 1.8 : 1;
+      tank.userZoom = tank.userZoom === 1 ? 2.2 : 1;
       tank.camX = 0; tank.camY = 0;
     };
     $("btn-gems-plus").onclick = () => {

@@ -15,11 +15,11 @@ const DATA = {
   // measured glass rectangles, fractions of artwork (per API_CONTRACT.md §Glass)
   // small: two-layer composite (tank_small_bg.jpg + tank_small_fg.png via build_small_tank.py)
   GLASS: {
-    small:  { left: .189, right: .810, top: .585, bottom: .782 },
-    medium: { left: .134, right: .865, top: .461, bottom: .757 },
-    large:  { left: .046, right: .954, top: .487, bottom: .761 },
-    xl:     { left: .046, right: .954, top: .402, bottom: .750 },
-    nursery: { left: .226, right: .773, top: .553, bottom: .765 },
+    small:  { left: .189, right: .810, top: .585, bottom: .762 },
+    medium: { left: .134, right: .865, top: .461, bottom: .737 },
+    large:  { left: .046, right: .954, top: .487, bottom: .741 },
+    xl:     { left: .046, right: .954, top: .402, bottom: .730 },
+    nursery: { left: .226, right: .773, top: .553, bottom: .745 },
   },
   // species → {group, name, folder sprite path builder, price fallback, base size in artwork px}
   SPECIES: {

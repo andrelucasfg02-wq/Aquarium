@@ -757,6 +757,19 @@ Object.assign(TankView.prototype, {
     const el = this.cv;
     const pos = (ev) => {
       const r = el.getBoundingClientRect();
+      // Self-heal: if the element's rendered size drifted from the cached
+      // cssW/cssH (Android Chrome URL bar / gesture bar can resize the visual
+      // viewport without firing reliable resize events), sync the cached dims
+      // WITHOUT resetting the camera, so tap mapping stays accurate.
+      const w = Math.floor(r.width), h = Math.floor(r.height);
+      if ((w && w !== this.cssW) || (h && h !== this.cssH)) {
+        if (w) this.cssW = w;
+        if (h) this.cssH = h;
+        const dprCap = this.quality === "low" ? 1 : this.quality === "medium" ? 1.5 : 2;
+        this.dpr = Math.min(window.devicePixelRatio || 1, dprCap);
+        this.cv.width = Math.floor(this.cssW * this.dpr);
+        this.cv.height = Math.floor(this.cssH * this.dpr);
+      }
       return [ev.clientX - r.left, ev.clientY - r.top];
     };
     let downAt = 0, downPos = null, moved = false;

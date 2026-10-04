@@ -355,7 +355,8 @@ class TankView {
     const F_TURN = isSwim8 ? 11 : 7;
     switch (e.state) {
       case "idle":
-        e.frame = 0;
+        // Goldfish don't use front pose (0) — use swim frame 1 instead
+        e.frame = (e.group === "goldfish") ? 1 : 0;
         e.stateT -= dt;
         if (e.stateT <= 0) {
           if (Math.random() < .22) { e.state = "sleep"; e.stateT = 6 + Math.random() * 8; }
@@ -431,7 +432,8 @@ class TankView {
         }
         this.moveToward(e, speed, dt);
         if (dist <= .006) {
-          e.state = "idle"; e.stateT = 2 + Math.random() * 5; e.frame = 0;
+          e.state = "idle"; e.stateT = 2 + Math.random() * 5;
+          e.frame = (e.group === "goldfish") ? 1 : 0;
         }
         break;
     }
@@ -668,7 +670,8 @@ Object.assign(TankView.prototype, {
     let scale = DATA.STAGE_SCALE[stage] || 1;
     if (stage === "adult" && e.group === "goldfish") scale *= 0.85; // adult goldfish run a bit smaller
     const base0 = (DATA.GROUP_BASE_PX[e.group] || 130) * scale * (T.fishScale || 1);
-    const frame = (e.faceT > 0) ? 0 : e.frame;
+    // Goldfish don't use the front pose (0) — show side swim frame instead when facing
+    const frame = (e.faceT > 0 && e.group !== "goldfish") ? 0 : e.frame;
     // betta front (0) renders 20% smaller (female_betta 30% smaller) and sleeping (6) 15% smaller; goldfish sleeping (6) renders 20% smaller;
     // cory eating (5) renders 30% smaller
     let base = base0;

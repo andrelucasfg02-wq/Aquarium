@@ -195,27 +195,27 @@ input{font-family:inherit}
 }
 /* tank switcher on table edge */
 #tank-switcher{
-  position:absolute;left:8px;right:8px;bottom:calc(var(--nav-h) + var(--safe-b) + 6px);z-index:15;
-  display:flex;align-items:center;justify-content:space-between;pointer-events:none;
+  position:absolute;left:0;right:0;bottom:calc(var(--nav-h) + var(--safe-b) + 6px);z-index:15;
+  display:flex;align-items:center;justify-content:center;gap:8px;pointer-events:none;
 }
 #tank-switcher[hidden]{display:none}
 .tank-arrow{
-  pointer-events:auto;width:40px;height:40px;border-radius:50%;
-  background:rgba(20,40,80,.8);border:2px solid rgba(100,180,255,.5);
-  color:#aee2ff;font-size:24px;font-weight:700;line-height:1;
+  pointer-events:auto;width:32px;height:32px;border-radius:50%;
+  background:rgba(20,40,80,.8);border:1.5px solid rgba(100,180,255,.5);
+  color:#aee2ff;font-size:20px;font-weight:700;line-height:1;
   display:flex;align-items:center;justify-content:center;cursor:pointer;
   box-shadow:0 2px 8px rgba(0,0,0,.35);backdrop-filter:blur(4px);
 }
 .tank-arrow:active{transform:scale(.92)}
 .tank-info{pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:2px}
 .tank-name-pill{
-  background:rgba(20,40,80,.8);border:1.5px solid rgba(100,180,255,.4);border-radius:14px;
-  color:#fff;font-size:14px;font-weight:700;padding:6px 16px;white-space:nowrap;
+  background:rgba(20,40,80,.8);border:1.5px solid rgba(100,180,255,.4);border-radius:12px;
+  color:#fff;font-size:12px;font-weight:700;padding:5px 12px;white-space:nowrap;
   box-shadow:0 2px 8px rgba(0,0,0,.35);backdrop-filter:blur(4px);
 }
 .tank-cap-pill{
-  background:rgba(20,40,80,.7);border:1px solid rgba(100,180,255,.3);border-radius:12px;
-  color:#aee2ff;font-size:11px;font-weight:600;padding:4px 12px;white-space:nowrap;
+  background:rgba(20,40,80,.7);border:1px solid rgba(100,180,255,.3);border-radius:10px;
+  color:#aee2ff;font-size:10px;font-weight:600;padding:3px 10px;white-space:nowrap;
   box-shadow:0 1px 6px rgba(0,0,0,.25);backdrop-filter:blur(4px);
 }
 .nav-tab{

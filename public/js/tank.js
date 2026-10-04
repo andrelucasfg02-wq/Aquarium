@@ -132,6 +132,14 @@ class TankView {
       v.ox = cx - (cx - v.ox) * T.zoom;
       v.oy = cy - (cy - v.oy) * T.zoom;
     }
+    // include user zoom (zoom button) so panning works when zoomed in
+    if (this.userZoom !== 1 && this.tier === "small") {
+      const cx = this.cssW / 2, cy = this.cssH / 2;
+      const fx = 0.5, fy = 0.527;
+      v.s *= this.userZoom;
+      v.ox = cx - fx * T.w * v.s;
+      v.oy = cy - fy * T.h * v.s;
+    }
     return { x: Math.max(0, -v.ox), y: Math.max(0, -v.oy) };
   }
   setCam(x, y) {

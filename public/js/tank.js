@@ -115,8 +115,8 @@ class TankView {
       // tank center in artwork fractions (for each tier)
       const focus = {
         small:  { fx: 0.5, fy: 0.605 },  // tank at (137,661) 850x719 on 1125x1688
-        medium: { fx: 0.5, fy: 0.616 },  // tank at (62,728) 1000x622 on 1125x1688
-        large:  { fx: 0.5, fy: 0.643 },  // tank at (2,822) 1120x528 on 1125x1688
+        medium: { fx: 0.5, fy: 0.588 },  // tank at (62,635) 1000x715 on 1125x1688
+        large:  { fx: 0.5, fy: 0.604 },  // tank at (2,690) 1120x660 on 1125x1688
         xl:     { fx: 0.5, fy: 0.551 },  // tank at (2,510) 1120x840 on 1125x1688
       };
       const f = focus[this.tier] || { fx: 0.5, fy: 0.5 };

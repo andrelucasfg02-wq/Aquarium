@@ -15,8 +15,8 @@ const DATA = {
   // small: two-layer composite (tank_small_bg.jpg + tank_small_fg.png via build_small_tank.py)
   GLASS: {
     small:  { left: .209, right: .790, top: .536, bottom: .762 },
-    medium: { left: .134, right: .865, top: .526, bottom: .758 },
-    large:  { left: .046, right: .954, top: .570, bottom: .770 },
+    medium: { left: .134, right: .865, top: .461, bottom: .757 },
+    large:  { left: .046, right: .954, top: .487, bottom: .761 },
     xl:     { left: .046, right: .954, top: .402, bottom: .750 },
   },
   // species → {group, name, folder sprite path builder, price fallback, base size in artwork px}

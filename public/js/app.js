@@ -241,6 +241,12 @@ const App = (() => {
       document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
       UI.open("event");
     };
+    $("btn-zoom").onclick = () => {
+      cancelPlace();
+      // toggle zoom into the aquarium (small tank only)
+      tank.userZoom = tank.userZoom === 1 ? 1.8 : 1;
+      tank.camX = 0; tank.camY = 0;
+    };
     $("btn-gems-plus").onclick = () => {
       cancelPlace();
       document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));

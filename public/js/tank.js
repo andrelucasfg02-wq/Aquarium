@@ -40,6 +40,7 @@ class TankView {
     this.camX = 0; this.camY = 0;   // camera pan (css px) — swipe to look around
     this._panId = null; this._panning = false;
     this._panSX = 0; this._panSY = 0; this._panCX = 0; this._panCY = 0;
+    this.userZoom = 1;  // 1 = normal, >1 = zoomed into aquarium (via zoom button)
     this.quality = "high";
     this.handlers = {};
     this.lastT = 0;
@@ -107,6 +108,16 @@ class TankView {
       v.s *= T.zoom;
       v.ox = cx - (cx - v.ox) * T.zoom;
       v.oy = cy - (cy - v.oy) * T.zoom;
+    }
+    // user zoom (zoom button): focus on the aquarium for small tank
+    if (this.userZoom !== 1 && this.tier === "small") {
+      const cx = this.cssW / 2, cy = this.cssH / 2;
+      // tank center in artwork fractions (tank at y=413..1365 in 1125x1688)
+      const fx = 0.5, fy = 0.527;
+      v.s *= this.userZoom;
+      // position so the tank center (fx,fy) lands at screen center
+      v.ox = cx - fx * T.w * v.s;
+      v.oy = cy - fy * T.h * v.s;
     }
     v.ox += this.camX; v.oy += this.camY;
     return v;

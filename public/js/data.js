@@ -10,6 +10,7 @@ const DATA = {
     medium: { file: "assets/tanks/tank_medium.jpg?v=" + TANK_V,  w: 1125, h: 1688, price: 5000,  capacity: 22, decorSlots: 20, fishScale: .7 },
     large:  { file: "assets/tanks/tank_large.jpg?v=" + TANK_V,   w: 1125, h: 1688, price: 10000, capacity: 35, decorSlots: 30, fishScale: .5 },
     xl:     { file: "assets/tanks/tank_xl.jpg?v=" + TANK_V,      w: 1125, h: 1688, price: 20000, capacity: 50, decorSlots: 40, fishScale: .4 },
+    nursery: { file: "assets/tanks/tank_nursery.jpg?v=" + TANK_V, w: 1125, h: 1688, price: 2500, capacity: 15, decorSlots: 12, fishScale: 1 },
   },
   // measured glass rectangles, fractions of artwork (per API_CONTRACT.md §Glass)
   // small: two-layer composite (tank_small_bg.jpg + tank_small_fg.png via build_small_tank.py)
@@ -18,6 +19,7 @@ const DATA = {
     medium: { left: .134, right: .865, top: .461, bottom: .757 },
     large:  { left: .046, right: .954, top: .487, bottom: .761 },
     xl:     { left: .046, right: .954, top: .402, bottom: .750 },
+    nursery: { left: .226, right: .773, top: .553, bottom: .765 },
   },
   // species → {group, name, folder sprite path builder, price fallback, base size in artwork px}
   SPECIES: {

@@ -37,7 +37,7 @@ const UI = (() => {
 
   /* ---------- tank names ---------- */
   function tankName(k) { const key = "tank." + k; const v = t(key); return v === key ? (k || "") : v; }
-  const TANK_LABELS = { small: t("tank.small"), medium: t("tank.medium"), large: t("tank.large"), xl: t("tank.xl") };
+  const TANK_LABELS = { small: t("tank.small"), medium: t("tank.medium"), large: t("tank.large"), xl: t("tank.xl"), nursery: t("tank.nursery") };
 
   /* ---------- fish tap menu: status, feed, treat, pet / transfer / breed ---------- */
   function openFishMenu(fish) {
@@ -285,7 +285,7 @@ const UI = (() => {
     const slotCost = state.tanks.extraCost || 10;
     const canBuySlot = extra < maxExtra;
     const owned = state.tanks.owned || [];
-    const nextBuy = ["medium", "large", "xl"].find((t) => !owned.includes(t));
+    const nextBuy = ["medium", "large", "xl", "nursery"].find((t) => !owned.includes(t));
     const nextPrice = nextBuy ? DATA.TANKS[nextBuy].price : 0;
 
     const overlay = document.createElement("div");

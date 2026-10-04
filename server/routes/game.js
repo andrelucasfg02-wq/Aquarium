@@ -685,9 +685,9 @@ module.exports = function gameRoutes(db) {
         return res.status(400).json({ ok: false, error: 'nursery only accepts young fish' });
       }
     } else {
-      // Regular tanks only accept adults (level 10) — babies stay in nursery
-      if (lvl < 10) {
-        return res.status(400).json({ ok: false, error: 'young fish must stay in the nursery' });
+      // Regular tanks accept young (5+) and adults — only babies (1-4) must stay in nursery
+      if (lvl <= 4) {
+        return res.status(400).json({ ok: false, error: 'baby fish must stay in the nursery' });
       }
     }
     const tanks = await H.getTanks(uid);

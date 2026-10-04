@@ -975,6 +975,15 @@ const UI = (() => {
         </div></div>
       <h3>👤 ${t("settings.account")}</h3>
       <div class="row-card"><div class="grow"><b>${esc(state.user.name)}</b><div class="sub">${esc(state.user.email)}</div></div></div>
+      <button class="pill-btn" id="btn-change-pass" style="width:100%;padding:13px;margin-bottom:10px">🔑 ${t("settings.change_password")}</button>
+      <div id="change-pass-form" hidden style="margin-bottom:10px">
+        <label class="auth-field"><span class="auth-ico">🔒</span><input type="password" id="cp-current" placeholder="${t("settings.current_password")}" autocomplete="current-password"></label>
+        <label class="auth-field"><span class="auth-ico">🔒</span><input type="password" id="cp-new" placeholder="${t("settings.new_password")}" autocomplete="new-password" minlength="6"></label>
+        <label class="auth-field"><span class="auth-ico">🔒</span><input type="password" id="cp-new2" placeholder="${t("settings.repeat_password")}" autocomplete="new-password" minlength="6"></label>
+        <button class="pill-btn blue" id="btn-save-pass" style="width:100%;padding:12px">${t("settings.save_password")}</button>
+        <p class="auth-error" id="cp-error" hidden></p>
+        <p class="auth-ok" id="cp-ok" hidden></p>
+      </div>
       <button class="pill-btn" id="btn-tutorial" style="width:100%;padding:13px;background:linear-gradient(135deg,#7fb8e8,#4a7fc9);margin-bottom:10px">🎓 ${t("settings.replay_tutorial")}</button>
       ${typeof InstallPromo !== "undefined" && !InstallPromo.isStandalone() ? `<button class="pill-btn" id="btn-install-app" style="width:100%;padding:13px;background:linear-gradient(135deg,#5ccb52,#2f9e44);margin-bottom:10px">📲 ${t("settings.install_app")}</button>` : ""}
       <button class="pill-btn" id="btn-logout" style="width:100%;padding:13px;background:linear-gradient(135deg,#e08a9b,#c05a7a)">🚪 ${t("settings.logout")}</button>
@@ -993,6 +1002,26 @@ const UI = (() => {
     });
     body.querySelectorAll("[data-setlang]").forEach((b) => b.onclick = () => I18N.setLang(b.dataset.setlang));
     $("set-quality").onchange = save;
+    // Change password
+    $("btn-change-pass").onclick = () => {
+      const f = $("change-pass-form");
+      f.hidden = !f.hidden;
+    };
+    $("btn-save-pass").onclick = async () => {
+      const err = $("cp-error"), ok = $("cp-ok");
+      err.hidden = true; ok.hidden = true;
+      const current = $("cp-current").value, np = $("cp-new").value, np2 = $("cp-new2").value;
+      if (np.length < 6) { err.textContent = t("settings.pass_min"); err.hidden = false; return; }
+      if (np !== np2) { err.textContent = t("settings.pass_mismatch"); err.hidden = false; return; }
+      const r = await Api.changePassword(current, np);
+      if (r.ok) {
+        ok.textContent = t("settings.pass_changed"); ok.hidden = false;
+        $("cp-current").value = ""; $("cp-new").value = ""; $("cp-new2").value = "";
+        setTimeout(() => { $("change-pass-form").hidden = true; ok.hidden = true; }, 2000);
+      } else {
+        err.textContent = r.error || t("settings.pass_failed"); err.hidden = false;
+      }
+    };
     $("btn-logout").onclick = async () => {
       await Api.logout();
       if (typeof Offline !== "undefined") Offline.clearAll();

@@ -151,5 +151,22 @@ module.exports = function authRoutes(db) {
     res.json({ ok: true });
   }));
 
+  // ---------- change password (logged-in user) ----------
+  r.post('/password/change', authRequired, ah(async (req, res) => {
+    const uid = req.user.id;
+    const current = String((req.body && req.body.current) || '');
+    const password = String((req.body && req.body.password) || '');
+    if (password.length < 6) {
+      return res.status(400).json({ ok: false, error: 'password must be at least 6 characters' });
+    }
+    const row = await db.get('SELECT password_hash FROM users WHERE id=?', uid);
+    if (!row || !(await checkPassword(current, row.password_hash))) {
+      return res.status(400).json({ ok: false, error: 'current password is incorrect' });
+    }
+    const pwHash = await hashPassword(password);
+    await db.run('UPDATE users SET password_hash=? WHERE id=?', pwHash, uid);
+    res.json({ ok: true });
+  }));
+
   return r;
 };

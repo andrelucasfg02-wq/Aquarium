@@ -50,6 +50,7 @@ const Api = (() => {
     passwordForgot: (email) => post("/api/password/forgot", { email }),
     passwordReset: (token, password) => post("/api/password/reset", { token, password }),
     logout: () => post("/api/logout"),
+    changePassword: (current, password) => post("/api/password/change", { current, password }),
     me: () => get("/api/me"),
     state: async () => {
       // flush any queued offline actions first (sync returns fresh state)

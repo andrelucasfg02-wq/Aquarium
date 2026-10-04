@@ -81,11 +81,27 @@ class TankView {
   }
 
   setTank(tier) {
+    const changed = this.tier !== tier;
     this.tier = tier;
     this.camX = 0; this.camY = 0;
     const T = DATA.TANKS[tier];
     this.bg = loadImg(T.file);
     this.bgBlur = null; // rebuilt lazily once the art loads
+    // When switching tiers, fish positions (artwork fractions) may fall
+    // outside the new glass — clamp them inside so fish don't render
+    // "flying" outside the tank.
+    if (changed) {
+      const g = DATA.GLASS[tier];
+      if (g) {
+        const cx = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+        for (const e of this.fish.values()) {
+          e.px = cx(e.px, g.left, g.right);
+          e.py = cx(e.py, g.top, g.bottom);
+          e.tx = cx(e.tx, g.left, g.right);
+          e.ty = cx(e.ty, g.top, g.bottom);
+        }
+      }
+    }
   }
 
   /* Low-res blurred copy of the tank art, used as a full-screen backdrop for
@@ -185,6 +201,11 @@ class TankView {
         this.fish.set(f.id, e);
       } else {
         e.data = f;
+        // Re-clamp existing fish: server fractions may be stale relative
+        // to the current tank art's glass (e.g. after an art update).
+        const g2 = this.glass();
+        if (f.x != null && (f.x < g2.left || f.x > g2.right)) e.px = e.tx = g2.left + Math.random() * (g2.right - g2.left);
+        if (f.y != null && (f.y < g2.top || f.y > g2.bottom)) e.py = e.ty = g2.top + Math.random() * (g2.bottom - g2.top);
       }
     }
     for (const id of [...this.fish.keys()]) if (!seen.has(id)) this.fish.delete(id);

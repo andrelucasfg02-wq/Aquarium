@@ -117,6 +117,7 @@ class TankView {
         small:  { fx: 0.5, fy: 0.624 },  // tank at (212,758) 700x592 on 1125x1688
         medium: { fx: 0.5, fy: 0.616 },  // tank at (62,728) 1000x622 on 1125x1688
         large:  { fx: 0.5, fy: 0.643 },  // tank at (2,822) 1120x528 on 1125x1688
+        xl:     { fx: 0.5, fy: 0.551 },  // tank at (2,510) 1120x840 on 1125x1688
       };
       const f = focus[this.tier] || { fx: 0.5, fy: 0.5 };
       v.s *= this.userZoom;

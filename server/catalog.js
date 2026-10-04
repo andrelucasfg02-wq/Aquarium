@@ -223,9 +223,9 @@ function fishLevel(grp, hybrid, bornAt, now) {
 }
 
 // ---- tanks ----
-const TANK_CAPACITY = { small: 12, medium: 22, large: 35 };
-const DECOR_SLOTS = { small: 10, medium: 20, large: 30 };
-const TANK_PRICES = { medium: 5000, large: 10000 };
+const TANK_CAPACITY = { small: 12, medium: 22, large: 35, xl: 50 };
+const DECOR_SLOTS = { small: 10, medium: 20, large: 30, xl: 40 };
+const TANK_PRICES = { medium: 5000, large: 10000, xl: 20000 };
 // extra decor slots per tank, bought with diamonds (10 each)
 const DECOR_EXTRA_SLOT_MAX = { small: 30, medium: 60, large: 100 };
 const DECOR_EXTRA_SLOT_COST = 10; // diamonds per extra slot

@@ -201,7 +201,7 @@ async function openDb() {
     }
     // decor slots: extra slots bought per tank with diamonds
     const tcols = await client.execute('PRAGMA table_info(user_tanks)');
-    for (const col of ['small_extra', 'medium_extra', 'large_extra']) {
+    for (const col of ['small_extra', 'medium_extra', 'large_extra', 'xl_extra']) {
       if (!tcols.rows.some((c) => c.name === col)) {
         await client.execute(`ALTER TABLE user_tanks ADD COLUMN ${col} INTEGER NOT NULL DEFAULT 0`);
       }

@@ -455,9 +455,9 @@ module.exports = function gameRoutes(db) {
         user,
         wallets: { coins: user.coins, gems: user.gems, food: user.food, xp: user.xp, level: user.level, medicine: user.medicine || 0, food_special: user.food_special || 0 },
         tanks: {
-          owned: ['small', 'medium', 'large'].filter((k) => tanks[k]),
+          owned: ['small', 'medium', 'large', 'xl'].filter((k) => tanks[k]),
           active: tanks.active,
-          extra: { small: tanks.small_extra || 0, medium: tanks.medium_extra || 0, large: tanks.large_extra || 0 },
+          extra: { small: tanks.small_extra || 0, medium: tanks.medium_extra || 0, large: tanks.large_extra || 0, xl: tanks.xl_extra || 0 },
           extraMax: C.DECOR_EXTRA_SLOT_MAX,
           extraCost: C.DECOR_EXTRA_SLOT_COST,
         },
@@ -648,7 +648,7 @@ module.exports = function gameRoutes(db) {
   r.post('/fish/transfer', ah(async (req, res) => {
     const uid = req.user.id;
     const { fish_id, tier } = req.body || {};
-    if (!['small', 'medium', 'large'].includes(tier)) {
+    if (!['small', 'medium', 'large', 'xl'].includes(tier)) {
       return res.status(400).json({ ok: false, error: 'invalid tank' });
     }
     const fish = await db.get(
@@ -672,10 +672,11 @@ module.exports = function gameRoutes(db) {
   r.post('/tanks/buy', ah(async (req, res) => {
     const uid = req.user.id;
     const { tier } = req.body || {};
-    if (tier !== 'medium' && tier !== 'large') return res.status(400).json({ ok: false, error: 'invalid tier' });
+    if (tier !== 'medium' && tier !== 'large' && tier !== 'xl') return res.status(400).json({ ok: false, error: 'invalid tier' });
     const tanks = await H.getTanks(uid);
     if (tanks[tier]) return res.status(400).json({ ok: false, error: 'already owned' });
     if (tier === 'large' && !tanks.medium) return res.status(400).json({ ok: false, error: 'buy medium first' });
+    if (tier === 'xl' && !tanks.large) return res.status(400).json({ ok: false, error: 'buy large first' });
     const price = C.TANK_PRICES[tier];
     const w = await H.getWallet(uid);
     if (w.coins < price) return res.status(400).json({ ok: false, error: 'not enough coins' });
@@ -689,7 +690,7 @@ module.exports = function gameRoutes(db) {
   r.post('/tanks/switch', ah(async (req, res) => {
     const uid = req.user.id;
     const { tier } = req.body || {};
-    if (!['small', 'medium', 'large'].includes(tier)) return res.status(400).json({ ok: false, error: 'invalid tier' });
+    if (!['small', 'medium', 'large', 'xl'].includes(tier)) return res.status(400).json({ ok: false, error: 'invalid tier' });
     const tanks = await H.getTanks(uid);
     if (!tanks[tier]) return res.status(400).json({ ok: false, error: 'tank not owned' });
     await db.run('UPDATE user_tanks SET active=? WHERE user_id=?', tier, uid);
@@ -700,7 +701,7 @@ module.exports = function gameRoutes(db) {
   r.post('/tanks/extra-slot', ah(async (req, res) => {
     const uid = req.user.id;
     const { tank } = req.body || {};
-    if (!['small', 'medium', 'large'].includes(tank)) return res.status(400).json({ ok: false, error: 'invalid tank' });
+    if (!['small', 'medium', 'large', 'xl'].includes(tank)) return res.status(400).json({ ok: false, error: 'invalid tank' });
     const col = `${tank}_extra`;
     const max = C.DECOR_EXTRA_SLOT_MAX[tank];
     const cost = C.DECOR_EXTRA_SLOT_COST;
@@ -825,7 +826,7 @@ module.exports = function gameRoutes(db) {
     const uid = req.user.id;
     const { deco_id, tank, x, y } = req.body || {};
     if (!C.decorItem(deco_id)) return res.status(400).json({ ok: false, error: 'unknown decoration' });
-    if (!['small', 'medium', 'large'].includes(tank)) return res.status(400).json({ ok: false, error: 'invalid tank' });
+    if (!['small', 'medium', 'large', 'xl'].includes(tank)) return res.status(400).json({ ok: false, error: 'invalid tank' });
     const tanks = await H.getTanks(uid);
     if (!tanks[tank]) return res.status(400).json({ ok: false, error: 'tank not owned' });
     const owned = await db.get('SELECT qty FROM decor_owned WHERE user_id=? AND deco_id=?', uid, deco_id);

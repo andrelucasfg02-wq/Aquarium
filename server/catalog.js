@@ -13,7 +13,7 @@ const GROUPS = {
     'golden_veil_betta', 'rose_halfmoon_betta', 'ember_crown_betta', 'bloom_maple_betta', 'azure_plakat_betta'],
   shrimp: ['red_shrimp', 'blue_shrimp', 'yellow_shrimp'],
   snail: ['snail'],
-  bottom_fish: ['bottom_fish'],
+  bottom_fish: ['bottom_fish', 'pleco'],
 };
 
 // Goldfish hybrid mixes: sorted "speciesA+speciesB" -> blended offspring species.
@@ -68,7 +68,7 @@ const SPECIES_NAMES = {
   cinder_goldfish: 'Cinder Goldfish', gilded_goldfish: 'Gilded Goldfish',
   nebula_goldfish: 'Nebula Goldfish', ember_night_goldfish: 'Ember Night Goldfish',
   red_shrimp: 'Red Shrimp', blue_shrimp: 'Blue Shrimp', yellow_shrimp: 'Yellow Shrimp',
-  snail: 'Snail', bottom_fish: 'Cory Fish',
+  snail: 'Snail', bottom_fish: 'Cory Fish', pleco: 'Pleco',
 };
 
 // price_coins / price_gems(null if not purchasable with gems)
@@ -80,7 +80,7 @@ const SPECIES_PRICES = {
   autumn_fish: { coins: null, gems: null },
   red_shrimp: { coins: 200, gems: null }, blue_shrimp: { coins: 200, gems: null },
   yellow_shrimp: { coins: 200, gems: null },
-  snail: { coins: 250, gems: null }, bottom_fish: { coins: 3000, gems: null },
+  snail: { coins: 250, gems: null }, bottom_fish: { coins: 3000, gems: null }, pleco: { coins: null, gems: 500 },
   fullmoon_betta: { coins: 1000, gems: null }, crowntail_betta: { coins: 1000, gems: null },
   female_betta: { coins: 1000, gems: null },
   veiltail_betta: { coins: 1400, gems: 8 }, plakat_betta: { coins: 1400, gems: 8 },
@@ -119,7 +119,7 @@ const SPECIES_RARITY = {
   cinder_goldfish: 'epic', gilded_goldfish: 'epic', nebula_goldfish: 'epic',
   ember_night_goldfish: 'epic',
   red_shrimp: 'common', blue_shrimp: 'common', yellow_shrimp: 'common',
-  snail: 'common', bottom_fish: 'uncommon',
+  snail: 'common', bottom_fish: 'uncommon', pleco: 'epic',
 };
 
 function speciesGroup(speciesId) {
@@ -140,7 +140,9 @@ function fishCatalog() {
         grow_level: growLevel(species_id),
         price_coins: p.coins,
         price_gems: p.gems,
-        desc: `${SPECIES_NAMES[species_id] || species_id} — ${group.replace('_', ' ')}.`,
+        desc: species_id === 'pleco'
+          ? 'Cleans 4 dirt per hour. The tank he\'s in stays clean!'
+          : `${SPECIES_NAMES[species_id] || species_id} — ${group.replace('_', ' ')}.`,
       });
     }
   }
@@ -157,7 +159,7 @@ const HYBRID_GROWTH_DAYS = 3;
 // Small critters grow fast, rare/legendary ones take longer.
 const GROW_LEVEL = {
   red_shrimp: 4, blue_shrimp: 4, yellow_shrimp: 4, snail: 4,
-  bottom_fish: 5,
+  bottom_fish: 5, pleco: 5,
   sakura_goldfish: 6, azure_tang: 6, ember_clownfish: 6,
   lemon_drop_goldfish: 6, midnight_moor: 6,
   twilight_goldfish: 7, sunset_goldfish: 7, tidepool_goldfish: 7, duskfin_goldfish: 7,

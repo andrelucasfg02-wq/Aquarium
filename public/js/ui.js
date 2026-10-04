@@ -491,6 +491,7 @@ const UI = (() => {
       species_id: id, name: speciesName(id), group: speciesGroup(id),
       price_coins: (DATA.SPECIES[id] || {}).price || 0,
       price_gems: (DATA.SPECIES[id] || {}).priceGems || 0,
+      desc: (DATA.SPECIES[id] || {}).desc || "",
     }));
     const tf = tankFish();
     const active = state.tanks.active;
@@ -500,6 +501,7 @@ const UI = (() => {
       html += `<div class="card">${fishImg(it.species_id)}
         <div class="nm">${esc(it.name)}</div>
         <div class="sub">${esc(it.group)}${it.species_id === "female_betta" ? " · " + t("shop.always_female") : ""} · ${t("shop.grows_at", { lvl: it.grow_level || 10 })}</div>
+        ${it.desc ? `<div class="sub" style="color:#2a7a3a;font-weight:600">${esc(it.desc)}</div>` : ""}
         <div class="price">${priceLabel(it)}</div>
         <button class="pill-btn pink" data-buyfish="${esc(it.species_id)}">${t("shop.buy")}</button>
       </div>`;

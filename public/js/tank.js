@@ -239,8 +239,8 @@ class TankView {
       animT: Math.random() * 10,
       frame: 0, faceT: 0, eatT: 0, turnT: 0,
       emoteCd: 0,
-      // cory cleaning: 1 dirt spot per hour per fish
-      cleanCd: f.clean_at ? Math.max(0, 3600 - (Date.now() / 1000 - f.clean_at)) : 0,
+      // cleaning: cory 1 dirt/hour, pleco 4 dirt/hour
+      cleanCd: f.clean_at ? Math.max(0, (f.species_id === "pleco" ? 900 : 3600) - (Date.now() / 1000 - f.clean_at)) : 0,
       cleanT: 0, cleanSpot: null,
     };
   }
@@ -436,7 +436,7 @@ class TankView {
             this.popAt(s.x, s.y);
             this.spots = this.spots.filter((o) => !o.dying);
             this.emit("coryCleaned", { spotId: s.id, fishId: e.data.id });
-            e.cleanCd = 3600;
+            e.cleanCd = e.data.species_id === "pleco" ? 900 : 3600;
             e.cleanSpot = null; e.cleanT = 0;
             e.state = "idle"; e.stateT = 1 + Math.random() * 2;
           }

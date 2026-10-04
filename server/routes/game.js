@@ -807,8 +807,9 @@ module.exports = function gameRoutes(db) {
     if (fish.location !== 'tank') return res.status(400).json({ ok: false, error: 'fish not in tank' });
     const active = await H.activeTank(uid);
     if (fish.tank !== active) return res.status(400).json({ ok: false, error: 'fish not in active tank' });
-    if (fish.clean_at && t - fish.clean_at < 3600) {
-      return res.status(400).json({ ok: false, error: 'cleaning cooldown', retry_in: 3600 - (t - fish.clean_at) });
+    const cd = fish.species_id === 'pleco' ? 900 : 3600;
+    if (fish.clean_at && t - fish.clean_at < cd) {
+      return res.status(400).json({ ok: false, error: 'cleaning cooldown', retry_in: cd - (t - fish.clean_at) });
     }
     const spot = await db.get('SELECT id FROM dirt_spots WHERE id=? AND user_id=?', spot_id, uid);
     if (!spot) return res.status(404).json({ ok: false, error: 'spot gone' });

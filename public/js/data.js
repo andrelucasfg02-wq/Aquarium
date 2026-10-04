@@ -8,14 +8,14 @@ const DATA = {
   TANKS: {
     small:  { file: "assets/tanks/tank_small.jpg?v=" + TANK_V,  w: 1125, h: 1688, price: 0,     capacity: 12, decorSlots: 10, fishScale: 1, fit: "cover", zoom: 1.0 },
     medium: { file: "assets/tanks/tank_medium.jpg?v=" + TANK_V,  w: 1125, h: 1688, price: 5000,  capacity: 22, decorSlots: 20, fishScale: .7 },
-    large:  { file: "assets/tanks/tank_large.jpg?v=" + TANK_V,   w: 1125, h: 563,  price: 10000, capacity: 35, decorSlots: 30, fishScale: .5 },
+    large:  { file: "assets/tanks/tank_large.jpg?v=" + TANK_V,   w: 1125, h: 1688, price: 10000, capacity: 35, decorSlots: 30, fishScale: .5 },
   },
   // measured glass rectangles, fractions of artwork (per API_CONTRACT.md §Glass)
   // small: two-layer composite (tank_small_bg.jpg + tank_small_fg.png via build_small_tank.py)
   GLASS: {
     small:  { left: .137, right: .863, top: .415, bottom: .762 },
     medium: { left: .134, right: .865, top: .526, bottom: .758 },
-    large:  { left: .036, right: .964, top: .320, bottom: .790 },
+    large:  { left: .046, right: .954, top: .570, bottom: .770 },
   },
   // species → {group, name, folder sprite path builder, price fallback, base size in artwork px}
   SPECIES: {

@@ -109,15 +109,20 @@ class TankView {
       v.ox = cx - (cx - v.ox) * T.zoom;
       v.oy = cy - (cy - v.oy) * T.zoom;
     }
-    // user zoom (zoom button): focus on the aquarium for small tank
-    if (this.userZoom !== 1 && this.tier === "small") {
+    // user zoom (zoom button): focus on the aquarium for all tiers
+    if (this.userZoom !== 1) {
       const cx = this.cssW / 2, cy = this.cssH / 2;
-      // tank center in artwork fractions (tank at y=413..1365 in 1125x1688)
-      const fx = 0.5, fy = 0.527;
+      // tank center in artwork fractions (for each tier)
+      const focus = {
+        small:  { fx: 0.5, fy: 0.624 },  // tank at (212,758) 700x592 on 1125x1688
+        medium: { fx: 0.5, fy: 0.616 },  // tank at (62,728) 1000x622 on 1125x1688
+        large:  { fx: 0.5, fy: 0.643 },  // tank at (2,822) 1120x528 on 1125x1688
+      };
+      const f = focus[this.tier] || { fx: 0.5, fy: 0.5 };
       v.s *= this.userZoom;
       // position so the tank center (fx,fy) lands at screen center
-      v.ox = cx - fx * T.w * v.s;
-      v.oy = cy - fy * T.h * v.s;
+      v.ox = cx - f.fx * T.w * v.s;
+      v.oy = cy - f.fy * T.h * v.s;
     }
     v.ox += this.camX; v.oy += this.camY;
     return v;
@@ -133,12 +138,17 @@ class TankView {
       v.oy = cy - (cy - v.oy) * T.zoom;
     }
     // include user zoom (zoom button) so panning works when zoomed in
-    if (this.userZoom !== 1 && this.tier === "small") {
+    if (this.userZoom !== 1) {
       const cx = this.cssW / 2, cy = this.cssH / 2;
-      const fx = 0.5, fy = 0.527;
+      const focus = {
+        small:  { fx: 0.5, fy: 0.624 },
+        medium: { fx: 0.5, fy: 0.616 },
+        large:  { fx: 0.5, fy: 0.643 },
+      };
+      const f = focus[this.tier] || { fx: 0.5, fy: 0.5 };
       v.s *= this.userZoom;
-      v.ox = cx - fx * T.w * v.s;
-      v.oy = cy - fy * T.h * v.s;
+      v.ox = cx - f.fx * T.w * v.s;
+      v.oy = cy - f.fy * T.h * v.s;
     }
     return { x: Math.max(0, -v.ox), y: Math.max(0, -v.oy) };
   }

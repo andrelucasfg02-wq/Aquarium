@@ -201,13 +201,6 @@ class TankView {
         this.fish.set(f.id, e);
       } else {
         e.data = f;
-        // Keep existing fish inside the current glass without disturbing the
-        // local swim animation: only nudge px/py/tx/ty if they've drifted
-        // outside (e.g. stale fractions after a tank art update).
-        const g2 = this.glass();
-        const cx2 = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-        const npx = cx2(e.px, g2.left, g2.right), npy = cx2(e.py, g2.top, g2.bottom);
-        if (npx !== e.px || npy !== e.py) { e.px = e.tx = npx; e.py = e.ty = npy; }
       }
     }
     for (const id of [...this.fish.keys()]) if (!seen.has(id)) this.fish.delete(id);

@@ -72,11 +72,39 @@ const App = (() => {
     }
     await refresh();
     startPoll();
+    // guest reminders: nudge to create an account — first at 5min, then every 10min
+    startGuestNudges();
     // first-run tutorial takes precedence over the promos this once
     const tutStarted = (typeof Tutorial !== "undefined") && Tutorial.maybeAutoStart();
     if (!tutStarted) showPromo();
     // install-as-app promo (browser tab only, at most once a week)
     if (!tutStarted && typeof InstallPromo !== "undefined") InstallPromo.maybeShow(4000);
+  }
+
+  let guestNudgeTimers = [];
+  function startGuestNudges() {
+    guestNudgeTimers.forEach(clearTimeout);
+    guestNudgeTimers = [];
+    if (!state || !state.user || !state.user.is_guest) return;
+    const nudge = () => {
+      // stop if no longer a guest (claimed account)
+      if (!state || !state.user || !state.user.is_guest) return;
+      UI.guestNudge(() => {
+        // open settings with the claim form visible
+        if (typeof UI !== "undefined" && UI.open) {
+          UI.open("settings");
+          setTimeout(() => {
+            const cf = document.getElementById("claim-form");
+            if (cf) { cf.hidden = false; cf.scrollIntoView({ behavior: "smooth", block: "center" }); }
+          }, 300);
+        }
+      });
+    };
+    // first at 5 min, then every 10 min
+    guestNudgeTimers.push(setTimeout(function tick() {
+      nudge();
+      guestNudgeTimers.push(setTimeout(tick, 10 * 60 * 1000));
+    }, 5 * 60 * 1000));
   }
 
   /* ---------- state ---------- */

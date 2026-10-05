@@ -1418,9 +1418,27 @@ const UI = (() => {
     });
   }
 
+  // Gentle non-blocking nudge for guests: small banner, dismissible.
+  // onCreate: called when the user taps "save progress".
+  function guestNudge(onCreate) {
+    document.querySelector(".guest-nudge")?.remove();
+    const el = document.createElement("div");
+    el.className = "guest-nudge";
+    el.innerHTML = `
+      <div class="guest-nudge-text">💾 ${t("settings.guest_nudge")}</div>
+      <button class="pill-btn blue guest-nudge-btn">${t("settings.guest_nudge_btn")}</button>
+      <button class="guest-nudge-x" aria-label="×">×</button>`;
+    el.querySelector(".guest-nudge-x").onclick = () => el.remove();
+    el.querySelector(".guest-nudge-btn").onclick = () => { el.remove(); onCreate && onCreate(); };
+    // auto-dismiss after 30s
+    setTimeout(() => el.remove(), 30000);
+    document.body.appendChild(el);
+  }
+
   return {
     toast, updateHUD, updateTankSwitcher, open, close, showTankFullPopup, closeTankFullPopup,
     openFishMenu, closeFishMenu, openBreedingWith, openFeedChoice, closeFeedChoice, guestLeaveDialog,
+    guestNudge,
     setCatalogs(f, d) { fishCatalog = f; decorCatalog = d; },
     get decorCatalog() { return decorCatalog; },
     refreshCurrent() {

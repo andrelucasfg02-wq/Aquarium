@@ -115,6 +115,16 @@ input{font-family:inherit}
   background:linear-gradient(135deg,rgba(255,243,205,.9),rgba(255,236,180,.9));
   border:2px solid #e8b93c;border-radius:14px;padding:12px;margin-bottom:10px;
 }
+.guest-leave-overlay{
+  position:fixed;inset:0;background:rgba(20,40,25,.55);z-index:9999;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.guest-leave-card{
+  background:linear-gradient(160deg,#f4fff6,#e3f5e8);border-radius:18px;padding:22px;
+  max-width:340px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.35);text-align:center;
+}
+.guest-leave-title{font-size:20px;font-weight:900;color:#1a5c2a;margin-bottom:8px}
+.guest-leave-card p{color:#3a6b45;font-size:14px;margin:0 0 16px;line-height:1.4}
 .dive-arrow{font-size:26px;font-weight:900;opacity:.9}
 .auth-error{color:#c22a55;font-size:13px;margin:4px 0 0;font-weight:700;text-shadow:0 1px 0 rgba(255,255,255,.6)}
 .auth-ok{color:#1e7a45;font-size:13px;margin:4px 0 0;font-weight:700;text-shadow:0 1px 0 rgba(255,255,255,.6)}

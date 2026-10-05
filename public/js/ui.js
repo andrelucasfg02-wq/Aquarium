@@ -1040,10 +1040,16 @@ const UI = (() => {
       }
     };
     $("btn-logout").onclick = async () => {
-      // Guests get a warning: leaving loses access to their progress
+      // Guests get a dialog: create account to save, stay, or leave (loses progress)
       if (state.user.is_guest) {
-        const leave = confirm(t("settings.guest_leave_warn"));
-        if (!leave) return;
+        const choice = await UI.guestLeaveDialog();
+        if (choice === "stay") return;
+        if (choice === "create") {
+          // scroll to the claim form in settings
+          const cf = $("claim-form");
+          if (cf) { cf.hidden = false; cf.scrollIntoView({ behavior: "smooth", block: "center" }); }
+          return;
+        }
         localStorage.removeItem("aquanim_guest_token");
       }
       await Api.logout();
@@ -1393,9 +1399,28 @@ const UI = (() => {
     foodshop: renderFoodShop,
   };
 
+  function guestLeaveDialog() {
+    return new Promise((resolve) => {
+      const ov = document.createElement("div");
+      ov.className = "guest-leave-overlay";
+      ov.innerHTML = `
+        <div class="guest-leave-card">
+          <div class="guest-leave-title">⚠️ ${t("settings.guest_leave_title")}</div>
+          <p>${t("settings.guest_leave_warn")}</p>
+          <button class="pill-btn blue" data-choice="create" style="width:100%;padding:13px;margin-bottom:8px">💾 ${t("settings.guest_leave_create")}</button>
+          <button class="pill-btn" data-choice="stay" style="width:100%;padding:13px;margin-bottom:8px;background:linear-gradient(135deg,#5ccb52,#2f9e44)">▶️ ${t("settings.guest_leave_stay")}</button>
+          <button class="pill-btn" data-choice="leave" style="width:100%;padding:13px;background:linear-gradient(135deg,#e08a9b,#c05a7a)">🚪 ${t("settings.guest_leave_yes")}</button>
+        </div>`;
+      const done = (choice) => { ov.remove(); resolve(choice); };
+      ov.querySelectorAll("[data-choice]").forEach((b) => b.onclick = () => done(b.dataset.choice));
+      ov.onclick = (e) => { if (e.target === ov) done("stay"); };
+      document.body.appendChild(ov);
+    });
+  }
+
   return {
     toast, updateHUD, updateTankSwitcher, open, close, showTankFullPopup, closeTankFullPopup,
-    openFishMenu, closeFishMenu, openBreedingWith, openFeedChoice, closeFeedChoice,
+    openFishMenu, closeFishMenu, openBreedingWith, openFeedChoice, closeFeedChoice, guestLeaveDialog,
     setCatalogs(f, d) { fishCatalog = f; decorCatalog = d; },
     get decorCatalog() { return decorCatalog; },
     refreshCurrent() {

@@ -2,7 +2,7 @@
 "use strict";
 
 // Bump TANK_V whenever shipped tank art changes so phones don't keep stale cached JPGs.
-const TANK_V = 4;
+const TANK_V = 5;
 
 const DATA = {
   TANKS: {

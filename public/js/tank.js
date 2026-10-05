@@ -388,8 +388,30 @@ class TankView {
         e.frame = (e.group === "goldfish") ? 1 : 0;
         e.stateT -= dt;
         if (e.stateT <= 0) {
-          if (Math.random() < .22) { e.state = "sleep"; e.stateT = 6 + Math.random() * 8; }
+          if (Math.random() < .22) {
+            // Bedtime: swim to the bottom or a furniture piece, then sleep there
+            const g = this.glass();
+            let sx, sy;
+            if (this.placements.length && Math.random() < .5) {
+              const p = this.placements[Math.floor(Math.random() * this.placements.length)];
+              sx = p.x + (Math.random() - .5) * .08;
+              sy = p.y - .02 - Math.random() * .03;
+            } else {
+              sx = g.left + Math.random() * (g.right - g.left);
+              sy = g.bottom - .015 - Math.random() * .03;
+            }
+            e.tx = Math.min(g.right, Math.max(g.left, sx));
+            e.ty = Math.min(g.bottom - .01, Math.max(g.top, sy));
+            e.state = "goto_sleep";
+          }
           else { this.pickTarget(e); e.state = "swim"; }
+        }
+        break;
+      case "goto_sleep":
+        e.frame = pickSwim(7);
+        this.moveToward(e, speed * .8, dt);
+        if (Math.hypot(e.tx - e.px, e.ty - e.py) <= .008) {
+          e.state = "sleep"; e.stateT = 6 + Math.random() * 8;
         }
         break;
       case "sleep":
@@ -552,7 +574,7 @@ class TankView {
     }
     // wake sleepers — dinner time!
     for (const e of this.fish.values()) {
-      if (e.state === "sleep" || e.state === "idle") { this.pickTarget(e); e.state = "swim"; }
+      if (e.state === "sleep" || e.state === "idle" || e.state === "goto_sleep") { this.pickTarget(e); e.state = "swim"; }
     }
     AudioFX.plop();
   }
@@ -928,7 +950,7 @@ Object.assign(TankView.prototype, {
       }
       best.faceT = 1.4;
       best.dir = fx >= best.px ? 1 : -1;
-      if (best.state === "sleep" || best.state === "idle") { this.pickTarget(best); best.state = "swim"; }
+      if (best.state === "sleep" || best.state === "idle" || best.state === "goto_sleep") { this.pickTarget(best); best.state = "swim"; }
       this.addEmoteImg(best.px, best.py - .04, "assets/icons/emote_love.png", 1.4);
       AudioFX.pop();
       this.emit("fishTap", best.data.id);

@@ -14,6 +14,7 @@ const GROUPS = {
   shrimp: ['red_shrimp', 'blue_shrimp', 'yellow_shrimp'],
   snail: ['snail'],
   bottom_fish: ['bottom_fish', 'pleco'],
+  danio: ['danio_zebra'],
 };
 
 // Goldfish hybrid mixes: sorted "speciesA+speciesB" -> blended offspring species.
@@ -69,6 +70,7 @@ const SPECIES_NAMES = {
   nebula_goldfish: 'Nebula Goldfish', ember_night_goldfish: 'Ember Night Goldfish',
   red_shrimp: 'Red Shrimp', blue_shrimp: 'Blue Shrimp', yellow_shrimp: 'Yellow Shrimp',
   snail: 'Snail', bottom_fish: 'Cory Fish', pleco: 'Pleco',
+  danio_zebra: 'Zebra Danio',
 };
 
 // price_coins / price_gems(null if not purchasable with gems)
@@ -81,6 +83,7 @@ const SPECIES_PRICES = {
   red_shrimp: { coins: 200, gems: null }, blue_shrimp: { coins: 200, gems: null },
   yellow_shrimp: { coins: 200, gems: null },
   snail: { coins: 250, gems: null }, bottom_fish: { coins: 3000, gems: null }, pleco: { coins: null, gems: 500 },
+  danio_zebra: { coins: 900, gems: null },
   fullmoon_betta: { coins: 1000, gems: null }, crowntail_betta: { coins: 1000, gems: null },
   female_betta: { coins: 1000, gems: null },
   veiltail_betta: { coins: 1400, gems: 8 }, plakat_betta: { coins: 1400, gems: 8 },
@@ -120,6 +123,7 @@ const SPECIES_RARITY = {
   ember_night_goldfish: 'epic',
   red_shrimp: 'common', blue_shrimp: 'common', yellow_shrimp: 'common',
   snail: 'common', bottom_fish: 'uncommon', pleco: 'epic',
+  danio_zebra: 'epic',
 };
 
 function speciesGroup(speciesId) {

@@ -63,9 +63,10 @@ const DATA = {
     snail:                 { group:"snail",  name:"Snail",        price:250 },
     bottom_fish:           { group:"bottom_fish", name:"Cory Fish", price:3000 },
     pleco:                  { group:"bottom_fish", name:"Pleco", priceGems:500, desc:"Cleans 4 dirt per hour. The tank he's in stays clean!" },
+    danio_zebra:            { group:"danio", name:"Zebra Danio", price:900 },
   },
-  GROUP_BASE_PX: { goldfish: 254, betta: 140, shrimp: 85, snail: 95, bottom_fish: 130 },
-  GROUP_SPEED:  { goldfish: .055, betta: .05, shrimp: .05, snail: .008, bottom_fish: .035 }, // fractions/sec
+  GROUP_BASE_PX: { goldfish: 254, betta: 140, shrimp: 85, snail: 95, bottom_fish: 130, danio: 110 },
+  GROUP_SPEED:  { goldfish: .055, betta: .05, shrimp: .05, snail: .008, bottom_fish: .035, danio: .065 }, // fractions/sec
   STAGE_SCALE: { baby: .4, juvenile: .7, adult: 1 },
   FOOD_PRICE: 10,
   SPECIAL_FOOD_PRICE: 20,
@@ -93,7 +94,7 @@ const DATA = {
 
 /** Frame roles: 0 idle, 1-4 swim, 5 eat (only while eating), 6 sleep, 7 rear/turn */
 // Bump SPRITE_V whenever shipped art changes so phones don't keep stale cached PNGs.
-const SPRITE_V = 65;
+const SPRITE_V = 66;
 // Species with a custom hybrid egg icon (assets/eggs/<species_id>.png).
 const EGG_V = 12;
 const EGG_ART = {

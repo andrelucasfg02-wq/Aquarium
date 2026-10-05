@@ -422,8 +422,10 @@ const UI = (() => {
     return (state.fish || []).filter((f) => f.tank === active && (!f.location || f.location === "tank"));
   }
   function priceLabel(item) {
-    if (item.price_gems) return `${CUR_GEM}${item.price_gems} <span class="sub">${t("shop.or")}</span> ${CUR_GOLD}${fmtCoins(item.price_coins)}`;
-    return `${CUR_GOLD} ${fmtCoins(item.price_coins)}`;
+    const gems = item.price_gems || 0, coins = item.price_coins || 0;
+    if (gems && coins) return `${CUR_GEM}${gems} <span class="sub">${t("shop.or")}</span> ${CUR_GOLD}${fmtCoins(coins)}`;
+    if (gems) return `${CUR_GEM}${gems}`;
+    return `${CUR_GOLD} ${fmtCoins(coins)}`;
   }
 
   /* ================= FISH SHOP ================= */

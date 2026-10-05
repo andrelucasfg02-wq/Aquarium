@@ -558,7 +558,7 @@ module.exports = function gameRoutes(db) {
     try {
       const row = await db.tx(async (txDb) => {
         const Ht = helpers(txDb);
-        if (w.coins >= item.price_coins) {
+        if (item.price_coins != null && w.coins >= item.price_coins) {
           await txDb.run('UPDATE wallets SET coins=coins-? WHERE user_id=?', item.price_coins, uid);
         } else if (item.price_gems && w.gems >= item.price_gems) {
           await txDb.run('UPDATE wallets SET gems=gems-? WHERE user_id=?', item.price_gems, uid);

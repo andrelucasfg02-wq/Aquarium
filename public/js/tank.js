@@ -16,10 +16,10 @@ function imgReady(im) { return im && im.complete && im.naturalWidth > 0; }
 /* Goldfish species with 8 swim frames (1-8); eat/sleep/turn live at 9/10/11.
    All other goldfish: swim 1-4, eat 5, sleep 6, turn 7. */
 const SWIM8_IDS = new Set(["ember_clownfish", "lemon_drop_goldfish", "sakura_goldfish", "azure_tang", "midnight_moor"]);
-/* Danio & Tetra: their 4 swim frames are tail-up, tail-down, straight, tail-up.
+/* Danio, Tetra & Gourami: their 4 swim frames are tail-up, tail-down, straight, tail-up.
    Playing 1-2-3-4 makes the tail teleport from one side to the other, so
    ping-pong through the straight frame instead: up, straight, down, straight. */
-const TAILBEAT_IDS = new Set(["danio_zebra", "tetra_neon"]);
+const TAILBEAT_IDS = new Set(["danio_zebra", "tetra_neon", "gourami_pearl"]);
 const TAILBEAT_SEQ = [1, 3, 2, 3];
 
 class TankView {

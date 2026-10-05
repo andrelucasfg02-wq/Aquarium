@@ -22,6 +22,12 @@ const SWIM8_IDS = new Set(["ember_clownfish", "lemon_drop_goldfish", "sakura_gol
 const TAILBEAT_IDS = new Set(["danio_zebra", "tetra_neon", "gourami_pearl"]);
 const TAILBEAT_SEQ = [1, 2];
 
+/* Schooling: tetras and danios swim together in formation when 2+ share
+   a tank — side by side and synchronized, then they split up for a while
+   and regroup. They also skip the front pose (idle shows a side frame). */
+const SCHOOL_IDS = new Set(["tetra_neon", "danio_zebra"]);
+const NO_FRONT_IDS = new Set(["tetra_neon", "danio_zebra"]);
+
 class TankView {
   constructor(canvas) {
     this.cv = canvas;
@@ -241,6 +247,8 @@ class TankView {
       animT: Math.random() * 10,
       frame: 0, faceT: 0, eatT: 0, turnT: 0,
       emoteCd: 0,
+      // schooling (tetra/danio): alternate together/apart phases
+      schoolMode: "together", schoolT: 8 + Math.random() * 10, schoolFollow: false,
       // cleaning: cory 1 dirt/hour, pleco 4 dirt/hour
       cleanCd: f.clean_at ? Math.max(0, (f.species_id === "pleco" ? 900 : 3600) - (Date.now() / 1000 - f.clean_at)) : 0,
       cleanT: 0, cleanSpot: null,
@@ -273,6 +281,53 @@ class TankView {
       // keep swimmers off the floor a bit
       e.ty = Math.min(e.ty, g.bottom - .06);
     }
+  }
+
+  // Schooling: the first fish of the species in the tank leads; the rest
+  // follow in formation. Phases alternate between together and apart.
+  schoolLeader(e) {
+    let first = null;
+    for (const o of this.fish) {
+      if (o.data && o.data.species_id === e.data.species_id) {
+        if (!first) first = o;
+        if (o === e) break; // e comes after first → first is the leader
+      }
+    }
+    // e is the leader itself (or alone) → no one to follow
+    if (!first || first === e) return null;
+    return (first.state === "swim" || first.state === "idle") ? first : null;
+  }
+
+  updateSchool(e, dt) {
+    if (!e.data || !SCHOOL_IDS.has(e.data.species_id)) return;
+    e.schoolT -= dt;
+    if (e.schoolT <= 0) {
+      e.schoolMode = e.schoolMode === "together" ? "apart" : "together";
+      // together 15-25s, apart 8-15s
+      e.schoolT = e.schoolMode === "together" ? 15 + Math.random() * 10 : 8 + Math.random() * 7;
+      // when splitting up, pick a fresh independent target
+      if (e.schoolMode === "apart" && (e.state === "swim" || e.state === "idle")) {
+        this.pickTarget(e);
+        if (e.state === "idle") e.state = "swim";
+      }
+    }
+    if (e.schoolMode !== "together") { e.schoolFollow = false; return; }
+    if (e.state !== "swim" && e.state !== "idle") { e.schoolFollow = false; return; } // don't interrupt eat/sleep/chase/etc
+    const leader = this.schoolLeader(e);
+    if (!leader) { e.schoolFollow = false; return; } // I'm the leader (or alone) — swim normally
+    e.schoolFollow = true;
+    // formation: line up beside/behind the leader, staggered
+    const mates = this.fish.filter((o) => o.data && o.data.species_id === e.data.species_id);
+    const idx = mates.indexOf(e);
+    const slot = Math.ceil(idx / 2);            // 1,1,2,2,3,3...
+    const side = (idx % 2 === 0 ? 1 : -1);      // alternate sides
+    // behind and to the side of the leader, relative to swim direction
+    e.tx = leader.px - leader.dir * slot * .045 + side * .02;
+    e.ty = leader.py + side * .025;
+    const g = this.glass();
+    e.tx = Math.max(g.left + .03, Math.min(g.right - .03, e.tx));
+    e.ty = Math.max(g.top + .04, Math.min(g.bottom - .06, e.ty));
+    if (e.state === "idle") { e.state = "swim"; e.stateT = 0; }
   }
 
   /* ---------- per-frame ---------- */
@@ -360,6 +415,7 @@ class TankView {
     e.animT += dt;
     e.emoteCd -= dt;
     if (e.faceT > 0) e.faceT -= dt;
+    this.updateSchool(e, dt);
     // sick fish keep emoting 🤒 until treated
     if (e.data && e.data.sick && e.emoteCd <= 0) {
       this.addEmoteImg(e.px, e.py - .03, "assets/icons/emote_sick.png", 2.2); e.emoteCd = 2.4;
@@ -384,8 +440,8 @@ class TankView {
       : 1 + Math.floor(e.animT * rate) % swimN;
     switch (e.state) {
       case "idle":
-        // Goldfish don't use front pose (0) — use swim frame 1 instead
-        e.frame = (e.group === "goldfish") ? 1 : 0;
+        // Goldfish, tetras and danios don't use front pose (0) — use swim frame 1 instead
+        e.frame = (e.group === "goldfish" || (e.data && NO_FRONT_IDS.has(e.data.species_id))) ? 1 : 0;
         e.stateT -= dt;
         if (e.stateT <= 0) {
           if (Math.random() < .22) {
@@ -482,9 +538,9 @@ class TankView {
           break;
         }
         this.moveToward(e, speed, dt);
-        if (dist <= .006) {
+        if (dist <= .006 && !e.schoolFollow) {
           e.state = "idle"; e.stateT = 2 + Math.random() * 5;
-          e.frame = (e.group === "goldfish") ? 1 : 0;
+          e.frame = (e.group === "goldfish" || (e.data && NO_FRONT_IDS.has(e.data.species_id))) ? 1 : 0;
         }
         break;
     }

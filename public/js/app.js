@@ -405,10 +405,10 @@ const App = (() => {
       // clamp with a small default half-size (server clamps too)
       const [cx, cy] = clampToGlass(x, y, 50, 50, state.tanks.active);
       // optimistic: draw it instantly, reconcile with the server after
-      const tmp = { id: "tmp-" + Date.now(), deco_id, tank: state.tanks.active, x: cx, y: cy };
+      const tmp = { id: "tmp-" + Date.now(), deco_id, tank: state.tanks.active, tank_num: state.tanks.activeNum || 1, x: cx, y: cy };
       tank.placements.push(tmp);
       AudioFX.pop();
-      const r = await Api.placeDecor(deco_id, state.tanks.active, cx, cy);
+      const r = await Api.placeDecor(deco_id, state.tanks.active, cx, cy, state.tanks.activeNum || 1);
       tank.placements = tank.placements.filter((p) => p !== tmp);
       if (r.ok) UI.toast(t("app.placed"));
       else if (r.error === "no free decor slots") {

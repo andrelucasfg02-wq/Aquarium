@@ -154,6 +154,7 @@ function helpers(db) {
       name: C.SPECIES_NAMES[row.species_id] || row.species_id,
       nickname: row.nickname || null,
       gender: row.gender, location: row.location, tank: row.tank,
+      tank_num: row.tank_num || 1,
       x: row.x, y: row.y, born_at: row.born_at,
       level,
       stage,
@@ -472,7 +473,7 @@ module.exports = function gameRoutes(db) {
     const spots = await db.all('SELECT id,x,y FROM dirt_spots WHERE user_id=?', uid);
     const ds = await db.get('SELECT last_cleaned_at FROM dirt_state WHERE user_id=?', uid);
     const decor_owned = await db.all('SELECT deco_id,qty FROM decor_owned WHERE user_id=? AND qty>0', uid);
-    const placements = await db.all('SELECT id,deco_id,tank,x,y FROM decor_placements WHERE user_id=?', uid);
+    const placements = await db.all('SELECT id,deco_id,tank,tank_num,x,y FROM decor_placements WHERE user_id=?', uid);
     const collection = (await db.all('SELECT species_id,count FROM collection WHERE user_id=?', uid))
       .map((c) => ({ species_id: c.species_id, seen: 1, count: c.count }));
     const settings = await db.get('SELECT music,sfx,quality FROM settings WHERE user_id=?', uid);
@@ -876,14 +877,15 @@ module.exports = function gameRoutes(db) {
 
   r.post('/decor/place', ah(async (req, res) => {
     const uid = req.user.id;
-    const { deco_id, tank, x, y } = req.body || {};
+    const { deco_id, tank, tank_num, x, y } = req.body || {};
     if (!C.decorItem(deco_id)) return res.status(400).json({ ok: false, error: 'unknown decoration' });
     if (!['small', 'medium', 'large', 'xl', 'nursery'].includes(tank)) return res.status(400).json({ ok: false, error: 'invalid tank' });
+    const tnum = Math.min(3, Math.max(1, Math.floor(Number(tank_num)) || 1));
     const tanks = await H.getTanks(uid);
     if (!tanks[tank]) return res.status(400).json({ ok: false, error: 'tank not owned' });
     const owned = await db.get('SELECT qty FROM decor_owned WHERE user_id=? AND deco_id=?', uid, deco_id);
     if (!owned || owned.qty <= 0) return res.status(400).json({ ok: false, error: 'not owned' });
-    const placed = (await db.get('SELECT COUNT(*) c FROM decor_placements WHERE user_id=? AND tank=?', uid, tank)).c;
+    const placed = (await db.get('SELECT COUNT(*) c FROM decor_placements WHERE user_id=? AND tank=? AND tank_num=?', uid, tank, tnum)).c;
     const maxSlots = C.DECOR_SLOTS[tank] + (tanks[`${tank}_extra`] || 0);
     if (placed >= maxSlots) return res.status(400).json({ ok: false, error: 'no free decor slots' });
 
@@ -891,11 +893,11 @@ module.exports = function gameRoutes(db) {
     const id = await db.tx(async (txDb) => {
       await txDb.run('UPDATE decor_owned SET qty=qty-1 WHERE user_id=? AND deco_id=?', uid, deco_id);
       const info = await txDb.run(
-        'INSERT INTO decor_placements (user_id,deco_id,tank,x,y) VALUES (?,?,?,?,?)',
-        uid, deco_id, tank, p.x, p.y);
+        'INSERT INTO decor_placements (user_id,deco_id,tank,tank_num,x,y) VALUES (?,?,?,?,?,?)',
+        uid, deco_id, tank, tnum, p.x, p.y);
       return info.lastInsertRowid;
     });
-    res.json({ ok: true, placement: { id, deco_id, tank, x: p.x, y: p.y } });
+    res.json({ ok: true, placement: { id, deco_id, tank, tank_num: tnum, x: p.x, y: p.y } });
   }));
 
   r.post('/decor/move', ah(async (req, res) => {

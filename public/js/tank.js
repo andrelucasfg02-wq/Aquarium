@@ -189,10 +189,12 @@ class TankView {
   syncState(state) {
     if (!state) return;
     this.setTank(state.tanks.active);
+    this.activeNum = state.tanks.activeNum || 1;
     // fish
     const seen = new Set();
     for (const f of (state.fish || [])) {
       if (f.tank && f.tank !== state.tanks.active) continue;
+      if (f.tank_num && (f.tank_num || 1) !== this.activeNum) continue;
       if (f.location && f.location !== "tank") continue;
       seen.add(f.id);
       let e = this.fish.get(f.id);
@@ -208,7 +210,7 @@ class TankView {
     // it is filled once via setDecoCatalog and must survive state syncs,
     // otherwise decorations turn invisible after any refresh)
     this.placements = (state.placements || [])
-      .filter((p) => p.tank === state.tanks.active)
+      .filter((p) => p.tank === state.tanks.active && (p.tank_num || 1) === this.activeNum)
       .map((p) => ({ ...p }));
     // dirt
     const prevIds = new Set(this.spots.map((s) => s.id));

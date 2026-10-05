@@ -220,6 +220,11 @@ async function openDb() {
     if (!tcols.rows.some((c) => c.name === 'active_num')) {
       await client.execute('ALTER TABLE user_tanks ADD COLUMN active_num INTEGER NOT NULL DEFAULT 1');
     }
+    // Decorations are per tank instance too
+    const dcols = await client.execute('PRAGMA table_info(decor_placements)');
+    if (!dcols.rows.some((c) => c.name === 'tank_num')) {
+      await client.execute('ALTER TABLE decor_placements ADD COLUMN tank_num INTEGER NOT NULL DEFAULT 1');
+    }
     // New players start with small + nursery
     // (handled in user creation; existing users keep their tanks)
     // grace start is a one-time migration: see the sick_at block above.

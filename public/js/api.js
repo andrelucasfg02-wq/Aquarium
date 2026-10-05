@@ -82,7 +82,7 @@ const Api = (() => {
     filterDirt: () => post("/api/dirt/filter"),
     decorCatalog: () => get("/api/shop/decor"),
     buyDecor: (deco_id) => post("/api/shop/decor/buy", { deco_id }),
-    placeDecor: (deco_id, tank, x, y) => post("/api/decor/place", { deco_id, tank, x, y }),
+    placeDecor: (deco_id, tank, x, y, tank_num) => post("/api/decor/place", { deco_id, tank, x, y, tank_num }),
     moveDecor: (id, x, y) => post("/api/decor/move", { id, x, y }),
     removeDecor: (id) => post("/api/decor/remove", { id }),
     claimQuest: (quest_id) => post("/api/quests/claim", { quest_id }),

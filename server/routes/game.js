@@ -854,13 +854,14 @@ module.exports = function gameRoutes(db) {
   }));
 
   // ---------- decor shop ----------
-  r.get('/shop/decor', ah(async (req, res) => res.json({ ok: true, items: C.decorCatalog() })));
+  r.get('/shop/decor', ah(async (req, res) => res.json({ ok: true, items: C.decorCatalog().filter((i) => i.shop) })));
 
   r.post('/shop/decor/buy', ah(async (req, res) => {
     const uid = req.user.id; const t = now();
     const { deco_id } = req.body || {};
     const item = C.decorItem(deco_id);
     if (!item) return res.status(400).json({ ok: false, error: 'unknown decoration' });
+    if (!item.shop) return res.status(400).json({ ok: false, error: 'no longer sold' });
     if (item.event === 'grab') return res.status(400).json({ ok: false, error: 'grab exclusive' });
     const w = await H.getWallet(uid);
     if (w.coins < item.price) return res.status(400).json({ ok: false, error: 'not enough coins' });

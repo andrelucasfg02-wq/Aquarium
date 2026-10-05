@@ -284,6 +284,7 @@ function decorCatalog() {
     price: idx <= 30 ? 120 : idx <= 61 ? 300 : 600,
     index: idx,
     event: it.event || null,
+    shop: it.shop !== false, // legacy items (shop:false) stay owned but unbuyable
   }));
   return _decorCache;
 }

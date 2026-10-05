@@ -16,6 +16,7 @@ const GROUPS = {
   bottom_fish: ['bottom_fish', 'pleco'],
   danio: ['danio_zebra'],
   tetra: ['tetra_neon'],
+  gourami: ['gourami_pearl'],
 };
 
 // Goldfish hybrid mixes: sorted "speciesA+speciesB" -> blended offspring species.
@@ -73,6 +74,7 @@ const SPECIES_NAMES = {
   snail: 'Snail', bottom_fish: 'Cory Fish', pleco: 'Pleco',
   danio_zebra: 'Zebra Danio',
   tetra_neon: 'Neon Tetra',
+  gourami_pearl: 'Pearl Gourami',
 };
 
 // price_coins / price_gems(null if not purchasable with gems)
@@ -87,6 +89,7 @@ const SPECIES_PRICES = {
   snail: { coins: 250, gems: null }, bottom_fish: { coins: 3000, gems: null }, pleco: { coins: null, gems: 500 },
   danio_zebra: { coins: 900, gems: null },
   tetra_neon: { coins: 1200, gems: null },
+  gourami_pearl: { coins: 2000, gems: null },
   fullmoon_betta: { coins: 1000, gems: null }, crowntail_betta: { coins: 1000, gems: null },
   female_betta: { coins: 1000, gems: null },
   veiltail_betta: { coins: 1400, gems: 8 }, plakat_betta: { coins: 1400, gems: 8 },
@@ -128,6 +131,7 @@ const SPECIES_RARITY = {
   snail: 'common', bottom_fish: 'uncommon', pleco: 'epic',
   danio_zebra: 'epic',
   tetra_neon: 'epic',
+  gourami_pearl: 'epic',
 };
 
 function speciesGroup(speciesId) {

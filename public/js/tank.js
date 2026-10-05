@@ -781,7 +781,8 @@ Object.assign(TankView.prototype, {
     const stage = f.stage || "adult";
     let scale = DATA.STAGE_SCALE[stage] || 1;
     if (stage === "adult" && e.group === "goldfish") scale *= 0.85; // adult goldfish run a bit smaller
-    const base0 = (DATA.GROUP_BASE_PX[e.group] || 130) * scale * (T.fishScale || 1);
+    const sp = DATA.SPECIES[f.species_id] || {};
+    const base0 = (sp.size || DATA.GROUP_BASE_PX[e.group] || 130) * scale * (T.fishScale || 1);
     // Goldfish don't use the front pose (0) — show side swim frame instead when facing
     const frame = (e.faceT > 0 && e.group !== "goldfish") ? 0 : e.frame;
     // betta front (0) renders 20% smaller (female_betta 30% smaller) and sleeping (6) 15% smaller; goldfish sleeping (6) renders 20% smaller;

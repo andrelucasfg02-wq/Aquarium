@@ -376,8 +376,8 @@ class TankView {
     const F_EAT = isSwim8 ? 9 : 5;
     const F_SLEEP = isSwim8 ? 10 : 6;
     const F_TURN = isSwim8 ? 11 : 7;
-    // danio/tetra ping-pong their tail-beat frames (up, straight, down, straight)
-    // instead of cycling 1-2-3-4, which teleports the tail side to side.
+    // danio/tetra/gourami: alternate their 2 side frames; the tail flex below
+    // provides the visible wag since the frames are very similar.
     const isTailbeat = e.data && TAILBEAT_IDS.has(e.data.species_id);
     const pickSwim = (rate) => isTailbeat
       ? TAILBEAT_SEQ[Math.floor(e.animT * rate) % TAILBEAT_SEQ.length]
@@ -749,7 +749,7 @@ Object.assign(TankView.prototype, {
     this.ctx.save();
     this.ctx.translate(x, y);
     this.ctx.scale(e.dir, 1);
-    if (e.state === "swim" && (f.species_id === "veiltail_betta" || f.species_id === "fullmoon_betta" || f.species_id === "plakat_betta" || f.species_id === "azure_plakat_betta" || f.species_id === "maple_rose_betta" || f.species_id === "maple_coral_betta" || f.species_id === "maple_ember_betta" || f.species_id === "autumn_fish" || f.species_id === "rose_halfmoon_betta")) {
+    if (e.state === "swim" && (f.species_id === "veiltail_betta" || f.species_id === "fullmoon_betta" || f.species_id === "plakat_betta" || f.species_id === "azure_plakat_betta" || f.species_id === "maple_rose_betta" || f.species_id === "maple_coral_betta" || f.species_id === "maple_ember_betta" || f.species_id === "autumn_fish" || f.species_id === "rose_halfmoon_betta" || f.species_id === "danio_zebra" || f.species_id === "tetra_neon" || f.species_id === "gourami_pearl")) {
       // tail-beat: a shear anchored at the head, so the tail and fins flex
       // side to side while the head stays steady — reads as natural swimming
       // instead of a rigid sprite sliding around.

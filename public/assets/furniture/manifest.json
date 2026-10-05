@@ -1,6 +1,6 @@
 {
   "pack": "furniture_sheet_1",
-  "count": 128,
+  "count": 130,
   "items": [
     {
       "id": "deco_sand_beige",
@@ -793,6 +793,18 @@
       "id": "deco_hollow_mossy_log",
       "file": "deco_new_hollow_mossy_log.png",
       "name": "Hollow Mossy Log",
+      "shop": true
+    },
+    {
+      "id": "deco_red_leaf_plant",
+      "file": "deco_new_red_leaf_plant.png",
+      "name": "Red Leaf Plant",
+      "shop": true
+    },
+    {
+      "id": "deco_grass_stone_tuft",
+      "file": "deco_new_grass_tuft.png",
+      "name": "Grass Stone Tuft",
       "shop": true
     }
   ]

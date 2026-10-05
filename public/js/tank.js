@@ -201,11 +201,13 @@ class TankView {
         this.fish.set(f.id, e);
       } else {
         e.data = f;
-        // Re-clamp existing fish: server fractions may be stale relative
-        // to the current tank art's glass (e.g. after an art update).
+        // Keep existing fish inside the current glass without disturbing the
+        // local swim animation: only nudge px/py/tx/ty if they've drifted
+        // outside (e.g. stale fractions after a tank art update).
         const g2 = this.glass();
-        if (f.x != null && (f.x < g2.left || f.x > g2.right)) e.px = e.tx = g2.left + Math.random() * (g2.right - g2.left);
-        if (f.y != null && (f.y < g2.top || f.y > g2.bottom)) e.py = e.ty = g2.top + Math.random() * (g2.bottom - g2.top);
+        const cx2 = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+        const npx = cx2(e.px, g2.left, g2.right), npy = cx2(e.py, g2.top, g2.bottom);
+        if (npx !== e.px || npy !== e.py) { e.px = e.tx = npx; e.py = e.ty = npy; }
       }
     }
     for (const id of [...this.fish.keys()]) if (!seen.has(id)) this.fish.delete(id);
@@ -779,19 +781,15 @@ Object.assign(TankView.prototype, {
     const el = this.cv;
     const pos = (ev) => {
       const r = el.getBoundingClientRect();
-      // Self-heal: if the element's rendered size drifted from the cached
-      // cssW/cssH (Android Chrome URL bar / gesture bar can resize the visual
-      // viewport without firing reliable resize events), sync the cached dims
-      // WITHOUT resetting the camera, so tap mapping stays accurate.
+      // Self-heal: if the element's rendered size drifted meaningfully from the
+      // cached cssW/cssH (Android Chrome URL bar / gesture bar can resize the
+      // visual viewport without firing reliable resize events), sync the cached
+      // dims WITHOUT resetting the camera, so tap mapping stays accurate.
+      // Threshold of 3px avoids jitter from subpixel rounding; backing store is
+      // left alone (next real resize() fixes it) to avoid canvas clears/flicker.
       const w = Math.floor(r.width), h = Math.floor(r.height);
-      if ((w && w !== this.cssW) || (h && h !== this.cssH)) {
-        if (w) this.cssW = w;
-        if (h) this.cssH = h;
-        const dprCap = this.quality === "low" ? 1 : this.quality === "medium" ? 1.5 : 2;
-        this.dpr = Math.min(window.devicePixelRatio || 1, dprCap);
-        this.cv.width = Math.floor(this.cssW * this.dpr);
-        this.cv.height = Math.floor(this.cssH * this.dpr);
-      }
+      if (w && Math.abs(w - this.cssW) > 3) this.cssW = w;
+      if (h && Math.abs(h - this.cssH) > 3) this.cssH = h;
       return [ev.clientX - r.left, ev.clientY - r.top];
     };
     let downAt = 0, downPos = null, moved = false;

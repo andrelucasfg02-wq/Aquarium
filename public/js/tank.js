@@ -275,6 +275,11 @@ class TankView {
       e.tx = g.left + padX + Math.random() * (g.right - g.left - padX * 2);
       const band = (g.bottom - g.top) * .22;
       e.ty = g.bottom - .02 - Math.random() * band;
+    } else if (e.data && SCHOOL_IDS.has(e.data.species_id)) {
+      // schooling fish (tetra/danio) prefer the surface — top 30% of the tank
+      e.tx = g.left + padX + Math.random() * (g.right - g.left - padX * 2);
+      const surfaceBand = (g.bottom - g.top) * .30;
+      e.ty = g.top + padY + Math.random() * surfaceBand;
     } else {
       e.tx = g.left + padX + Math.random() * (g.right - g.left - padX * 2);
       e.ty = g.top + padY + Math.random() * (g.bottom - g.top - padY * 2);

@@ -66,6 +66,9 @@ const DATA = {
     danio_zebra:            { group:"danio", name:"Zebra Danio", price:900 },
     tetra_neon:              { group:"tetra", name:"Neon Tetra", price:1200 },
     gourami_pearl:            { group:"gourami", name:"Pearl Gourami", price:2000 },
+    swordtail_blue:           { group:"goldfish", name:"Blue Swordtail", folder:"sword_blue", price:1500 },
+    swordtail_gold:           { group:"goldfish", name:"Gold Swordtail", folder:"sword_gold", price:1500 },
+    swordtail_red:            { group:"goldfish", name:"Red Swordtail",  folder:"sword_red",  price:1500 },
   },
   GROUP_BASE_PX: { goldfish: 254, betta: 140, shrimp: 85, snail: 95, bottom_fish: 130, danio: 110, tetra: 110, gourami: 150 },
   GROUP_SPEED:  { goldfish: .055, betta: .05, shrimp: .05, snail: .008, bottom_fish: .035, danio: .065, tetra: .065, gourami: .045 }, // fractions/sec
@@ -96,7 +99,7 @@ const DATA = {
 
 /** Frame roles: 0 idle, 1-4 swim, 5 eat (only while eating), 6 sleep, 7 rear/turn */
 // Bump SPRITE_V whenever shipped art changes so phones don't keep stale cached PNGs.
-const SPRITE_V = 69;
+const SPRITE_V = 70;
 // Species with a custom hybrid egg icon (assets/eggs/<species_id>.png).
 const EGG_V = 12;
 const EGG_ART = {

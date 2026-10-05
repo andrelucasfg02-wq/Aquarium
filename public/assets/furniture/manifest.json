@@ -1,6 +1,6 @@
 {
   "pack": "furniture_sheet_1",
-  "count": 118,
+  "count": 128,
   "items": [
     {
       "id": "deco_sand_beige",
@@ -757,6 +757,42 @@
       "id": "deco_rocks_purple",
       "file": "deco_new_rocks_purple.png",
       "name": "Purple Crystal Rocks",
+      "shop": true
+    },
+    {
+      "id": "deco_lush_leaf_plant",
+      "file": "deco_new_lush_leaf_plant.png",
+      "name": "Lush Leaf Plant",
+      "shop": true
+    },
+    {
+      "id": "deco_mossy_log_cave",
+      "file": "deco_new_mossy_log_cave.png",
+      "name": "Mossy Log Cave",
+      "shop": true
+    },
+    {
+      "id": "deco_leaf_arch_cave",
+      "file": "deco_new_leaf_arch_cave.png",
+      "name": "Leaf Arch Cave",
+      "shop": true
+    },
+    {
+      "id": "deco_purple_pumice_rock",
+      "file": "deco_new_purple_pumice_rock.png",
+      "name": "Purple Pumice Rock",
+      "shop": true
+    },
+    {
+      "id": "deco_stone_bridge",
+      "file": "deco_new_stone_bridge.png",
+      "name": "Stone Bridge",
+      "shop": true
+    },
+    {
+      "id": "deco_hollow_mossy_log",
+      "file": "deco_new_hollow_mossy_log.png",
+      "name": "Hollow Mossy Log",
       "shop": true
     }
   ]

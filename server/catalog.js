@@ -270,7 +270,7 @@ function randomPointInGlass(tank, margin = 0.05) {
   return { x, y };
 }
 
-// ---- decor catalog: 93 items from public/assets/furniture/manifest.json ----
+// ---- decor catalog: items from public/assets/furniture/manifest.json ----
 // Price = tiered by manifest order: idx 0-30 -> 120, 31-61 -> 300, 62-92 -> 600.
 let _decorCache = null;
 function decorCatalog() {

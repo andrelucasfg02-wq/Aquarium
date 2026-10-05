@@ -13,6 +13,23 @@ const rand = (lo, hi) => lo + Math.random() * (hi - lo);
 const EVENT_META = {
   autumn1: { goal: 300000, fish: 'autumn_fish', ends_at: null },
 };
+// Per-level rewards (level = 0-based index, displayed as level+1).
+// Levels 1-4: coins (escalating from 500). Levels 5-10: diamonds (from 5).
+// Level 10 (index 9) also grants the event fish via /event/claim.
+const EVENT_LEVEL_REWARDS = {
+  autumn1: [
+    { coins: 500 },   // level 1
+    { coins: 750 },   // level 2
+    { coins: 1000 },  // level 3
+    { coins: 1500 },  // level 4
+    { gems: 5 },      // level 5
+    { gems: 8 },      // level 6
+    { gems: 12 },     // level 7
+    { gems: 15 },     // level 8
+    { gems: 20 },     // level 9
+    { gems: 30 },     // level 10 (+ event fish via /event/claim)
+  ],
+};
 const EVENT_GOALS = { autumn1: EVENT_META.autumn1.goal };
 const EVENT_FISH = { autumn1: EVENT_META.autumn1.fish };
 const eventEnded = (eventId, nowT) => {
@@ -1038,9 +1055,11 @@ module.exports = function gameRoutes(db) {
     const run = finished ? mr : claimed + 1;
     const p = await db.get('SELECT score,level,moves FROM event_progress WHERE user_id=? AND event_id=? AND run=?', uid, event, run);
     const rw = await db.get('SELECT claimed_at FROM event_rewards WHERE user_id=? AND event_id=? AND run=?', uid, event, run);
+    const claimedLevels = (await db.all('SELECT level FROM event_level_rewards WHERE user_id=? AND event_id=? AND run=?', uid, event, run)).map((r) => r.level);
     res.json({ ok: true, score: p ? p.score : 0, level: p ? p.level : 0, moves: p ? p.moves : 0,
                claimed: !!rw, goal: EVENT_GOALS[event],
-               runs_claimed: claimed, max_runs: mr, current_run: run });
+               runs_claimed: claimed, max_runs: mr, current_run: run,
+               rewards: EVENT_LEVEL_REWARDS[event] || [], claimed_levels: claimedLevels });
   }));
 
   r.post('/event/progress', ah(async (req, res) => {
@@ -1108,6 +1127,36 @@ module.exports = function gameRoutes(db) {
         ...(mapleGender ? { gender: mapleGender } : {}),
       }, t);
       return { ok: true, fish_id: fish.id, species_id: EVENT_FISH[event], run, runs_claimed: run, max_runs: mr };
+    });
+    if (!out.ok) return res.status(400).json(out);
+    res.json(out);
+  }));
+
+  // Claim a per-level reward. Level is 0-based (0 = level 1). The player must
+  // have reached that level in the current run. PK prevents double-claims.
+  r.post('/event/level-claim', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const { event, level } = req.body || {};
+    if (!validEvent(event)) return res.status(400).json({ ok: false, error: 'unknown event' });
+    const lv = Math.floor(Number(level));
+    const rewards = EVENT_LEVEL_REWARDS[event] || [];
+    if (!Number.isFinite(lv) || lv < 0 || lv >= rewards.length)
+      return res.status(400).json({ ok: false, error: 'invalid level' });
+    const out = await db.tx(async (txDb) => {
+      const claimed = await runsClaimed(txDb, uid, event);
+      const mr = maxRuns(event);
+      if (claimed >= mr) return { ok: false, error: 'event finished' };
+      const run = claimed + 1;
+      const p = await txDb.get('SELECT level FROM event_progress WHERE user_id=? AND event_id=? AND run=?', uid, event, run);
+      const reached = p ? p.level : 0;
+      if (reached < lv) return { ok: false, error: 'level not reached yet' };
+      const already = await txDb.get('SELECT claimed_at FROM event_level_rewards WHERE user_id=? AND event_id=? AND run=? AND level=?', uid, event, run, lv);
+      if (already) return { ok: false, error: 'already claimed' };
+      await txDb.run('INSERT INTO event_level_rewards(user_id,event_id,run,level,claimed_at) VALUES(?,?,?,?,?)', uid, event, run, lv, t);
+      const rw = rewards[lv];
+      if (rw.coins) await txDb.run('UPDATE wallets SET coins=coins+? WHERE user_id=?', rw.coins, uid);
+      if (rw.gems) await txDb.run('UPDATE wallets SET gems=gems+? WHERE user_id=?', rw.gems, uid);
+      return { ok: true, level: lv, reward: rw };
     });
     if (!out.ok) return res.status(400).json(out);
     res.json(out);

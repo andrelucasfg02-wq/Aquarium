@@ -66,6 +66,10 @@ const SCHEMA = `
       user_id INTEGER, event_id TEXT, run INTEGER NOT NULL DEFAULT 1,
       claimed_at INTEGER,
       PRIMARY KEY(user_id,event_id,run));
+    CREATE TABLE IF NOT EXISTS event_level_rewards(
+      user_id INTEGER, event_id TEXT, run INTEGER NOT NULL DEFAULT 1,
+      level INTEGER, claimed_at INTEGER,
+      PRIMARY KEY(user_id,event_id,run,level));
     CREATE TABLE IF NOT EXISTS market_listings(
       id INTEGER PRIMARY KEY, seller_id INTEGER, fish_id INTEGER UNIQUE,
       price_diamonds INTEGER, listed_at INTEGER);

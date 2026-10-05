@@ -63,7 +63,10 @@ function checkLevel() {
   while (level < LEVELS.length - 1 && score >= LEVELS[level]) { level++; leveled = true; }
   updateHud();
   saveProgress();
-  if (leveled) toast(t("event.level_up", { n: level + 1 }));
+  if (leveled) {
+    toast(t("event.level_up", { n: level + 1 }));
+    setTimeout(() => toast("🎁 " + t("event.reward_available", { n: level + 1 })), 1500);
+  }
   if (level >= 4 && !rocksPlaced) {
     rocksPlaced = true;
     placeRocks();
@@ -465,6 +468,61 @@ async function endGame(win) {
   };
 }
 
+async function showRewards() {
+  const card = R.querySelector("#ev-card");
+  card.innerHTML = `<h2>🎁 ${t("event.rewards_title")}</h2><p style="font-size:13px">${t("event.rewards_sub")}</p><div id="ev-rewards-list" style="max-height:50vh;overflow-y:auto"></div><button class="btn" id="ev-rewards-back" style="margin-top:12px">${t("event.back")}</button><p id="ev-rewards-msg" style="font-size:13px;min-height:18px"></p>`;
+  const list = card.querySelector("#ev-rewards-list");
+  const msg = card.querySelector("#ev-rewards-msg");
+  card.querySelector("#ev-rewards-back").onclick = () => mount(R);
+  let sp = null;
+  try { sp = await loadProgress(); } catch (e) {}
+  const rewards = (sp && sp.rewards) || [];
+  const claimed = new Set((sp && sp.claimed_levels) || []);
+  const reached = sp ? sp.level : 0;
+  if (!rewards.length) {
+    list.innerHTML = `<p style="font-size:13px">${t("event.no_rewards")}</p>`;
+    return;
+  }
+  list.innerHTML = rewards.map((rw, i) => {
+    const isClaimed = claimed.has(i);
+    const isReached = reached >= i;
+    const label = rw.coins ? `🪙 ${rw.coins}` : `💎 ${rw.gems}`;
+    const btn = isClaimed
+      ? `<span style="color:#4caf50;font-size:13px">✓ ${t("event.claimed")}</span>`
+      : isReached
+        ? `<button class="btn small" data-claim="${i}">${t("event.claim")}</button>`
+        : `<span style="color:#999;font-size:12px">${t("event.locked")}</span>`;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-bottom:1px solid #eee">
+      <div><strong>${t("event.level", { n: i + 1 })}</strong><br><span style="font-size:14px">${label}</span></div>
+      <div>${btn}</div>
+    </div>`;
+  }).join("");
+  list.querySelectorAll("[data-claim]").forEach((btn) => {
+    btn.onclick = async () => {
+      const lv = parseInt(btn.dataset.claim, 10);
+      btn.disabled = true; btn.textContent = t("event.claiming");
+      try {
+        const r = await Api.eventLevelClaim(EVENT_ID, lv);
+        if (r && r.ok) {
+          const rw = r.reward;
+          const got = rw.coins ? `🪙 ${rw.coins}` : `💎 ${rw.gems}`;
+          msg.textContent = t("event.reward_claimed", { reward: got });
+          if (window.AudioFX) AudioFX.coin();
+          if (window.App && App.refresh) await App.refresh();
+          // refresh the list
+          showRewards();
+        } else {
+          msg.textContent = t("event.claim_fail", { err: (r && r.error) || "" });
+          btn.disabled = false; btn.textContent = t("event.claim");
+        }
+      } catch (e) {
+        msg.textContent = t("event.offline");
+        btn.disabled = false; btn.textContent = t("event.claim");
+      }
+    };
+  });
+}
+
 async function mount(root) {
   R = root;
   R.innerHTML = '<div id="ev-fish-layer"><div class="swim f1 spr-fish1"></div><div class="swim f2 spr-fish2"></div><div class="swim f3 spr-fish3"></div></div>\n<h1><img class="ico big" src="assets/event/leaf.png" alt="leaf" data-i18n-alt="event.alt_leaf"> Autumn Crush</h1>\n<div class="sub" data-i18n="event.subtitle">Autumn event &middot; Week 1</div>\n<div id="ev-hud">\n  <div class="chip"><img class="ico" src="assets/event/pearl.png" alt="points" data-i18n-alt="event.alt_points"> <span id="ev-score">0</span></div>\n  <div class="chip"><img class="ico" src="assets/event/fish1.png" alt="goal" data-i18n-alt="event.alt_goal"> <span id="ev-target">5.000</span></div>\n  <div class="chip"><img class="ico" src="assets/event/leaf.png" alt="level" data-i18n-alt="event.alt_level"> <span id="ev-level">Lv 1</span></div>\n</div>\n<div id="ev-progress-wrap"><div id="ev-progress-label"></div><div id="ev-progress-bar"><div id="ev-progress-fill"></div></div></div>\n<div id="ev-board"><div id="ev-fx"></div></div>\n<div id="ev-legend">\n  <div class="leg"><img class="ico" src="assets/event/pearl.png" alt="pearl" data-i18n-alt="event.alt_pearl"> <span data-i18n="event.leg_boom">= big explosion</span></div>\n  <div class="leg"><img class="ico" src="assets/event/tadpole.png" alt="tadpole" data-i18n-alt="event.alt_tadpole"> <span data-i18n="event.leg_swarm">= swarm clears pieces</span></div>\n  <div class="leg"><span class="ico spr spr-rock" style="display:inline-block"></span> <span data-i18n="event.leg_rock">= only the pearl breaks it (Lv 5+)</span></div>\n  <div class="leg" data-i18n="event.leg_how">Tap 2 neighboring pieces to swap</div>\n</div>\n<div id="ev-toast"></div>\n<div id="ev-overlay"><div class="card" id="ev-card"></div></div>';
@@ -494,7 +552,8 @@ async function mount(root) {
   ${_done ? `<p style="font-size:13px">${t("event.done_card")}</p>`
     : _second && !_has ? `<p style="font-size:13px">${t("event.second_chance")}</p>`
     : _second ? `<p style="font-size:13px">${t("event.last_chance_card")}</p>` : ``}
-  ${_done ? `` : _has ? `<button class="btn" id="ev-continue-btn">${t("event.continue")}</button>` : `<button class="btn" id="ev-start-btn">${_second ? t("event.start_over") : t("event.start")}</button>`}`;
+  ${_done ? `` : _has ? `<button class="btn" id="ev-continue-btn">${t("event.continue")}</button>` : `<button class="btn" id="ev-start-btn">${_second ? t("event.start_over") : t("event.start")}</button>`}
+  <button class="btn" id="ev-rewards-btn" style="margin-top:8px">🎁 ${t("event.rewards")}</button>`;
   updateHud();
   if (_has) R.querySelector("#ev-continue-btn").onclick = () => {
     score = _save.score; level = _save.level; moves = _save.moves;
@@ -505,6 +564,8 @@ async function mount(root) {
   };
   const _startBtn = R.querySelector("#ev-start-btn");
   if (_startBtn) _startBtn.onclick = () => { startFreshRun(); };
+  const _rewardsBtn = R.querySelector("#ev-rewards-btn");
+  if (_rewardsBtn) _rewardsBtn.onclick = () => { showRewards(); };
 }
 
 function unmount() {

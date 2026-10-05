@@ -95,6 +95,7 @@ const Api = (() => {
     eventProgress: (event) => get(`/api/event/progress?event=${encodeURIComponent(event)}`),
     eventSave: (event, score, level, moves) => post("/api/event/progress", { event, score, level, moves }),
     eventClaim: (event) => post("/api/event/claim", { event }),
+    eventLevelClaim: (event, level) => post("/api/event/level-claim", { event, level }),
     transferFish: (fish_id, tier, num) => post("/api/fish/transfer", { fish_id, tier, num }),
     renameFish: (fish_id, name) => post("/api/fish/rename", { fish_id, name }),
     marketListings: () => get("/api/market/listings"),

@@ -57,7 +57,7 @@ const resolveEggSpecies = (variant_a, variant_b) => {
 };
 
 function helpers(db) {
-  const getWallet = (uid) => db.get('SELECT * FROM wallets WHERE user_id=?', uid);
+  const getWallet = (uid) => db.get('SELECT user_id, COALESCE(coins,0) AS coins, COALESCE(gems,0) AS gems, COALESCE(food,0) AS food, COALESCE(xp,0) AS xp, COALESCE(level,1) AS level, COALESCE(medicine,0) AS medicine, COALESCE(food_special,0) AS food_special FROM wallets WHERE user_id=?', uid);
   const addCoins = (uid, n) => db.run('UPDATE wallets SET coins=coins+? WHERE user_id=?', n, uid);
   const addGems = (uid, n) => db.run('UPDATE wallets SET gems=gems+? WHERE user_id=?', n, uid);
 

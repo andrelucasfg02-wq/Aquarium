@@ -855,6 +855,8 @@ module.exports = function gameRoutes(db) {
 
   // ---------- decor shop ----------
   r.get('/shop/decor', ah(async (req, res) => res.json({ ok: true, items: C.decorCatalog().filter((i) => i.shop) })));
+  // full catalog (including retired items) for rendering owned/placed decorations
+  r.get('/decor/catalog', ah(async (req, res) => res.json({ ok: true, items: C.decorCatalog() })));
 
   r.post('/shop/decor/buy', ah(async (req, res) => {
     const uid = req.user.id; const t = now();

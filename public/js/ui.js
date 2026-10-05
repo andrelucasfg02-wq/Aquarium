@@ -631,7 +631,7 @@ const UI = (() => {
     const ownedMap = {};
     for (const o of (state.decor_owned || [])) ownedMap[o.deco_id] = o.qty;
     const q = (filter || "").toLowerCase();
-    const list = items.filter((it) => it.event !== "grab" && (!q || it.name.toLowerCase().includes(q)));
+    const list = items.filter((it) => it.shop !== false && it.event !== "grab" && (!q || it.name.toLowerCase().includes(q)));
 
     const activeTank = state.tanks.active;
     const baseSlots = DATA.TANKS[activeTank].decorSlots;

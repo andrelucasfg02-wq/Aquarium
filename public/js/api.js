@@ -80,7 +80,7 @@ const Api = (() => {
     breed: (male_id, female_id) => post("/api/breeding/breed", { male_id, female_id }),
     wipeDirt: (ids) => post("/api/dirt/wipe", { ids }),
     filterDirt: () => post("/api/dirt/filter"),
-    decorCatalog: () => get("/api/shop/decor"),
+    decorCatalog: () => get("/api/decor/catalog"),
     buyDecor: (deco_id) => post("/api/shop/decor/buy", { deco_id }),
     placeDecor: (deco_id, tank, x, y, tank_num) => post("/api/decor/place", { deco_id, tank, x, y, tank_num }),
     moveDecor: (id, x, y) => post("/api/decor/move", { id, x, y }),

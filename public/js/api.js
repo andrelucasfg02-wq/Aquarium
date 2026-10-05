@@ -87,6 +87,7 @@ const Api = (() => {
     placeDecor: (deco_id, tank, x, y, tank_num) => post("/api/decor/place", { deco_id, tank, x, y, tank_num }),
     moveDecor: (id, x, y) => post("/api/decor/move", { id, x, y }),
     removeDecor: (id) => post("/api/decor/remove", { id }),
+    collectAllDecor: (tank, tank_num) => post("/api/decor/collect-all", { tank, tank_num }),
     claimQuest: (quest_id) => post("/api/quests/claim", { quest_id }),
     buyFood: (qty, kind) => post("/api/shop/food/buy", { qty, kind }),
     buyCoins: (pack) => post("/api/shop/coins/buy", { pack }),

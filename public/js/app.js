@@ -387,6 +387,16 @@ const App = (() => {
       $("btn-remove-deco").disabled = true;
       await refresh();
     };
+    $("btn-collect-all-deco").onclick = async () => {
+      if (!confirm(t("editbar.collect_all_confirm"))) return;
+      const r = await Api.collectAllDecor(state.tanks.active, state.tanks.activeNum || 1);
+      if (r.ok && r.collected > 0) { UI.toast(t("editbar.collected", { n: r.collected })); AudioFX.pop(); }
+      else if (r.ok) UI.toast(t("editbar.nothing_to_collect"));
+      else UI.toast(r.error || t("app.err_remove"));
+      tank.selectedPlacement = null;
+      $("btn-remove-deco").disabled = true;
+      await refresh();
+    };
   }
 
   /* ---------- tank events ---------- */

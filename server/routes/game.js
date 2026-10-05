@@ -926,6 +926,26 @@ module.exports = function gameRoutes(db) {
     res.json({ ok: true });
   }));
 
+  // collect all: remove every placement in a tank instance back to inventory
+  r.post('/decor/collect-all', ah(async (req, res) => {
+    const uid = req.user.id;
+    const { tank, tank_num } = req.body || {};
+    const where = tank_num != null
+      ? 'user_id=? AND tank=? AND tank_num=?'
+      : 'user_id=? AND tank=?';
+    const args = tank_num != null ? [uid, tank, tank_num] : [uid, tank];
+    const placed = await db.all(`SELECT deco_id FROM decor_placements WHERE ${where}`, ...args);
+    if (!placed.length) return res.json({ ok: true, collected: 0 });
+    await db.tx(async (txDb) => {
+      await txDb.run(`DELETE FROM decor_placements WHERE ${where}`, ...args);
+      for (const p of placed) {
+        await txDb.run(`INSERT INTO decor_owned (user_id,deco_id,qty) VALUES (?,?,1)
+                    ON CONFLICT(user_id,deco_id) DO UPDATE SET qty=qty+1`, uid, p.deco_id);
+      }
+    });
+    res.json({ ok: true, collected: placed.length });
+  }));
+
   // ---------- quests ----------
   r.post('/quests/claim', ah(async (req, res) => {
     const uid = req.user.id; const t = now();

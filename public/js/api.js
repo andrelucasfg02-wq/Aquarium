@@ -47,6 +47,8 @@ const Api = (() => {
     onAuthFail(fn) { onAuthFail = fn; },
     register: (name, email, password) => post("/api/register", { name, email, password }),
     login: (email, password) => post("/api/login", { email, password }),
+    guest: (guest_token) => post("/api/guest", { guest_token }),
+    claim: (name, email, password) => post("/api/claim", { name, email, password }),
     passwordForgot: (email) => post("/api/password/forgot", { email }),
     passwordReset: (token, password) => post("/api/password/reset", { token, password }),
     logout: () => post("/api/logout"),

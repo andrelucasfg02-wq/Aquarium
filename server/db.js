@@ -149,6 +149,10 @@ async function openDb() {
 
   // lightweight migrations for databases created before a column existed
   try {
+    const ucols = await client.execute('PRAGMA table_info(users)');
+    if (!ucols.rows.some((c) => c.name === 'is_guest')) {
+      await client.execute('ALTER TABLE users ADD COLUMN is_guest INTEGER NOT NULL DEFAULT 0');
+    }
     const cols = await client.execute('PRAGMA table_info(fish)');
     if (!cols.rows.some((c) => c.name === 'nickname')) {
       await client.execute('ALTER TABLE fish ADD COLUMN nickname TEXT');

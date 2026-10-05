@@ -978,6 +978,19 @@ const UI = (() => {
           <button class="pill-btn${I18N.lang === "es" ? " active" : ""}" data-setlang="es">${t("lang.es")}</button>
         </div></div>
       <h3>👤 ${t("settings.account")}</h3>
+      ${state.user.is_guest ? `
+      <div class="guest-banner">
+        <div><b>🎮 ${t("settings.guest_title")}</b><div class="sub">${t("settings.guest_desc")}</div></div>
+        <button class="pill-btn blue" id="btn-claim" style="width:100%;padding:12px;margin-top:8px">💾 ${t("settings.save_progress")}</button>
+        <div id="claim-form" hidden style="margin-top:10px">
+          <label class="auth-field"><span class="auth-ico">👤</span><input type="text" id="claim-name" placeholder="${t("auth.name")}" autocomplete="name"></label>
+          <label class="auth-field"><span class="auth-ico">✉️</span><input type="email" id="claim-email" placeholder="${t("auth.email")}" autocomplete="email"></label>
+          <label class="auth-field"><span class="auth-ico">🔒</span><input type="password" id="claim-pass" placeholder="${t("auth.newpass_min")}" autocomplete="new-password" minlength="6"></label>
+          <button class="pill-btn blue" id="btn-save-claim" style="width:100%;padding:12px">${t("settings.create_account")}</button>
+          <p class="auth-error" id="claim-error" hidden></p>
+          <p class="auth-ok" id="claim-ok" hidden></p>
+        </div>
+      </div>` : ""}
       <div class="row-card"><div class="grow"><b>${esc(state.user.name)}</b><div class="sub">${esc(state.user.email)}</div></div></div>
       <button class="pill-btn" id="btn-change-pass" style="width:100%;padding:13px;margin-bottom:10px">🔑 ${t("settings.change_password")}</button>
       <div id="change-pass-form" hidden style="margin-bottom:10px">
@@ -1027,10 +1040,35 @@ const UI = (() => {
       }
     };
     $("btn-logout").onclick = async () => {
+      // Guests get a warning: leaving loses access to their progress
+      if (state.user.is_guest) {
+        const leave = confirm(t("settings.guest_leave_warn"));
+        if (!leave) return;
+        localStorage.removeItem("aquanim_guest_token");
+      }
       await Api.logout();
       if (typeof Offline !== "undefined") Offline.clearAll();
       location.reload();
     };
+    // Guest -> real account
+    if ($("btn-claim")) {
+      $("btn-claim").onclick = () => { $("claim-form").hidden = !$("claim-form").hidden; };
+      $("btn-save-claim").onclick = async () => {
+        const err = $("claim-error"), ok = $("claim-ok");
+        err.hidden = true; ok.hidden = true;
+        const name = $("claim-name").value.trim(), email = $("claim-email").value.trim(), pass = $("claim-pass").value;
+        if (!name) { err.textContent = t("auth.err.name"); err.hidden = false; return; }
+        if (pass.length < 6) { err.textContent = t("settings.pass_min"); err.hidden = false; return; }
+        const r = await Api.claim(name, email, pass);
+        if (r.ok) {
+          localStorage.removeItem("aquanim_guest_token");
+          ok.textContent = t("settings.claim_done"); ok.hidden = false;
+          setTimeout(() => App.refresh(), 1500);
+        } else {
+          err.textContent = r.error || t("settings.claim_failed"); err.hidden = false;
+        }
+      };
+    }
     $("btn-tutorial").onclick = () => {
       if (typeof Tutorial !== "undefined") Tutorial.start();
     };

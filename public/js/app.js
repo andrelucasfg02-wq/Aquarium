@@ -172,6 +172,23 @@ const App = (() => {
       if (r.ok) { AudioFX.unlock(); enterGame(); }
       else { err.textContent = r.error || r.message || t("auth.err.login"); err.hidden = false; AudioFX.error(); }
     };
+    $("btn-guest").onclick = async () => {
+      const err = $("login-error"); err.hidden = true;
+      $("btn-guest").disabled = true;
+      try {
+        const saved = localStorage.getItem("aquanim_guest_token");
+        const r = await Api.guest(saved || undefined);
+        if (r.ok) {
+          if (r.guest_token) localStorage.setItem("aquanim_guest_token", r.guest_token);
+          AudioFX.unlock(); enterGame();
+        } else {
+          err.textContent = r.error || t("auth.err.login"); err.hidden = false; AudioFX.error();
+        }
+      } catch (e) {
+        err.textContent = t("auth.err.login"); err.hidden = false; AudioFX.error();
+      }
+      $("btn-guest").disabled = false;
+    };
     $("form-register").onsubmit = async (e) => {
       e.preventDefault();
       const err = $("reg-error"); err.hidden = true;

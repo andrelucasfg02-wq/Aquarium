@@ -101,6 +101,20 @@ input{font-family:inherit}
 }
 .btn-dive:active{transform:scale(.97)}
 .dive-fish{font-size:24px}
+.btn-ghost{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  background:rgba(255,255,255,.35);color:#1a6b2e;font-weight:800;font-size:16px;
+  padding:12px;border:2px solid rgba(46,158,68,.4);border-radius:999px;cursor:pointer;
+  font-family:ui-rounded,'SF Pro Rounded','Nunito','Trebuchet MS',sans-serif;
+}
+.btn-ghost:active{transform:scale(.97)}
+.btn-ghost:disabled{opacity:.5}
+.auth-divider{display:flex;align-items:center;gap:10px;margin:12px 0;color:#5a8a66;font-size:13px}
+.auth-divider::before,.auth-divider::after{content:"";flex:1;height:1px;background:rgba(46,158,68,.25)}
+.guest-banner{
+  background:linear-gradient(135deg,rgba(255,243,205,.9),rgba(255,236,180,.9));
+  border:2px solid #e8b93c;border-radius:14px;padding:12px;margin-bottom:10px;
+}
 .dive-arrow{font-size:26px;font-weight:900;opacity:.9}
 .auth-error{color:#c22a55;font-size:13px;margin:4px 0 0;font-weight:700;text-shadow:0 1px 0 rgba(255,255,255,.6)}
 .auth-ok{color:#1e7a45;font-size:13px;margin:4px 0 0;font-weight:700;text-shadow:0 1px 0 rgba(255,255,255,.6)}

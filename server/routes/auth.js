@@ -77,14 +77,66 @@ module.exports = function authRoutes(db) {
     const { email, password } = req.body || {};
     const now = Math.floor(Date.now() / 1000);
     if (!email || !password) return res.status(401).json({ ok: false, error: 'invalid credentials' });
-    const row = await db.get('SELECT id,name,email,password_hash FROM users WHERE email=?',
+    const row = await db.get('SELECT id,name,email,password_hash,is_guest FROM users WHERE email=?',
       String(email).trim().toLowerCase());
     if (!row || !(await checkPassword(String(password), row.password_hash))) {
       return res.status(401).json({ ok: false, error: 'invalid credentials' });
     }
     const token = await createSession(db, row.id, now);
     setSessionCookie(res, token);
-    res.json({ ok: true, user: { id: row.id, name: row.name, email: row.email } });
+    res.json({ ok: true, user: { id: row.id, name: row.name, email: row.email, is_guest: !!row.is_guest } });
+  }));
+
+  // Guest mode: play without an account. Creates a guest user (or reuses
+  // the guest token from localStorage via ?reuse). Progress lives on the
+  // server but is only reachable via the guest token.
+  r.post('/guest', ah(async (req, res) => {
+    const now = Math.floor(Date.now() / 1000);
+    const { guest_token } = req.body || {};
+    // Reuse existing guest session if the token is still valid
+    if (guest_token) {
+      const s = await db.get('SELECT user_id FROM sessions WHERE token=? AND expires_at>?', guest_token, now);
+      if (s) {
+        const u = await db.get('SELECT id,name,email,is_guest FROM users WHERE id=? AND is_guest=1', s.user_id);
+        if (u) {
+          const token = await createSession(db, u.id, now);
+          setSessionCookie(res, token);
+          return res.json({ ok: true, user: { id: u.id, name: u.name, email: u.email, is_guest: true }, guest_token: token });
+        }
+      }
+    }
+    // Create a fresh guest
+    const gid = crypto.randomBytes(8).toString('hex');
+    const email = `guest_${gid}@guest.local`;
+    const pwHash = await hashPassword(crypto.randomBytes(16).toString('hex'));
+    const userId = await db.tx(async (t) => {
+      const info = await t.run(
+        'INSERT INTO users (name,email,password_hash,created_at,is_guest) VALUES (?,?,?,?,1)',
+        'Guest', email, pwHash, now);
+      await seedStarterKit(t, info.lastInsertRowid, now);
+      return info.lastInsertRowid;
+    });
+    const token = await createSession(db, userId, now);
+    setSessionCookie(res, token);
+    res.status(201).json({ ok: true, user: { id: userId, name: 'Guest', email, is_guest: true }, guest_token: token });
+  }));
+
+  // Convert a guest account into a real one (sets name/email/password)
+  r.post('/claim', authRequired(db), ah(async (req, res) => {
+    const { name, email, password } = req.body || {};
+    const me = await db.get('SELECT id,is_guest FROM users WHERE id=?', req.user.id);
+    if (!me || !me.is_guest) return res.status(400).json({ ok: false, error: 'not a guest account' });
+    if (!name || !String(name).trim()) return res.status(400).json({ ok: false, error: 'name is required' });
+    if (!email || !EMAIL_RE.test(String(email))) return res.status(400).json({ ok: false, error: 'valid email is required' });
+    if (!password || String(password).length < 6) return res.status(400).json({ ok: false, error: 'password must be at least 6 characters' });
+    const emailNorm = String(email).trim().toLowerCase();
+    const exists = await db.get('SELECT id FROM users WHERE email=? AND id!=?', emailNorm, me.id);
+    if (exists) return res.status(409).json({ ok: false, error: 'email already registered' });
+    const pwHash = await hashPassword(String(password));
+    await db.run('UPDATE users SET name=?, email=?, password_hash=?, is_guest=0 WHERE id=?',
+      String(name).trim(), emailNorm, pwHash, me.id);
+    const user = await db.get('SELECT id,name,email FROM users WHERE id=?', me.id);
+    res.json({ ok: true, user: { ...user, is_guest: false } });
   }));
 
   r.post('/logout', authRequired(db), ah(async (req, res) => {
@@ -95,11 +147,12 @@ module.exports = function authRoutes(db) {
 
   r.get('/me', authRequired(db), ah(async (req, res) => {
     const row = await db.get(
-      `SELECT u.id,u.name,u.email,w.level,w.xp,w.coins,w.gems,w.food
+      `SELECT u.id,u.name,u.email,u.is_guest,w.level,w.xp,w.coins,w.gems,w.food
        FROM users u JOIN wallets w ON w.user_id=u.id WHERE u.id=?`,
       req.user.id
     );
     if (!row) return res.status(401).json({ ok: false, error: 'not logged in' });
+    row.is_guest = !!row.is_guest;
     res.json({ ok: true, user: row });
   }));
 

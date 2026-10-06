@@ -15,7 +15,7 @@ const GROUPS = {
     'golden_veil_betta', 'rose_halfmoon_betta', 'ember_crown_betta', 'bloom_maple_betta', 'azure_plakat_betta'],
   shrimp: ['red_shrimp', 'blue_shrimp', 'yellow_shrimp'],
   snail: ['snail'],
-  bottom_fish: ['bottom_fish', 'pleco', 'blackleaf'],
+  bottom_fish: ['bottom_fish', 'pleco', 'blackleaf', 'pleco_cory'],
   danio: ['danio_zebra'],
   tetra: ['tetra_neon'],
   gourami: ['gourami_pearl'],
@@ -34,6 +34,7 @@ const HYBRID_MIXES = {
   'lemon_drop_goldfish+midnight_moor': 'gilded_goldfish',
   'azure_tang+midnight_moor': 'nebula_goldfish',
   'ember_clownfish+midnight_moor': 'ember_night_goldfish',
+  'bottom_fish+pleco': 'pleco_cory',
 };
 
 // Maple Betta crosses: betta parent species -> the two hybrid offspring (50/50 on hatch).
@@ -77,6 +78,7 @@ const SPECIES_NAMES = {
   nebula_goldfish: 'Nebula Goldfish', ember_night_goldfish: 'Ember Night Goldfish',
   red_shrimp: 'Red Shrimp', blue_shrimp: 'Blue Shrimp', yellow_shrimp: 'Yellow Shrimp',
   snail: 'Snail', bottom_fish: 'Cory Fish', pleco: 'Pleco', blackleaf: 'Blackleaf',
+  pleco_cory: 'Pleco Cory',
   danio_zebra: 'Zebra Danio',
   tetra_neon: 'Neon Tetra',
   gourami_pearl: 'Pearl Gourami',
@@ -94,7 +96,7 @@ const SPECIES_PRICES = {
   red_shrimp: { coins: 200, gems: null }, blue_shrimp: { coins: 200, gems: null },
   yellow_shrimp: { coins: 200, gems: null },
   snail: { coins: 250, gems: null }, bottom_fish: { coins: 3000, gems: null }, pleco: { coins: null, gems: 500 },
-  blackleaf: { coins: null, gems: null },
+  blackleaf: { coins: null, gems: null }, pleco_cory: { coins: null, gems: null },
   danio_zebra: { coins: 900, gems: null },
   tetra_neon: { coins: 1200, gems: null },
   gourami_pearl: { coins: 2000, gems: null },
@@ -140,6 +142,7 @@ const SPECIES_RARITY = {
   swordtail_blue: 'epic', swordtail_gold: 'epic', swordtail_red: 'epic',
   red_shrimp: 'common', blue_shrimp: 'common', yellow_shrimp: 'common',
   snail: 'common', bottom_fish: 'uncommon', pleco: 'epic',
+  blackleaf: 'epic', pleco_cory: 'epic',
   danio_zebra: 'epic',
   tetra_neon: 'epic',
   gourami_pearl: 'epic',

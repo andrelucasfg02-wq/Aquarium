@@ -811,7 +811,7 @@ Object.assign(TankView.prototype, {
     this.ctx.save();
     this.ctx.translate(x, y);
     this.ctx.scale(e.dir, 1);
-    if (e.state === "swim" && (f.species_id === "veiltail_betta" || f.species_id === "fullmoon_betta" || f.species_id === "plakat_betta" || f.species_id === "azure_plakat_betta" || f.species_id === "maple_rose_betta" || f.species_id === "maple_coral_betta" || f.species_id === "maple_ember_betta" || f.species_id === "autumn_fish" || f.species_id === "rose_halfmoon_betta" || f.species_id === "danio_zebra" || f.species_id === "tetra_neon" || f.species_id === "gourami_pearl")) {
+    if (e.state === "swim" && (f.species_id === "veiltail_betta" || f.species_id === "fullmoon_betta" || f.species_id === "plakat_betta" || f.species_id === "azure_plakat_betta" || f.species_id === "maple_rose_betta" || f.species_id === "maple_coral_betta" || f.species_id === "maple_ember_betta" || f.species_id === "autumn_fish" || f.species_id === "rose_halfmoon_betta" || f.species_id === "maple_veil_betta" || f.species_id === "danio_zebra" || f.species_id === "tetra_neon" || f.species_id === "gourami_pearl")) {
       // tail-beat: a shear anchored at the head, so the tail and fins flex
       // side to side while the head stays steady — reads as natural swimming
       // instead of a rigid sprite sliding around.

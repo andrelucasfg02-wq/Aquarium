@@ -11,6 +11,7 @@ const GROUPS = {
   betta: ['autumn_fish', 'fullmoon_betta', 'crowntail_betta', 'veiltail_betta', 'female_betta', 'plakat_betta',
     'maple_rose_betta', 'maple_ember_betta', 'maple_dusk_betta', 'maple_storm_betta',
     'maple_lilac_betta', 'maple_petal_betta', 'maple_tide_betta', 'maple_coral_betta',
+    'maple_veil_betta',
     'golden_veil_betta', 'rose_halfmoon_betta', 'ember_crown_betta', 'bloom_maple_betta', 'azure_plakat_betta'],
   shrimp: ['red_shrimp', 'blue_shrimp', 'yellow_shrimp'],
   snail: ['snail'],
@@ -41,6 +42,7 @@ const MAPLE_CROSSES = {
   crowntail_betta: ['maple_dusk_betta', 'maple_storm_betta'],
   female_betta: ['maple_lilac_betta', 'maple_petal_betta'],
   plakat_betta: ['maple_tide_betta', 'maple_coral_betta'],
+  veiltail_betta: ['maple_veil_betta'],
 };
 
 // Female Betta crosses: the other betta parent species -> the hybrid offspring.
@@ -64,6 +66,7 @@ const SPECIES_NAMES = {
   maple_dusk_betta: 'Dusk Maple Betta', maple_storm_betta: 'Storm Maple Betta',
   maple_lilac_betta: 'Lilac Maple Betta', maple_petal_betta: 'Petal Maple Betta',
   maple_tide_betta: 'Tide Maple Betta', maple_coral_betta: 'Coral Maple Betta',
+  maple_veil_betta: 'Veil Maple Betta',
   golden_veil_betta: 'Golden Veil Betta', rose_halfmoon_betta: 'Rose Halfmoon Betta',
   ember_crown_betta: 'Ember Crown Betta', bloom_maple_betta: 'Bloom Maple Betta',
   azure_plakat_betta: 'Azure Plakat Betta',
@@ -101,6 +104,7 @@ const SPECIES_PRICES = {
   maple_rose_betta: { coins: null, gems: null }, maple_ember_betta: { coins: null, gems: null },
   maple_dusk_betta: { coins: null, gems: null }, maple_storm_betta: { coins: null, gems: null },
   maple_lilac_betta: { coins: null, gems: null }, maple_petal_betta: { coins: null, gems: null },
+  maple_veil_betta: { coins: null, gems: null },
   maple_tide_betta: { coins: null, gems: null }, maple_coral_betta: { coins: null, gems: null },
   // female hybrids: bred-only, never sold in the shop
   golden_veil_betta: { coins: null, gems: null }, rose_halfmoon_betta: { coins: null, gems: null },
@@ -124,6 +128,7 @@ const SPECIES_RARITY = {
   maple_dusk_betta: 'legendary', maple_storm_betta: 'legendary',
   maple_lilac_betta: 'legendary', maple_petal_betta: 'legendary',
   maple_tide_betta: 'legendary', maple_coral_betta: 'legendary',
+  maple_veil_betta: 'legendary',
   golden_veil_betta: 'legendary', rose_halfmoon_betta: 'legendary',
   ember_crown_betta: 'legendary', bloom_maple_betta: 'legendary',
   azure_plakat_betta: 'legendary',
@@ -186,6 +191,7 @@ const GROW_LEVEL = {
   female_betta: 7, plakat_betta: 7,
   maple_rose_betta: 8, maple_ember_betta: 8, maple_dusk_betta: 8, maple_storm_betta: 8,
   maple_lilac_betta: 8, maple_petal_betta: 8, maple_tide_betta: 8, maple_coral_betta: 8,
+  maple_veil_betta: 8,
   golden_veil_betta: 8, rose_halfmoon_betta: 8, ember_crown_betta: 8,
   bloom_maple_betta: 8, azure_plakat_betta: 8,
   autumn_fish: 10, // Maple Betta — the rarest takes the full journey

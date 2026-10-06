@@ -61,6 +61,7 @@
       'hud.filter_price': '🫧 Filter ({price})',
       'hud.minigame': 'Play minigame',
       'hud.event': 'Weekly event',
+      'hud.mazeevent': 'Maze event',
       'hud.zoom': 'Zoom aquarium',
       'hud.breed': 'Breeding',
       'hud.chat': 'Public chat',
@@ -460,6 +461,7 @@
       'chat.placeholder': 'Type a message…',
       'chat.slow_down': 'Slow down a bit! 🐢',
       'event.title': 'Autumn Event',
+      'maze.title': 'Help the baby DarkLeaf scape',
       'event.couldnt_load': 'Couldn\'t load the event game 🍂',
     },
     pt: {
@@ -515,6 +517,7 @@
       'hud.filter_price': '🫧 Filtrar ({price})',
       'hud.minigame': 'Jogar minigame',
       'hud.event': 'Evento semanal',
+      'hud.mazeevent': 'Evento do labirinto',
       'hud.zoom': 'Ampliar aquário',
       'hud.breed': 'Reprodução',
       'hud.chat': 'Chat público',
@@ -914,6 +917,7 @@
       'chat.placeholder': 'Digite uma mensagem…',
       'chat.slow_down': 'Calma aí! 🐢',
       'event.title': 'Evento de Outono',
+      'maze.title': 'Help the baby DarkLeaf scape',
       'event.couldnt_load': 'Não foi possível carregar o jogo do evento 🍂',
     },
     es: {
@@ -969,6 +973,7 @@
       'hud.filter_price': '🫧 Filtrar ({price})',
       'hud.minigame': 'Jugar minijuego',
       'hud.event': 'Evento semanal',
+      'hud.mazeevent': 'Evento del laberinto',
       'hud.zoom': 'Ampliar acuario',
       'hud.breed': 'Crianza',
       'hud.chat': 'Chat público',
@@ -1368,6 +1373,7 @@
       'chat.placeholder': 'Escribe un mensaje…',
       'chat.slow_down': '¡Más despacio! 🐢',
       'event.title': 'Evento de Otoño',
+      'maze.title': 'Help the baby DarkLeaf scape',
       'event.couldnt_load': 'No se pudo cargar el juego del evento 🍂',
     },
   };

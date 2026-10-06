@@ -395,6 +395,7 @@ const UI = (() => {
     if (window.EventCrush) EventCrush.unmount();
     $("screen-overlay").hidden = true;
     $("screen-body").innerHTML = "";
+    $("screen-body").classList.remove("maze-body");
     document.querySelectorAll(".chat-screen").forEach((e) => e.classList.remove("chat-screen"));
     currentScreen = null;
     if (eggTimer) { clearInterval(eggTimer); eggTimer = null; }
@@ -406,6 +407,7 @@ const UI = (() => {
     aquariums: ICON("aquariums") + t("nav.aquariums"), shop: ICON("nav_shop") + t("nav.shop"), lab: ICON("lab") + t("nav.lab"),
     collection: ICON("nav_collection") + t("nav.collection"), inventory: ICON("nav_inventory") + t("nav.inventory"), quests: ICON("quests") + t("nav.quests"),
     settings: `<img class="title-ic" src="assets/icons/icon_settings.png" alt=""> ` + t("settings.title"), minigame: "🎮 " + t("mg.title"), event: "🍂 " + t("event.title"),
+    maze: `<img class="title-ic" src="assets/event/event_maze_icon.png" alt=""> ` + t("maze.title"),
     market: `<img class="title-ic" src="assets/icons/icon_diamond.png" alt="">` + t("market.title"), chat: ICON("chat") + t("chat.title"),
     community: ICON("community") + t("nav.community"),
     gemshop: ICON("diamond") + t("gemshop.title"),
@@ -1162,6 +1164,16 @@ const UI = (() => {
     else body.innerHTML = `<div class="empty">${t("event.couldnt_load")}</div>`;
   }
 
+  /* ================= MAZE EVENT: HELP THE BABY DARKLEAF SCAPE ================= */
+  function renderMaze() {
+    const body = $("screen-body");
+    // Nao reconstruir no meio da partida: App.refresh() (poll de 30s) chama
+    // refreshCurrent(), que remontaria o iframe e resetaria o jogo do nada.
+    if (body.querySelector("iframe.maze-frame")) return;
+    body.classList.add("maze-body");
+    body.innerHTML = `<iframe class="maze-frame" src="event-maze/index.html" title="maze" allow="fullscreen"></iframe>`;
+  }
+
   function renderMinigame(root) {
     const body = root || $("screen-body");
     MG.round = 0; MG.times = []; MG.active = false;
@@ -1393,6 +1405,7 @@ const UI = (() => {
     aquariums: renderAquariums, shop: renderShopScreen, lab: renderLab,
     collection: renderCollection, inventory: renderInventory, quests: renderQuestsScreen,
     settings: renderSettings, minigame: renderMinigame, event: renderEvent,
+    maze: renderMaze,
     market: renderMarket, chat: renderChat, community: renderCommunity,
     gemshop: renderGemShop,
     coinshop: renderCoinShop,

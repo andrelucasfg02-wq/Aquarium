@@ -287,6 +287,11 @@ const App = (() => {
       document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
       UI.open("event");
     };
+    $("btn-maze").onclick = () => {
+      cancelPlace();
+      document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
+      UI.open("maze");
+    };
     $("btn-zoom").onclick = () => {
       cancelPlace();
       // toggle zoom into the aquarium (small tank only)

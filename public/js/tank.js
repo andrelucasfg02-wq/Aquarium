@@ -249,8 +249,8 @@ class TankView {
       emoteCd: 0,
       // schooling (tetra/danio): alternate together/apart phases
       schoolMode: "together", schoolT: 8 + Math.random() * 10, schoolFollow: false,
-      // cleaning: cory 1 dirt/hour, pleco 4 dirt/hour
-      cleanCd: f.clean_at ? Math.max(0, (f.species_id === "pleco" ? 900 : 3600) - (Date.now() / 1000 - f.clean_at)) : 0,
+      // cleaning: cory 1 dirt/hour, pleco 4 dirt/hour, blackleaf 1 dirt/3 hours
+      cleanCd: f.clean_at ? Math.max(0, (f.species_id === "pleco" ? 900 : f.species_id === "blackleaf" ? 10800 : 3600) - (Date.now() / 1000 - f.clean_at)) : 0,
       cleanT: 0, cleanSpot: null,
     };
   }
@@ -527,7 +527,7 @@ class TankView {
             this.popAt(s.x, s.y);
             this.spots = this.spots.filter((o) => !o.dying);
             this.emit("coryCleaned", { spotId: s.id, fishId: e.data.id });
-            e.cleanCd = e.data.species_id === "pleco" ? 900 : 3600;
+            e.cleanCd = e.data.species_id === "pleco" ? 900 : e.data.species_id === "blackleaf" ? 10800 : 3600;
             e.cleanSpot = null; e.cleanT = 0;
             e.state = "idle"; e.stateT = 1 + Math.random() * 2;
           }

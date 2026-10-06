@@ -823,16 +823,17 @@ module.exports = function gameRoutes(db) {
     res.json({ ok: true, remaining, green });
   }));
 
-  // cory cleaning: a bottom fish swims to a dirt spot and sucks it up (1/hour per fish)
+  // cory cleaning: a bottom fish swims to a dirt spot and sucks it up
+  // (cory 1/hour, pleco 4/hour, blackleaf 1 per 3 hours — enforced per fish)
   r.post('/dirt/cory-clean', ah(async (req, res) => {
     const uid = req.user.id; const t = now();
     const { spot_id, fish_id } = req.body || {};
-    const fish = await db.get('SELECT id, grp, clean_at, location, tank FROM fish WHERE id=? AND user_id=?', fish_id, uid);
+    const fish = await db.get('SELECT id, species_id, grp, clean_at, location, tank FROM fish WHERE id=? AND user_id=?', fish_id, uid);
     if (!fish || fish.grp !== 'bottom_fish') return res.status(404).json({ ok: false, error: 'fish not found' });
     if (fish.location !== 'tank') return res.status(400).json({ ok: false, error: 'fish not in tank' });
     const active = await H.activeTank(uid);
     if (fish.tank !== active) return res.status(400).json({ ok: false, error: 'fish not in active tank' });
-    const cd = fish.species_id === 'pleco' ? 900 : 3600;
+    const cd = fish.species_id === 'pleco' ? 900 : fish.species_id === 'blackleaf' ? 10800 : 3600;
     if (fish.clean_at && t - fish.clean_at < cd) {
       return res.status(400).json({ ok: false, error: 'cleaning cooldown', retry_in: cd - (t - fish.clean_at) });
     }
@@ -1159,6 +1160,27 @@ module.exports = function gameRoutes(db) {
         ...(mapleGender ? { gender: mapleGender } : {}),
       }, t);
       return { ok: true, fish_id: fish.id, species_id: EVENT_FISH[event], run, runs_claimed: run, max_runs: mr };
+    });
+    if (!out.ok) return res.status(400).json(out);
+    res.json(out);
+  }));
+
+  // Maze event prize: finishing level 3 of "Help the baby DarkLeaf scape"
+  // grants the Blackleaf bottom fish, once per user. The prize goes to the
+  // inventory as an adult (born 10 days ago) and banks 1 diamond a day like
+  // other event fish (event_id set).
+  r.post('/event/maze-claim', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const out = await db.tx(async (txDb) => {
+      const Ht = helpers(txDb);
+      const already = await txDb.get("SELECT claimed_at FROM event_rewards WHERE user_id=? AND event_id='maze1'", uid);
+      if (already) return { ok: false, error: 'already claimed' };
+      await txDb.run('INSERT INTO event_rewards(user_id,event_id,run,claimed_at) VALUES(?,?,?,?)', uid, 'maze1', 1, t);
+      const fish = await Ht.addFish(uid, 'blackleaf', {
+        location: 'inventory', origin: 'event', event_id: 'maze1',
+        born_at: t - 10 * 86400, // event prize arrives as an adult
+      }, t);
+      return { ok: true, fish_id: fish.id, species_id: 'blackleaf' };
     });
     if (!out.ok) return res.status(400).json(out);
     res.json(out);

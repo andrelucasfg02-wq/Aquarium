@@ -1,6 +1,6 @@
 {
   "pack": "furniture_sheet_1",
-  "count": 130,
+  "count": 133,
   "items": [
     {
       "id": "deco_sand_beige",
@@ -805,6 +805,24 @@
       "id": "deco_grass_stone_tuft",
       "file": "deco_new_grass_tuft.png",
       "name": "Grass Stone Tuft",
+      "shop": true
+    },
+    {
+      "id": "deco_lush_fern_plant",
+      "file": "deco_new_lush_fern_plant.png",
+      "name": "Lush Fern Plant",
+      "shop": true
+    },
+    {
+      "id": "deco_lily_leaf_plant",
+      "file": "deco_new_lily_leaf_plant.png",
+      "name": "Lily Leaf Plant",
+      "shop": true
+    },
+    {
+      "id": "deco_flat_stone_stack",
+      "file": "deco_new_flat_stone_stack.png",
+      "name": "Flat Stone Stack",
       "shop": true
     }
   ]

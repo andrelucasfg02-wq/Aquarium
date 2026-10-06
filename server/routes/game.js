@@ -409,7 +409,7 @@ module.exports = function gameRoutes(db) {
         `INSERT INTO eggs (user_id,grp,variant_a,variant_b,hybrid,generation,hatch_at,created_at,event_id,species)
          VALUES (?,?,?,?,?,?,?,?,?,?)`,
         uid, male.grp, male.species_id, female.species_id, hybrid ? 1 : 0,
-        generation, t + hatchHours * 3600, t, male.event_id || female.event_id || null, species);
+        generation, t + hatchHours * 3600, t, null, species);
       await Ht.questProgressAdd(uid, 'breed_1', 1, t);
       await Ht.addXp(uid, 5);
       return info.lastInsertRowid;

@@ -68,7 +68,7 @@ const DATA = {
     pleco_cory:             { group:"bottom_fish", name:"Pleco Cory", desc:"Pleco x Cory hybrid. Breed-only." },
     danio_zebra:            { group:"danio", name:"Zebra Danio", price:900, size:143 },
     tetra_neon:              { group:"tetra", name:"Neon Tetra", price:1200, size:143 },
-    gourami_pearl:            { group:"gourami", name:"Pearl Gourami", price:2000, size:140 },
+    gourami_pearl:            { group:"gourami", name:"Pearl Gourami", price:2000, size:224 },
     swordtail_blue:           { group:"goldfish", name:"Blue Swordtail", folder:"sword_blue", price:1500, size:154 },
     swordtail_gold:           { group:"goldfish", name:"Gold Swordtail", folder:"sword_gold", price:1500, size:154 },
     swordtail_red:            { group:"goldfish", name:"Red Swordtail",  folder:"sword_red",  price:1500, size:154 },

@@ -64,7 +64,7 @@ const DATA = {
     snail:                 { group:"snail",  name:"Snail",        price:250 },
     bottom_fish:           { group:"bottom_fish", name:"Cory Fish", price:3000 },
     pleco:                  { group:"bottom_fish", name:"Pleco", priceGems:500, desc:"Cleans 4 dirt per hour. The tank he's in stays clean!" },
-    blackleaf:              { group:"bottom_fish", name:"Blackleaf", size:208, desc:"Maze event prize. Cleans 1 dirt every 3 hours and finds 1 diamond a day." },
+    blackleaf:              { group:"bottom_fish", name:"Blackleaf", size:182, desc:"Maze event prize. Cleans 1 dirt every 3 hours and finds 1 diamond a day." },
     pleco_cory:             { group:"bottom_fish", name:"Pleco Cory", desc:"Pleco x Cory hybrid. Breed-only." },
     danio_zebra:            { group:"danio", name:"Zebra Danio", price:900, size:143 },
     tetra_neon:              { group:"tetra", name:"Neon Tetra", price:1200, size:143 },

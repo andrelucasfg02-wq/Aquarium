@@ -1165,7 +1165,7 @@ module.exports = function gameRoutes(db) {
     res.json(out);
   }));
 
-  // Maze event prize: finishing level 3 of "Help the baby DarkLeaf scape"
+  // Maze event prize: finishing level 3 of "Help the baby DarkLeaf escape"
   // grants the Blackleaf bottom fish, once per user. The prize goes to the
   // inventory as an adult (born 10 days ago) and banks 1 diamond a day like
   // other event fish (event_id set).

@@ -461,7 +461,7 @@
       'chat.placeholder': 'Type a message…',
       'chat.slow_down': 'Slow down a bit! 🐢',
       'event.title': 'Autumn Event',
-      'maze.title': 'Help the baby DarkLeaf scape',
+      'maze.title': 'Help the baby DarkLeaf escape',
       'event.couldnt_load': 'Couldn\'t load the event game 🍂',
     },
     pt: {
@@ -917,7 +917,7 @@
       'chat.placeholder': 'Digite uma mensagem…',
       'chat.slow_down': 'Calma aí! 🐢',
       'event.title': 'Evento de Outono',
-      'maze.title': 'Help the baby DarkLeaf scape',
+      'maze.title': 'Help the baby DarkLeaf escape',
       'event.couldnt_load': 'Não foi possível carregar o jogo do evento 🍂',
     },
     es: {
@@ -1373,7 +1373,7 @@
       'chat.placeholder': 'Escribe un mensaje…',
       'chat.slow_down': '¡Más despacio! 🐢',
       'event.title': 'Evento de Otoño',
-      'maze.title': 'Help the baby DarkLeaf scape',
+      'maze.title': 'Help the baby DarkLeaf escape',
       'event.couldnt_load': 'No se pudo cargar el juego del evento 🍂',
     },
   };

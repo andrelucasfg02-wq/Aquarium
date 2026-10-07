@@ -158,7 +158,7 @@ const App = (() => {
 
   function startPoll() {
     stopPoll();
-    pollTimer = setInterval(() => refresh(), 30000);
+    pollTimer = setInterval(() => refresh(), 60000);
     document.addEventListener("visibilitychange", () => {
       if (!document.hidden) refresh();
     });

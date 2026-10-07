@@ -1414,7 +1414,7 @@ const UI = (() => {
     input.onkeydown = (e) => { if (e.key === "Enter") send(); };
     await load(0);
     if (chatTimer) clearInterval(chatTimer);
-    chatTimer = setInterval(() => load(chatLastId), 3000);
+    chatTimer = setInterval(() => load(chatLastId), 10000);
   }
 
   const RENDER = {

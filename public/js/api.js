@@ -91,6 +91,8 @@ const Api = (() => {
     claimQuest: (quest_id) => post("/api/quests/claim", { quest_id }),
     buyFood: (qty, kind) => post("/api/shop/food/buy", { qty, kind }),
     buyCoins: (pack) => post("/api/shop/coins/buy", { pack }),
+    diamondPrices: () => get("/api/shop/diamonds/prices"),
+    diamondCheckout: (gems) => post("/api/shop/diamonds/checkout", { gems }),
     saveSettings: (music, sfx, quality) => post("/api/settings", { music, sfx, quality }),
     minigameFinish: (score) => post("/api/minigame/finish", { score }),
     shellStatus: () => get("/api/shell/status"),

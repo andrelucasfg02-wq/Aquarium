@@ -525,21 +525,37 @@ const UI = (() => {
   /* ================= DIAMOND SHOP (via + on the HUD) ================= */
   async function renderGemShop() {
     const body = $("screen-body");
+    // Localized prices from the server (geo-priced by country). Falls back
+    // to the static list if offline / endpoint unavailable.
+    let packs = null;
+    try {
+      const r = await Api.diamondPrices();
+      if (r && r.ok && Array.isArray(r.packs) && r.packs.length) packs = r.packs;
+    } catch (e) { /* offline fallback below */ }
+    if (!packs) packs = DATA.GEM_PACKS.map((p) => ({ gems: p.gems, display: p.price }));
     let html = `<div class="sub" style="margin:2px 0 12px">${t("gemshop.subtitle")}</div><div class="grid2">`;
-    for (const p of DATA.GEM_PACKS) {
+    for (const p of packs) {
       html += `<div class="card"><img class="fish-prev" src="assets/icons/icon_diamond.png" alt="" style="width:64px;height:64px">
         <div class="nm">${p.gems} ${t("gemshop.diamonds")}</div>
-        <div class="price">${esc(p.price)}</div>
+        <div class="price">${esc(p.display || "")}</div>
         <button class="pill-btn" data-buypack="${p.gems}">${t("shop.buy")}</button>
       </div>`;
     }
     html += `</div>`;
     body.innerHTML = html;
-    body.querySelectorAll("[data-buypack]").forEach((b) => b.onclick = () => buyGemPack(+b.dataset.buypack));
+    body.querySelectorAll("[data-buypack]").forEach((b) => b.onclick = () => buyGemPack(b, +b.dataset.buypack));
   }
-  function buyGemPack(gems) {
-    // real checkout (Stripe/Mercado Pago) plugs in here once the key is set
-    toast(t("gemshop.soon"));
+  async function buyGemPack(btn, gems) {
+    btn.disabled = true;
+    toast(t("gemshop.redirecting"));
+    const r = await Api.diamondCheckout(gems);
+    if (r && r.ok && r.url) {
+      // Stripe Checkout (same tab); success_url brings the player back.
+      window.location.href = r.url;
+      return;
+    }
+    btn.disabled = false;
+    toast(t(r && r.error === "payments_not_configured" ? "gemshop.soon" : "gemshop.error"));
   }
 
   /* ================= COIN SHOP (via + on the coins HUD chip: diamonds -> coins) ================= */

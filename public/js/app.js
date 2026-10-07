@@ -43,6 +43,15 @@ const App = (() => {
     if (new URLSearchParams(location.search).get("reset")) { showAuth(); return; }
     if (!me.ok || !me.user) { showAuth(); return; }
     enterGame();
+    // returning from Stripe Checkout: ?shop=success | ?shop=cancelled
+    const shopResult = new URLSearchParams(location.search).get("shop");
+    if (shopResult === "success" || shopResult === "cancelled") {
+      history.replaceState(null, "", location.pathname);
+      setTimeout(() => {
+        UI.toast(t(shopResult === "success" ? "gemshop.success" : "gemshop.cancelled"));
+        if (shopResult === "success") refresh();
+      }, 900);
+    }
   }
 
   function showAuth() {

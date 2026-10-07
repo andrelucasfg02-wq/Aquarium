@@ -7,10 +7,16 @@ const { openDb } = require('./db');
 const { authRequired } = require('./auth');
 const authRoutes = require('./routes/auth');
 const gameRoutes = require('./routes/game');
+const { paymentRoutes, stripeWebhookHandler } = require('./routes/payments');
 
 async function main() {
   const db = await openDb();
   const app = express();
+
+  // Stripe webhook needs the RAW body for signature verification,
+  // and no auth (Stripe calls it, not the player). Mount before express.json().
+  app.post('/api/webhooks/stripe', express.raw({ type: 'application/json', limit: '1mb' }),
+    stripeWebhookHandler(db));
 
   app.use(express.json({ limit: '256kb' }));
   app.use(cookieParser());
@@ -19,6 +25,7 @@ async function main() {
 
   app.use('/api', authRoutes(db));
   app.use('/api', authRequired(db), gameRoutes(db));
+  app.use('/api', authRequired(db), paymentRoutes(db));
 
   // Frontend (single-container deploy): serve public/ for everything non-API.
   app.use(express.static(path.join(__dirname, '..', 'public')));

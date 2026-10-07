@@ -79,6 +79,8 @@ const SCHEMA = `
       id INTEGER PRIMARY KEY, user_id INTEGER, token_hash TEXT UNIQUE,
       expires_at INTEGER, used INTEGER, created_at INTEGER);
     CREATE INDEX IF NOT EXISTS idx_resets_token ON password_resets(token_hash);
+    CREATE TABLE IF NOT EXISTS stripe_events(
+      event_id TEXT PRIMARY KEY, created_at INTEGER);
     CREATE INDEX IF NOT EXISTS idx_fish_user ON fish(user_id);
     CREATE INDEX IF NOT EXISTS idx_eggs_user ON eggs(user_id);
     CREATE INDEX IF NOT EXISTS idx_dirt_user ON dirt_spots(user_id);

@@ -1,1 +1,1 @@
-{"rewrites":[{"destination":"/api/index","source":"/api/:path*"},{"destination":"/api/index","source":"/health"},{"destination":"/public/index.html","source":"/"},{"destination":"/public/$1","source":"/(.*)"}]}
+{"framework":null,"rewrites":[{"destination":"/api/index","source":"/api/:path*"},{"destination":"/api/index","source":"/health"},{"destination":"/public/index.html","source":"/"},{"destination":"/public/$1","source":"/(.*)"}]}

@@ -487,7 +487,8 @@ const UI = (() => {
   async function renderShopScreen() {
     const body = $("screen-body");
     try {
-    body.innerHTML = `<div class="shop-banner"><img src="${DATA.SCENES.fishstore}" alt="Fish Store"></div><div class="tabbar comm-tabs">
+    const banner = (DATA.SCENES && DATA.SCENES.fishstore) ? `<div class="shop-banner"><img src="${DATA.SCENES.fishstore}" alt="Fish Store"></div>` : "";
+    body.innerHTML = `${banner}<div class="tabbar comm-tabs">
         <button class="pill-btn${shopTab === "fish" ? " active" : ""}" data-stab="fish"><img src="assets/icons/icon_fish.png" alt=""><span>${t("shop.fish")}</span></button>
         <button class="pill-btn${shopTab === "decor" ? " active" : ""}" data-stab="decor"><img src="assets/icons/icon_decor.png" alt=""><span>${t("deco.title")}</span></button>
       </div><div id="shop-body"></div>`;

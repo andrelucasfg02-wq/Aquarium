@@ -298,7 +298,8 @@ module.exports = function gameRoutes(db) {
   const doFeed = async (uid, kind, t) => {
     kind = kind === 'special' ? 'special' : 'normal';
     const tank = await H.activeTank(uid);
-    const tankFish = await db.all("SELECT id, grp FROM fish WHERE user_id=? AND tank=? AND location='tank'", uid, tank);
+    const tankNum = await H.activeTankNum(uid);
+    const tankFish = await db.all("SELECT id, grp FROM fish WHERE user_id=? AND tank=? AND tank_num=? AND location='tank'", uid, tank, tankNum);
     const targets = tankFish.filter((f) => (kind === 'special') === (f.grp === 'bottom_fish'));
     if (targets.length === 0) return { pellets: 0, kind };
     const w = await H.getWallet(uid);

@@ -720,7 +720,8 @@ const UI = (() => {
   async function renderBreeding() {
     const body = $("lab-body") || $("screen-body");
     // hybrids cannot breed: keep them out of the pick lists entirely
-    const tf = tankFish().filter((f) => !(f.lineage && f.lineage.hybrid));
+    // show all fish in any tank (not just the active aquarium)
+    const tf = (state.fish || []).filter((f) => (!f.location || f.location === "tank") && !(f.lineage && f.lineage.hybrid));
     breedMale = breedMale && tf.find((f) => f.id === breedMale.id) ? breedMale : null;
     breedFemale = breedFemale && tf.find((f) => f.id === breedFemale.id) ? breedFemale : null;
 

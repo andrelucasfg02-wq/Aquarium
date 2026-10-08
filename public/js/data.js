@@ -67,6 +67,7 @@ const DATA = {
     blackleaf:              { group:"bottom_fish", name:"Blackleaf", size:308, desc:"Maze event prize. Cleans 1 dirt every 3 hours and finds 1 diamond a day." },
     pleco_cory:             { group:"bottom_fish", name:"Pleco Cory", desc:"Pleco x Cory hybrid. Breed-only." },
     danio_zebra:            { group:"danio", name:"Zebra Danio", price:900, size:143 },
+    danio_tetra:            { group:"danio", name:"Danio Tetra", size:143, desc:"Danio x Tetra hybrid. Breed-only." },
     tetra_neon:              { group:"tetra", name:"Neon Tetra", price:1200, size:143 },
     gourami_pearl:            { group:"gourami", name:"Pearl Gourami", price:2000, size:224 },
     swordtail_blue:           { group:"goldfish", name:"Blue Swordtail", folder:"sword_blue", price:1500, size:260 },
@@ -102,7 +103,7 @@ const DATA = {
 
 /** Frame roles: 0 idle, 1-4 swim, 5 eat (only while eating), 6 sleep, 7 rear/turn */
 // Bump SPRITE_V whenever shipped art changes so phones don't keep stale cached PNGs.
-const SPRITE_V = 77;
+const SPRITE_V = 78;
 // Species with a custom hybrid egg icon (assets/eggs/<species_id>.png).
 const EGG_V = 12;
 const EGG_ART = {
@@ -115,6 +116,7 @@ const EGG_ART = {
   blaze_goldfish: 1, orchid_goldfish: 1, cinder_goldfish: 1, gilded_goldfish: 1,
   nebula_goldfish: 1, ember_night_goldfish: 1,
   pleco_cory: 1,
+  danio_tetra: 1,
 };
 function eggIcon(speciesId) {
   return (speciesId && EGG_ART[speciesId]) ? `assets/eggs/${speciesId}.png?v=${EGG_V}` : null;

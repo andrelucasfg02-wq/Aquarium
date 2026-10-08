@@ -19,14 +19,14 @@ const SWIM8_IDS = new Set(["ember_clownfish", "lemon_drop_goldfish", "sakura_gol
 /* Danio, Tetra & Gourami: swim with 2 side frames (1-2) alternating.
    (Frames 3-4 are mirrors — the game already flips via e.dir, so using
    them in the cycle causes constant flip-flopping.) */
-const TAILBEAT_IDS = new Set(["danio_zebra", "tetra_neon", "gourami_pearl"]);
+const TAILBEAT_IDS = new Set(["danio_zebra", "tetra_neon", "gourami_pearl", "danio_tetra"]);
 const TAILBEAT_SEQ = [1, 2];
 
 /* Schooling: tetras and danios swim together in formation when 2+ share
    a tank — side by side and synchronized, then they split up for a while
    and regroup. They also skip the front pose (idle shows a side frame). */
-const SCHOOL_IDS = new Set(["tetra_neon", "danio_zebra"]);
-const NO_FRONT_IDS = new Set(["tetra_neon", "danio_zebra"]);
+const SCHOOL_IDS = new Set(["tetra_neon", "danio_zebra", "danio_tetra"]);
+const NO_FRONT_IDS = new Set(["tetra_neon", "danio_zebra", "danio_tetra"]);
 
 class TankView {
   constructor(canvas) {
@@ -824,7 +824,7 @@ Object.assign(TankView.prototype, {
     this.ctx.save();
     this.ctx.translate(x, y);
     this.ctx.scale(e.dir, 1);
-    if (e.state === "swim" && (f.species_id === "veiltail_betta" || f.species_id === "fullmoon_betta" || f.species_id === "plakat_betta" || f.species_id === "azure_plakat_betta" || f.species_id === "maple_rose_betta" || f.species_id === "maple_coral_betta" || f.species_id === "maple_ember_betta" || f.species_id === "maple_storm_betta" || f.species_id === "autumn_fish" || f.species_id === "rose_halfmoon_betta" || f.species_id === "maple_veil_betta" || f.species_id === "golden_veil_betta" || f.species_id === "danio_zebra" || f.species_id === "tetra_neon" || f.species_id === "gourami_pearl")) {
+    if (e.state === "swim" && (f.species_id === "veiltail_betta" || f.species_id === "fullmoon_betta" || f.species_id === "plakat_betta" || f.species_id === "azure_plakat_betta" || f.species_id === "maple_rose_betta" || f.species_id === "maple_coral_betta" || f.species_id === "maple_ember_betta" || f.species_id === "maple_storm_betta" || f.species_id === "autumn_fish" || f.species_id === "rose_halfmoon_betta" || f.species_id === "maple_veil_betta" || f.species_id === "golden_veil_betta" || f.species_id === "danio_zebra" || f.species_id === "tetra_neon" || f.species_id === "gourami_pearl" || f.species_id === "danio_tetra")) {
       // tail-beat: a shear anchored at the head, so the tail and fins flex
       // side to side while the head stays steady — reads as natural swimming
       // instead of a rigid sprite sliding around.

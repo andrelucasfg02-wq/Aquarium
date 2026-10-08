@@ -16,7 +16,7 @@ const GROUPS = {
   shrimp: ['red_shrimp', 'blue_shrimp', 'yellow_shrimp'],
   snail: ['snail'],
   bottom_fish: ['bottom_fish', 'pleco', 'blackleaf', 'pleco_cory'],
-  danio: ['danio_zebra'],
+  danio: ['danio_zebra', 'danio_tetra'],
   tetra: ['tetra_neon'],
   gourami: ['gourami_pearl'],
 };
@@ -35,6 +35,7 @@ const HYBRID_MIXES = {
   'azure_tang+midnight_moor': 'nebula_goldfish',
   'ember_clownfish+midnight_moor': 'ember_night_goldfish',
   'bottom_fish+pleco': 'pleco_cory',
+  'danio_zebra+tetra_neon': 'danio_tetra',
 };
 
 // Maple Betta crosses: betta parent species -> the two hybrid offspring (50/50 on hatch).
@@ -80,6 +81,7 @@ const SPECIES_NAMES = {
   snail: 'Snail', bottom_fish: 'Cory Fish', pleco: 'Pleco', blackleaf: 'Blackleaf',
   pleco_cory: 'Pleco Cory',
   danio_zebra: 'Zebra Danio',
+  danio_tetra: 'Danio Tetra',
   tetra_neon: 'Neon Tetra',
   gourami_pearl: 'Pearl Gourami',
 };
@@ -98,6 +100,7 @@ const SPECIES_PRICES = {
   snail: { coins: 250, gems: null }, bottom_fish: { coins: 3000, gems: null }, pleco: { coins: null, gems: 500 },
   blackleaf: { coins: null, gems: null }, pleco_cory: { coins: null, gems: null },
   danio_zebra: { coins: 900, gems: null },
+  danio_tetra: { coins: null, gems: null },
   tetra_neon: { coins: 1200, gems: null },
   gourami_pearl: { coins: 2000, gems: null },
   fullmoon_betta: { coins: 1000, gems: null }, crowntail_betta: { coins: 1000, gems: null },
@@ -144,6 +147,7 @@ const SPECIES_RARITY = {
   snail: 'common', bottom_fish: 'uncommon', pleco: 'epic',
   blackleaf: 'epic', pleco_cory: 'epic',
   danio_zebra: 'epic',
+  danio_tetra: 'epic',
   tetra_neon: 'epic',
   gourami_pearl: 'epic',
 };

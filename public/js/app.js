@@ -24,8 +24,6 @@ const App = (() => {
     }
     // translate static HTML (auth screen etc.) before first paint
     if (typeof I18N !== "undefined") I18N.applyI18n();
-    // decorative home cottage on the tank screen
-    { const hh = document.getElementById("home-house"); if (hh) hh.src = DATA.SCENES.house; }
     // if the server is cold (Render wake-up), show a hint after 8s
     const wakeTimer = setTimeout(() => {
       const sub = document.getElementById("loading-sub");

@@ -1179,14 +1179,25 @@ module.exports = function gameRoutes(db) {
     const uid = req.user.id; const t = now();
     const out = await db.tx(async (txDb) => {
       const Ht = helpers(txDb);
-      const already = await txDb.get("SELECT claimed_at FROM event_rewards WHERE user_id=? AND event_id='maze1'", uid);
-      if (already) return { ok: false, error: 'already claimed' };
-      await txDb.run('INSERT INTO event_rewards(user_id,event_id,run,claimed_at) VALUES(?,?,?,?)', uid, 'maze1', 1, t);
+      const claims = await txDb.all(
+        "SELECT run FROM event_rewards WHERE user_id=? AND event_id='maze1' ORDER BY run", uid);
+      if (claims.length >= 2) return { ok: false, error: 'already claimed twice' };
+      const run = claims.length + 1;
+      let gender;
+      if (run === 1) {
+        gender = Math.random() < 0.5 ? 'male' : 'female';
+      } else {
+        // second play: guaranteed opposite sex of the first reward
+        const first = await txDb.get(
+          "SELECT gender FROM fish WHERE user_id=? AND species_id='blackleaf' AND event_id='maze1' ORDER BY id LIMIT 1", uid);
+        gender = !first || first.gender === 'male' ? 'female' : 'male';
+      }
+      await txDb.run('INSERT INTO event_rewards(user_id,event_id,run,claimed_at) VALUES(?,?,?,?)', uid, 'maze1', run, t);
       const fish = await Ht.addFish(uid, 'blackleaf', {
-        location: 'inventory', origin: 'event', event_id: 'maze1',
+        location: 'inventory', origin: 'event', event_id: 'maze1', gender,
         born_at: t - 10 * 86400, // event prize arrives as an adult
       }, t);
-      return { ok: true, fish_id: fish.id, species_id: 'blackleaf' };
+      return { ok: true, fish_id: fish.id, species_id: 'blackleaf', gender, run };
     });
     if (!out.ok) return res.status(400).json(out);
     res.json(out);

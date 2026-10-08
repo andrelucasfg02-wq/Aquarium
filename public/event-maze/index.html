@@ -106,7 +106,7 @@
         .then(function(r){return r.json()})
         .then(function(d){
           if(d&&d.ok)showPrize(false);
-          else if(d&&d.error==='already claimed')showPrize(true);
+          else if(d&&d.error==='already claimed'||d&&d.error==='already claimed twice')showPrize(true);
         })
         .catch(function(){});
     }catch(e){}

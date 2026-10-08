@@ -1,8 +1,6 @@
 // All authenticated /api game routes. Every query is filtered by user_id.
 // All DB access is async (libSQL facade).
 const { Router } = require('express');
-const path = require('path');
-const fs = require('fs');
 const { ah } = require('../async');
 const C = require('../catalog');
 
@@ -1354,7 +1352,11 @@ module.exports = function gameRoutes(db) {
     return { fish: fish.n, friends: fr.n, tanks,
       collection: coll.map((c) => ({ species_id: c.species_id, count: c.count })) };
   };
-  const avatarUrl = (fname) => fname ? '/uploads/avatars/' + fname : null;
+  const avatarUrl = (v) => {
+    if (!v) return null;
+    // new: data URL stored in DB; legacy: filename under public/uploads/avatars
+    return v.startsWith('data:') ? v : '/uploads/avatars/' + v;
+  };
 
   // my own full profile (includes wallet)
   r.get('/profile', ah(async (req, res) => {
@@ -1411,8 +1413,9 @@ module.exports = function gameRoutes(db) {
     res.json({ ok: true, bio });
   }));
 
-  // upload my profile photo (data URL; png/jpeg/webp, validated by magic bytes)
-  const AVATAR_DIR = path.join(__dirname, '..', '..', 'public', 'uploads', 'avatars');
+  // upload my profile photo: data URL (png/jpeg/webp, magic-byte validated).
+  // Stored in the DB (not the filesystem) because serverless hosts (Vercel)
+  // have a read-only disk. Client downscales to <=256px JPEG before sending.
   const AVATAR_MAX_B64 = 400 * 1024;
   function parseAvatar(dataUrl) {
     const m = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/.exec(String((dataUrl || '')).slice(0, AVATAR_MAX_B64 + 100));
@@ -1425,22 +1428,14 @@ module.exports = function gameRoutes(db) {
     const isWebp = buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
       buf.length > 12 && buf.toString('ascii', 8, 12) === 'WEBP';
     if (!((ext === 'png' && isPng) || (ext === 'jpg' && isJpg) || (ext === 'webp' && isWebp))) return null;
-    return { buf, ext };
+    return { dataUrl: `data:image/${m[1]};base64,${m[2]}` };
   }
   r.post('/profile/avatar', ah(async (req, res) => {
     const uid = req.user.id;
     const parsed = parseAvatar(req.body && req.body.image);
     if (!parsed) return res.status(400).json({ ok: false, error: 'bad image' });
-    fs.mkdirSync(AVATAR_DIR, { recursive: true });
-    for (const f of fs.readdirSync(AVATAR_DIR)) {
-      if (f.startsWith(uid + '_')) {
-        try { fs.unlinkSync(path.join(AVATAR_DIR, f)); } catch (e) { /* ignore */ }
-      }
-    }
-    const fname = `${uid}_${Date.now()}.${parsed.ext}`;
-    fs.writeFileSync(path.join(AVATAR_DIR, fname), parsed.buf);
-    await db.run('UPDATE users SET avatar=? WHERE id=?', fname, uid);
-    res.json({ ok: true, avatar_url: avatarUrl(fname) });
+    await db.run('UPDATE users SET avatar=? WHERE id=?', parsed.dataUrl, uid);
+    res.json({ ok: true, avatar_url: parsed.dataUrl });
   }));
 
   // visit snapshot: a player's active tank (fish + decor), shaped for TankView.syncState

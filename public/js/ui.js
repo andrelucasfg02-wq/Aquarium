@@ -22,9 +22,14 @@ const UI = (() => {
   function updateHUD(st) {
     state = st;
     const w = st.wallets, u = st.user;
-    $("hud-player").textContent = `😊 ${u.name || t("hud.player")}`;
-    $("hud-player").onclick = () => open("profile");
-    $("hud-player").style.cursor = "pointer";
+    const hp = $("hud-player");
+    if (u.avatar_url) {
+      hp.innerHTML = `<img class="hud-av" src="${esc(u.avatar_url)}" alt=""> ${esc(u.name || t("hud.player"))}`;
+    } else {
+      hp.textContent = `😊 ${u.name || t("hud.player")}`;
+    }
+    hp.onclick = () => open("profile");
+    hp.style.cursor = "pointer";
     $("hud-level").innerHTML = `<img class="hud-ic" src="assets/icons/icon_level.png" alt=""> ${w.level || 1}`;
     const setChip = (id, val) => { const el = $(id); const s = el && el.querySelector("span"); if (s) s.textContent = val; };
     setChip("hud-coins", fmtCoins(w.coins));

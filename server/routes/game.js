@@ -456,8 +456,11 @@ module.exports = function gameRoutes(db) {
       }
     }
     const user = await db.get(
-      `SELECT u.id,u.name,u.email,w.level,w.xp,w.coins,w.gems,w.food,w.food_special,w.medicine
+      `SELECT u.id,u.name,u.email,u.avatar,w.level,w.xp,w.coins,w.gems,w.food,w.food_special,w.medicine
        FROM users u JOIN wallets w ON w.user_id=u.id WHERE u.id=?`, uid);
+    if (user && user.avatar) {
+      user.avatar_url = user.avatar.startsWith('data:') ? user.avatar : '/uploads/avatars/' + user.avatar;
+    }
     const tanks = await H.getTanks(uid);
     const fish = (await db.all('SELECT * FROM fish WHERE user_id=? ORDER BY id', uid))
       .map((f) => H.fishJson(f, t));

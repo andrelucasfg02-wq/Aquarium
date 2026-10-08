@@ -1,5 +1,5 @@
 // AquaNim service worker — app shell offline, API sempre da rede.
-const SW_VERSION = 'aquanim-v3';
+const SW_VERSION = 'aquanim-v4';
 const APP_SHELL = [
   '/',
   '/index.html',

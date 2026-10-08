@@ -486,6 +486,7 @@ const UI = (() => {
   let shopTab = "fish";
   async function renderShopScreen() {
     const body = $("screen-body");
+    try {
     body.innerHTML = `<div class="shop-banner"><img src="${DATA.SCENES.fishstore}" alt="Fish Store"></div><div class="tabbar comm-tabs">
         <button class="pill-btn${shopTab === "fish" ? " active" : ""}" data-stab="fish"><img src="assets/icons/icon_fish.png" alt=""><span>${t("shop.fish")}</span></button>
         <button class="pill-btn${shopTab === "decor" ? " active" : ""}" data-stab="decor"><img src="assets/icons/icon_decor.png" alt=""><span>${t("deco.title")}</span></button>
@@ -493,6 +494,9 @@ const UI = (() => {
     body.querySelectorAll("[data-stab]").forEach((b) => b.onclick = () => { shopTab = b.dataset.stab; renderShopScreen(); });
     const sub = $("shop-body");
     if (shopTab === "decor") renderDecorShop(sub); else renderShopFish(sub);
+    } catch (e) {
+      body.innerHTML = `<div class="empty">Shop error: ${esc(String(e.message || e))}</div>`;
+    }
   }
 
   async function renderShopFish(root) {

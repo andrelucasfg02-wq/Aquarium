@@ -1276,8 +1276,8 @@ const UI = (() => {
     body.classList.toggle("chat-screen", communityTab === "chat");
     body.innerHTML = `<div class="tabbar comm-tabs">
         <button class="pill-btn${communityTab === "chat" ? " active" : ""}" data-ctab="chat">${ICON("chat")}<span>${t("chat.title")}</span></button>
-        <button class="pill-btn${communityTab === "market" ? " active" : ""}" data-ctab="market"><img src="assets/icons/icon_diamond.png" alt=""><span>${t("market.title")}</span></button>
         <button class="pill-btn${communityTab === "friends" ? " active" : ""}" data-ctab="friends">${ICON("community")}<span>${t("friends.title")}</span></button>
+        <button class="pill-btn${communityTab === "market" ? " active" : ""}" data-ctab="market"><img src="assets/icons/icon_diamond.png" alt=""><span>${t("market.title")}</span></button>
       </div><div id="comm-body"></div>`;
     body.querySelectorAll("[data-ctab]").forEach((b) => b.onclick = () => { communityTab = b.dataset.ctab; renderCommunity(); });
     const sub = $("comm-body");

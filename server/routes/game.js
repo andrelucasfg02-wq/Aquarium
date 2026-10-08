@@ -277,7 +277,7 @@ function helpers(db) {
   });
 
   return {
-    getWallet, addCoins, addGems, addXp, getTanks, activeTank,
+    getWallet, addCoins, addGems, addXp, getTanks, activeTank, activeTankNum,
     tankFishCount, totalFishCount, ensureQuests, questRow, questProgressAdd,
     questProgressMax, questList, fishJson, addFish, hatchEgg, maintain,
   };

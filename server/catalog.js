@@ -153,6 +153,17 @@ function speciesGroup(speciesId) {
   return null;
 }
 
+// Breeding families: which species can breed together.
+// Swordtails only with swordtails (not other goldfish); tetras and danios
+// are the same kind and can cross-breed.
+const SWORDTAILS = ['swordtail_blue', 'swordtail_gold', 'swordtail_red'];
+function breedFamily(speciesId) {
+  if (SWORDTAILS.includes(speciesId)) return 'swordtail';
+  const g = speciesGroup(speciesId);
+  if (g === 'danio' || g === 'tetra') return 'tetra_danio';
+  return g;
+}
+
 function fishCatalog() {
   const items = [];
   for (const [group, list] of Object.entries(GROUPS)) {
@@ -338,7 +349,7 @@ function periodKey(period, nowSec) {
 
 module.exports = {
   GROUPS, MAPLE_CROSSES, FEMALE_CROSSES, HYBRID_MIXES, SPECIES_NAMES, SPECIES_PRICES, SPECIES_RARITY,
-  speciesGroup, fishCatalog,
+  speciesGroup, breedFamily, fishCatalog,
   HATCH_HOURS, GROWTH_DAYS, HYBRID_HATCH_HOURS, HYBRID_GROWTH_DAYS, growthStage,
   GROW_LEVEL, growLevel,
   HUNGER_FULL_SECS, HUNGER_EMPTY_SECS, SICK_AFTER_SECS, MEDICINE_PRICE, SPECIAL_FOOD_PRICE,

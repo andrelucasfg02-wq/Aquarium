@@ -388,7 +388,7 @@ module.exports = function gameRoutes(db) {
     if (male.gender !== 'male' || female.gender !== 'female') {
       throw { status: 400, message: 'breeding needs one male and one female' };
     }
-    if (male.grp !== female.grp) {
+    if (C.breedFamily(male.species_id) !== C.breedFamily(female.species_id)) {
       throw { status: 400, message: "These species can't breed together" };
     }
     const lin = (f) => { try { return JSON.parse(f.lineage); } catch { return {}; } };
@@ -789,10 +789,12 @@ module.exports = function gameRoutes(db) {
     const fish = await db.get("SELECT * FROM fish WHERE id=? AND user_id=? AND location='tank'", fishId, uid);
     if (!fish) return res.status(404).json({ ok: false, error: 'fish not found' });
     const other = fish.gender === 'male' ? 'female' : 'male';
+    const fam = C.breedFamily(fish.species_id);
     const rows = await db.all(
-      "SELECT * FROM fish WHERE user_id=? AND location='tank' AND grp=? AND gender=? AND id!=? ORDER BY id",
-      uid, fish.grp, other, fishId);
-    res.json({ ok: true, partners: rows.map((f) => H.fishJson(f, t)).filter((p) => !(p.lineage && p.lineage.hybrid)) });
+      "SELECT * FROM fish WHERE user_id=? AND location='tank' AND gender=? AND id!=? ORDER BY id",
+      uid, other, fishId);
+    const compatible = rows.filter((f) => C.breedFamily(f.species_id) === fam);
+    res.json({ ok: true, partners: compatible.map((f) => H.fishJson(f, t)).filter((p) => !(p.lineage && p.lineage.hybrid)) });
   }));
 
   r.post('/breeding/breed', ah(async (req, res) => {

@@ -1266,10 +1266,88 @@ const UI = (() => {
     body.innerHTML = `<div class="tabbar comm-tabs">
         <button class="pill-btn${communityTab === "chat" ? " active" : ""}" data-ctab="chat">${ICON("chat")}<span>${t("chat.title")}</span></button>
         <button class="pill-btn${communityTab === "market" ? " active" : ""}" data-ctab="market"><img src="assets/icons/icon_diamond.png" alt=""><span>${t("market.title")}</span></button>
+        <button class="pill-btn${communityTab === "friends" ? " active" : ""}" data-ctab="friends">${ICON("community")}<span>${t("friends.title")}</span></button>
       </div><div id="comm-body"></div>`;
     body.querySelectorAll("[data-ctab]").forEach((b) => b.onclick = () => { communityTab = b.dataset.ctab; renderCommunity(); });
     const sub = $("comm-body");
-    if (communityTab === "chat") renderChat(sub); else renderMarket(sub);
+    if (communityTab === "chat") renderChat(sub);
+    else if (communityTab === "friends") renderFriends(sub);
+    else renderMarket(sub);
+  }
+
+  /* ================= FRIENDS ================= */
+  async function renderFriends(root) {
+    const body = root || $("screen-body");
+    if (state.user && state.user.is_guest) {
+      body.innerHTML = `<div class="empty">${t("friends.guest_only")}</div>`;
+      return;
+    }
+    body.innerHTML = `<div class="empty">${t("friends.loading")}</div>`;
+    const r = await Api.friends();
+    if (!r.ok) { body.innerHTML = `<div class="empty">${t("friends.couldnt_load")}</div>`; return; }
+    const incoming = r.incoming || [], friends = r.friends || [];
+    let html = `
+      <div class="friend-search">
+        <input id="fq" maxlength="24" placeholder="${t("friends.search_ph")}" autocomplete="off">
+        <button class="pill-btn" id="fq-go">${t("friends.search")}</button>
+      </div>
+      <div id="fq-results"></div>`;
+    if (incoming.length) {
+      html += `<div class="sec-title">${t("friends.requests")} (${incoming.length})</div>` +
+        incoming.map((u) => `<div class="row-card"><span class="grow nm">${esc(u.name)}</span>
+          <button class="pill-btn" data-acc="${u.id}">${t("friends.accept")}</button>
+          <button class="pill-btn" data-dec="${u.id}">${t("friends.decline")}</button></div>`).join("");
+    }
+    html += `<div class="sec-title">${t("friends.title")} (${friends.length})</div>`;
+    html += friends.length
+      ? friends.map((u) => `<div class="row-card"><span class="grow nm">${esc(u.name)}</span>
+          <button class="pill-btn" data-rm="${u.id}">${t("friends.remove")}</button></div>`).join("")
+      : `<div class="empty">${t("friends.empty")}</div>`;
+    body.innerHTML = html;
+
+    const doSearch = async () => {
+      const q = $("fq").value.trim();
+      const box = $("fq-results");
+      if (q.length < 2) { box.innerHTML = ""; return; }
+      const s = await Api.friendsSearch(q);
+      if (!s.ok || !s.users.length) {
+        box.innerHTML = `<div class="empty">${t("friends.no_results")}</div>`; return;
+      }
+      box.innerHTML = s.users.map((u) => {
+        const st = u.my_status || u.their_status;
+        let right;
+        if (st === "accepted") right = `<span class="muted">${t("friends.is_friend")}</span>`;
+        else if (u.my_status === "pending") right = `<button class="pill-btn" data-cancel="${u.id}">${t("friends.cancel")}</button>`;
+        else if (u.their_status === "pending") right = `<span class="muted">${t("friends.requested_you")}</span>`;
+        else right = `<button class="pill-btn" data-add="${u.id}">${t("friends.add")}</button>`;
+        return `<div class="row-card"><span class="grow nm">${esc(u.name)}</span>${right}</div>`;
+      }).join("");
+      box.querySelectorAll("[data-add]").forEach((b) => b.onclick = async () => {
+        b.disabled = true;
+        const rr = await Api.friendRequest(+b.dataset.add);
+        if (rr.ok) { toast(t("friends.req_sent")); doSearch(); }
+        else { b.disabled = false; toast(rr.error || t("friends.error")); }
+      });
+      box.querySelectorAll("[data-cancel]").forEach((b) => b.onclick = async () => {
+        await Api.friendRemove(+b.dataset.cancel); doSearch();
+      });
+    };
+    $("fq-go").onclick = doSearch;
+    $("fq").onkeydown = (e) => { if (e.key === "Enter") doSearch(); };
+    body.querySelectorAll("[data-acc]").forEach((b) => b.onclick = async () => {
+      b.disabled = true;
+      const rr = await Api.friendRespond(+b.dataset.acc, true);
+      if (rr.ok) { toast(t("friends.now_friends")); renderFriends(body); }
+      else { b.disabled = false; toast(rr.error || t("friends.error")); }
+    });
+    body.querySelectorAll("[data-dec]").forEach((b) => b.onclick = async () => {
+      await Api.friendRespond(+b.dataset.dec, false); renderFriends(body);
+    });
+    body.querySelectorAll("[data-rm]").forEach((b) => b.onclick = async () => {
+      b.disabled = true;
+      await Api.friendRemove(+b.dataset.rm);
+      toast(t("friends.removed")); renderFriends(body);
+    });
   }
 
   async function renderMarket(root) {

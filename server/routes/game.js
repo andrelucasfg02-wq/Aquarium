@@ -1248,6 +1248,94 @@ module.exports = function gameRoutes(db) {
     res.json({ ok: true, listings: rows.map((l) => marketFishJson(l, t)) });
   }));
 
+  // ================= FRIENDS =================
+  // Row (A,B,'pending') = A requested B. Accepted friendship = rows both ways 'accepted'.
+  const friendIsGuest = async (uid) => {
+    const u = await db.get('SELECT is_guest FROM users WHERE id=?', uid);
+    return !u || !!u.is_guest;
+  };
+
+  // list friends + incoming/outgoing requests
+  r.get('/friends', ah(async (req, res) => {
+    const uid = req.user.id;
+    const friends = await db.all(
+      `SELECT u.id, u.name FROM friends f JOIN users u ON u.id=f.friend_id
+       WHERE f.user_id=? AND f.status='accepted' ORDER BY u.name COLLATE NOCASE`, uid);
+    const incoming = await db.all(
+      `SELECT u.id, u.name FROM friends f JOIN users u ON u.id=f.user_id
+       WHERE f.friend_id=? AND f.status='pending' ORDER BY f.created_at DESC`, uid);
+    const outgoing = await db.all(
+      `SELECT friend_id AS id FROM friends WHERE user_id=? AND status='pending'`, uid);
+    res.json({ ok: true, friends, incoming, outgoing: outgoing.map((o) => o.id) });
+  }));
+
+  // search players by username
+  r.get('/friends/search', ah(async (req, res) => {
+    const uid = req.user.id;
+    const q = String(req.query.q || '').trim().slice(0, 24);
+    if (q.length < 2) return res.json({ ok: true, users: [] });
+    const like = `%${q.replace(/[%_\\]/g, '\\$&')}%`;
+    const rows = await db.all(
+      `SELECT u.id, u.name,
+        (SELECT status FROM friends WHERE user_id=? AND friend_id=u.id) AS my_status,
+        (SELECT status FROM friends WHERE user_id=u.id AND friend_id=?) AS their_status
+       FROM users u
+       WHERE u.id != ? AND COALESCE(u.is_guest,0)=0 AND u.name LIKE ? ESCAPE '\\'
+       ORDER BY u.name COLLATE NOCASE LIMIT 10`,
+      uid, uid, uid, like);
+    res.json({ ok: true, users: rows });
+  }));
+
+  // send a friend request
+  r.post('/friends/request', ah(async (req, res) => {
+    const uid = req.user.id;
+    if (await friendIsGuest(uid)) return res.status(403).json({ ok: false, error: 'guest_only' });
+    const target = Number(req.body && req.body.user_id);
+    if (!target || target === uid) return res.status(400).json({ ok: false, error: 'invalid user' });
+    const tu = await db.get('SELECT id FROM users WHERE id=? AND COALESCE(is_guest,0)=0', target);
+    if (!tu) return res.status(404).json({ ok: false, error: 'user not found' });
+    const existing = await db.get(
+      'SELECT status FROM friends WHERE (user_id=? AND friend_id=?) OR (user_id=? AND friend_id=?)',
+      uid, target, target, uid);
+    if (existing) return res.status(400).json({
+      ok: false, error: existing.status === 'accepted' ? 'already friends' : 'request pending',
+    });
+    await db.run('INSERT INTO friends (user_id,friend_id,status,created_at) VALUES (?,?,?,?)',
+      uid, target, 'pending', now());
+    res.json({ ok: true });
+  }));
+
+  // accept / decline an incoming request
+  r.post('/friends/respond', ah(async (req, res) => {
+    const uid = req.user.id;
+    const from = Number(req.body && req.body.user_id);
+    const accept = !!(req.body && req.body.accept);
+    const row = await db.get(
+      'SELECT status FROM friends WHERE user_id=? AND friend_id=?', from, uid);
+    if (!row || row.status !== 'pending') {
+      return res.status(404).json({ ok: false, error: 'no request' });
+    }
+    if (accept) {
+      await db.run('UPDATE friends SET status=? WHERE user_id=? AND friend_id=?',
+        'accepted', from, uid);
+      await db.run('INSERT OR IGNORE INTO friends (user_id,friend_id,status,created_at) VALUES (?,?,?,?)',
+        uid, from, 'accepted', now());
+    } else {
+      await db.run('DELETE FROM friends WHERE user_id=? AND friend_id=?', from, uid);
+    }
+    res.json({ ok: true, accepted: accept });
+  }));
+
+  // remove a friend (or cancel an outgoing request) — both directions
+  r.post('/friends/remove', ah(async (req, res) => {
+    const uid = req.user.id;
+    const fid = Number(req.body && req.body.user_id);
+    if (!fid) return res.status(400).json({ ok: false, error: 'invalid user' });
+    await db.run('DELETE FROM friends WHERE (user_id=? AND friend_id=?) OR (user_id=? AND friend_id=?)',
+      uid, fid, fid, uid);
+    res.json({ ok: true });
+  }));
+
   // list one of your fish for sale (diamonds)
   r.post('/market/list', ah(async (req, res) => {
     const uid = req.user.id; const t = now();

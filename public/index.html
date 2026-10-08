@@ -159,7 +159,10 @@
 </div>
 
 <script src="js/offline.js"></script>
-<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+<script>
+  // CrazyGames SDK loads async — never blocks the game if the CDN is slow.
+  (function(){var s=document.createElement("script");s.src="https://sdk.crazygames.com/crazygames-sdk-v3.js";s.async=true;document.head.appendChild(s);})();
+</script>
 <script src="js/cg-sdk.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/data.js"></script>

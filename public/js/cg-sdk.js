@@ -26,11 +26,16 @@ const CG = (() => {
     catch (e) { return null; }
   }
 
-  /** Resolve once on boot. Safe to call multiple times. */
+  /** Resolve once on boot. Safe to call multiple times. Waits for the
+   *  async SDK script (up to ~8s) before falling back to no-op mode. */
   async function init() {
     if (initPromise) return initPromise;
     initPromise = (async () => {
-      sdk = getSDK();
+      for (let i = 0; i < 40; i++) {
+        sdk = getSDK();
+        if (sdk) break;
+        await new Promise(r => setTimeout(r, 200));
+      }
       if (!sdk) return false;
       try {
         await sdk.init();

@@ -23,6 +23,8 @@ const UI = (() => {
     state = st;
     const w = st.wallets, u = st.user;
     $("hud-player").textContent = `😊 ${u.name || t("hud.player")}`;
+    $("hud-player").onclick = () => open("profile");
+    $("hud-player").style.cursor = "pointer";
     $("hud-level").innerHTML = `<img class="hud-ic" src="assets/icons/icon_level.png" alt=""> ${w.level || 1}`;
     const setChip = (id, val) => { const el = $(id); const s = el && el.querySelector("span"); if (s) s.textContent = val; };
     setChip("hud-coins", fmtCoins(w.coins));
@@ -384,6 +386,7 @@ const UI = (() => {
     if (name === "quests" && arg) questsTab = arg;
     if (name === "shop" && arg) shopTab = arg;
     if (name === "lab" && arg) labTab = arg;
+    if (name === "profile") profileUserId = arg || null;
     $("screen-title").innerHTML = TITLES[name] || esc(name);
     $("screen-overlay").hidden = false;
     RENDER[name]();
@@ -392,6 +395,7 @@ const UI = (() => {
     if (currentScreen && !$("screen-overlay").hidden && RENDER[currentScreen]) RENDER[currentScreen]();
   }
   function close(silent) {
+    killVisitView();
     if (window.EventCrush) EventCrush.unmount();
     $("screen-overlay").hidden = true;
     $("screen-body").innerHTML = "";
@@ -410,6 +414,8 @@ const UI = (() => {
     maze: `<img class="title-ic" src="assets/event/event_maze_icon.png" alt=""> ` + t("maze.title"),
     market: `<img class="title-ic" src="assets/icons/icon_diamond.png" alt="">` + t("market.title"), chat: ICON("chat") + t("chat.title"),
     community: ICON("community") + t("nav.community"),
+    profile: ICON("community") + t("profile.title"),
+    visit: "🐠 " + t("profile.visit_title"),
     gemshop: ICON("diamond") + t("gemshop.title"),
     coinshop: ICON("gold") + t("coinshop.title"),
     foodshop: ICON("food") + t("foodshop.title"),
@@ -1294,13 +1300,13 @@ const UI = (() => {
       <div id="fq-results"></div>`;
     if (incoming.length) {
       html += `<div class="sec-title">${t("friends.requests")} (${incoming.length})</div>` +
-        incoming.map((u) => `<div class="row-card"><span class="grow nm">${esc(u.name)}</span>
+        incoming.map((u) => `<div class="row-card"><button class="prof-link grow" data-prof="${u.id}">${esc(u.name)}</button>
           <button class="pill-btn" data-acc="${u.id}">${t("friends.accept")}</button>
           <button class="pill-btn" data-dec="${u.id}">${t("friends.decline")}</button></div>`).join("");
     }
     html += `<div class="sec-title">${t("friends.title")} (${friends.length})</div>`;
     html += friends.length
-      ? friends.map((u) => `<div class="row-card"><span class="grow nm">${esc(u.name)}</span>
+      ? friends.map((u) => `<div class="row-card"><button class="prof-link grow" data-prof="${u.id}">${esc(u.name)}</button>
           <button class="pill-btn" data-rm="${u.id}">${t("friends.remove")}</button></div>`).join("")
       : `<div class="empty">${t("friends.empty")}</div>`;
     body.innerHTML = html;
@@ -1320,7 +1326,7 @@ const UI = (() => {
         else if (u.my_status === "pending") right = `<button class="pill-btn" data-cancel="${u.id}">${t("friends.cancel")}</button>`;
         else if (u.their_status === "pending") right = `<span class="muted">${t("friends.requested_you")}</span>`;
         else right = `<button class="pill-btn" data-add="${u.id}">${t("friends.add")}</button>`;
-        return `<div class="row-card"><span class="grow nm">${esc(u.name)}</span>${right}</div>`;
+        return `<div class="row-card"><button class="prof-link grow" data-prof="${u.id}">${esc(u.name)}</button>${right}</div>`;
       }).join("");
       box.querySelectorAll("[data-add]").forEach((b) => b.onclick = async () => {
         b.disabled = true;
@@ -1331,9 +1337,11 @@ const UI = (() => {
       box.querySelectorAll("[data-cancel]").forEach((b) => b.onclick = async () => {
         await Api.friendRemove(+b.dataset.cancel); doSearch();
       });
+      box.querySelectorAll("[data-prof]").forEach((b) => b.onclick = () => open("profile", +b.dataset.prof));
     };
     $("fq-go").onclick = doSearch;
     $("fq").onkeydown = (e) => { if (e.key === "Enter") doSearch(); };
+    body.querySelectorAll("[data-prof]").forEach((b) => b.onclick = () => open("profile", +b.dataset.prof));
     body.querySelectorAll("[data-acc]").forEach((b) => b.onclick = async () => {
       b.disabled = true;
       const rr = await Api.friendRespond(+b.dataset.acc, true);
@@ -1347,6 +1355,162 @@ const UI = (() => {
       b.disabled = true;
       await Api.friendRemove(+b.dataset.rm);
       toast(t("friends.removed")); renderFriends(body);
+    });
+  }
+
+  /* ================= PROFILE ================= */
+  let profileUserId = null; // null = my own profile
+  let visitId = null, visitName = "";
+  function memberSince(ts) {
+    try {
+      return new Date(ts * 1000).toLocaleDateString(undefined, { year: "numeric", month: "short" });
+    } catch (e) { return ""; }
+  }
+  function downscaleImage(file, maxSize) {
+    // profile photos: shrink to <=maxSize px, JPEG — keeps uploads tiny
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const sc = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * sc));
+        const h = Math.max(1, Math.round(img.height * sc));
+        const cv = document.createElement("canvas");
+        cv.width = w; cv.height = h;
+        cv.getContext("2d").drawImage(img, 0, 0, w, h);
+        resolve(cv.toDataURL("image/jpeg", .82));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+      img.src = url;
+    });
+  }
+  function avatarHtml(p, cls) {
+    if (p.avatar_url) return `<img class="${cls || "prof-avatar"}" src="${esc(p.avatar_url)}" alt="">`;
+    return `<div class="${cls || "prof-avatar"}">${esc((p.name || "?").trim().charAt(0).toUpperCase())}</div>`;
+  }
+  async function renderProfile() {
+    const body = $("screen-body");
+    body.innerHTML = `<div class="empty">${t("profile.loading")}</div>`;
+    const r = profileUserId ? await Api.profileOf(profileUserId) : await Api.profile();
+    if (!r.ok || !r.profile) {
+      body.innerHTML = `<div class="empty">${t("profile.couldnt_load")}</div>`; return;
+    }
+    const p = r.profile;
+    const stats = [
+      { ic: "🐠", v: p.fish, l: t("profile.fish") },
+      { ic: "👥", v: p.friends, l: t("profile.friends") },
+    ];
+    if (p.mine) {
+      stats.push({ ic: "🪑", v: p.tanks, l: t("profile.tanks") });
+      stats.push({ ic: "🪙", v: fmtCoins(p.coins), l: t("profile.coins") });
+      stats.push({ ic: "💎", v: fmtCoins(p.gems), l: t("profile.gems") });
+      stats.push({ ic: "✨", v: fmtCoins(p.xp), l: t("profile.xp") });
+    }
+    const coll = (p.collection || []).slice(0, 24);
+    let html = `
+      <div class="prof-head">
+        <div class="prof-avwrap">${avatarHtml(p)}
+          ${p.mine ? `<button class="prof-cam" id="prof-photo" title="${t("profile.photo")}">📷</button>
+          <input type="file" id="prof-file" accept="image/png,image/jpeg,image/webp" hidden>` : ``}
+        </div>
+        <div class="prof-id">
+          <div class="prof-name">${esc(p.name)}</div>
+          <div class="prof-sub"><span class="lvl-chip">${t("profile.level")} ${p.level}</span>
+            <span class="muted"> · ${t("profile.since")} ${memberSince(p.created_at)}</span></div>
+        </div>
+      </div>
+      ${p.bio ? `<div class="prof-bio">${esc(p.bio)}</div>` : ``}
+      ${p.mine ? `<div class="prof-edit">
+          <input id="prof-bio" maxlength="160" value="${esc(p.bio || "")}" placeholder="${t("profile.bio_ph")}" autocomplete="off">
+          <button class="pill-btn" id="prof-biosave">${t("profile.save")}</button>
+        </div>` : ``}
+      <div class="prof-grid">` +
+      stats.map((s) => `<div class="card prof-stat"><div class="pv-ic">${s.ic}</div><div class="pv">${s.v}</div><div class="sub">${s.l}</div></div>`).join("") +
+      `</div>
+      <div class="sec-title">🐟 ${t("profile.collection")} (${(p.collection || []).length})</div>
+      <div class="prof-coll">` +
+      (coll.length ? coll.map((c) => `<div class="prof-fish">${fishImg(c.species_id)}<span>${c.count > 1 ? "×" + c.count : ""}</span></div>`).join("")
+        : `<div class="empty">${t("profile.no_collection")}</div>`) +
+      `</div>`;
+    if (p.mine) {
+      html += `<div class="prof-edit">
+          <input id="prof-name" maxlength="24" value="${esc(p.name)}" autocomplete="off">
+          <button class="pill-btn" id="prof-save">${t("profile.save_name")}</button>
+        </div>`;
+    } else {
+      html += `<div class="prof-actions">
+          <button class="pill-btn" id="prof-visit">🐠 ${t("profile.visit")}</button>`;
+      if (p.relation === "accepted") html += `<button class="pill-btn" id="prof-rm">${t("friends.remove")}</button>`;
+      html += `</div>`;
+    }
+    body.innerHTML = html;
+    if (p.mine) {
+      $("prof-save").onclick = async () => {
+        const nm = $("prof-name").value.trim();
+        const rr = await Api.profileRename(nm);
+        if (rr.ok) { toast(t("profile.name_saved")); await App.refresh(); renderProfile(); }
+        else toast(rr.error || t("profile.error"));
+      };
+      $("prof-biosave").onclick = async () => {
+        const b = $("prof-bio").value.trim();
+        const rr = await Api.profileBio(b);
+        if (rr.ok) { toast(t("profile.bio_saved")); renderProfile(); }
+        else toast(rr.error || t("profile.error"));
+      };
+      $("prof-photo").onclick = () => $("prof-file").click();
+      $("prof-file").onchange = async (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        const dataUrl = await downscaleImage(f, 256);
+        if (!dataUrl) { toast(t("profile.error")); return; }
+        toast(t("profile.uploading"));
+        const rr = await Api.profileAvatar(dataUrl);
+        if (rr.ok) { toast(t("profile.photo_saved")); await App.refresh(); renderProfile(); }
+        else toast(rr.error || t("profile.error"));
+      };
+    } else {
+      $("prof-visit").onclick = () => { visitId = p.id; visitName = p.name; open("visit"); };
+      const b = $("prof-rm");
+      if (b) b.onclick = async () => {
+        b.disabled = true;
+        await Api.friendRemove(p.id);
+        toast(t("friends.removed"));
+        open("community", "friends");
+      };
+    }
+  }
+
+  /* ================= VISIT A FRIEND'S AQUARIUM (read-only) ================= */
+  let visitView = null;
+  function killVisitView() {
+    if (visitView) { try { visitView.destroy(); } catch (e) { /* ignore */ } visitView = null; }
+  }
+  async function renderVisit() {
+    killVisitView();
+    const body = $("screen-body");
+    body.innerHTML = `<div class="visit-bar">
+        <button class="pill-btn" id="visit-back">← ${esc(visitName)}</button>
+      </div><div class="empty">${t("profile.visit_loading")}</div>`;
+    $("visit-back").onclick = () => open("profile", visitId);
+    const r = await Api.visitTank(visitId);
+    if (!r.ok || !r.visit) {
+      body.querySelector(".empty").textContent = t("profile.couldnt_load"); return;
+    }
+    body.innerHTML = `<div class="visit-bar">
+        <button class="pill-btn" id="visit-back">← ${esc(visitName)}</button>
+        <span class="muted">${t("profile.visit_hint")}</span>
+      </div><canvas id="visit-canvas" class="visit-canvas"></canvas>`;
+    $("visit-back").onclick = () => open("profile", visitId);
+    visitView = new TankView($("visit-canvas"));
+    visitView.setReadOnly(true);
+    const dc = await Api.decorCatalog();
+    if (dc.ok && dc.items) visitView.setDecoCatalog(dc.items);
+    visitView.syncState({
+      tanks: { active: r.visit.tier, activeNum: r.visit.tank_num },
+      fish: r.visit.fish || [],
+      placements: r.visit.placements || [],
+      dirt: { spots: [], green: false },
     });
   }
 
@@ -1504,6 +1668,8 @@ const UI = (() => {
     gemshop: renderGemShop,
     coinshop: renderCoinShop,
     foodshop: renderFoodShop,
+    profile: renderProfile,
+    visit: renderVisit,
   };
 
   function guestLeaveDialog() {

@@ -1,6 +1,8 @@
 // All authenticated /api game routes. Every query is filtered by user_id.
 // All DB access is async (libSQL facade).
 const { Router } = require('express');
+const path = require('path');
+const fs = require('fs');
 const { ah } = require('../async');
 const C = require('../catalog');
 
@@ -1334,6 +1336,132 @@ module.exports = function gameRoutes(db) {
     await db.run('DELETE FROM friends WHERE (user_id=? AND friend_id=?) OR (user_id=? AND friend_id=?)',
       uid, fid, fid, uid);
     res.json({ ok: true });
+  }));
+
+  // ================= PROFILE =================
+  const TANK_COLS = ['small','medium','large','xl','nursery','small_extra',
+    'medium_extra','large_extra','xl_extra','nursery_extra'];
+  const profileStats = async (uid) => {
+    const fish = await db.get('SELECT COUNT(*) AS n FROM fish WHERE user_id=?', uid);
+    const fr = await db.get(
+      `SELECT COUNT(*) AS n FROM friends WHERE user_id=? AND status='accepted'`, uid);
+    const tk = await db.get(
+      `SELECT ${TANK_COLS.join(',')} FROM user_tanks WHERE user_id=?`, uid);
+    let tanks = 0;
+    if (tk) for (const c of TANK_COLS) tanks += Number(tk[c]) || 0;
+    const coll = await db.all(
+      'SELECT species_id, count FROM collection WHERE user_id=? ORDER BY count DESC', uid);
+    return { fish: fish.n, friends: fr.n, tanks,
+      collection: coll.map((c) => ({ species_id: c.species_id, count: c.count })) };
+  };
+  const avatarUrl = (fname) => fname ? '/uploads/avatars/' + fname : null;
+
+  // my own full profile (includes wallet)
+  r.get('/profile', ah(async (req, res) => {
+    const uid = req.user.id;
+    const p = await db.get(
+      `SELECT u.id, u.name, u.created_at, u.avatar, u.bio, w.level, w.xp, w.coins, w.gems
+       FROM users u LEFT JOIN wallets w ON w.user_id=u.id WHERE u.id=?`, uid);
+    if (!p) return res.status(404).json({ ok: false, error: 'user not found' });
+    const s = await profileStats(uid);
+    res.json({ ok: true, profile: {
+      id: p.id, name: p.name, level: p.level || 1, xp: p.xp || 0,
+      created_at: p.created_at, coins: p.coins || 0, gems: p.gems || 0,
+      avatar_url: avatarUrl(p.avatar), bio: p.bio || '',
+      ...s, mine: true,
+    }});
+  }));
+
+  // another player's public profile (no wallet)
+  r.get('/profile/:id', ah(async (req, res) => {
+    const id = Number(req.params.id);
+    if (!id || id === req.user.id) {
+      return res.status(400).json({ ok: false, error: 'invalid user' });
+    }
+    const p = await db.get(
+      `SELECT u.id, u.name, u.created_at, u.avatar, u.bio, w.level
+       FROM users u LEFT JOIN wallets w ON w.user_id=u.id
+       WHERE u.id=? AND COALESCE(u.is_guest,0)=0`, id);
+    if (!p) return res.status(404).json({ ok: false, error: 'user not found' });
+    const s = await profileStats(id);
+    const rel = await db.get(
+      'SELECT status FROM friends WHERE user_id=? AND friend_id=?', req.user.id, id);
+    res.json({ ok: true, profile: {
+      id: p.id, name: p.name, level: p.level || 1, created_at: p.created_at,
+      avatar_url: avatarUrl(p.avatar), bio: p.bio || '',
+      fish: s.fish, friends: s.friends, collection: s.collection, mine: false,
+      relation: rel ? rel.status : null,
+    }});
+  }));
+
+  // rename myself (2–24 chars)
+  r.post('/profile/name', ah(async (req, res) => {
+    const uid = req.user.id;
+    const name = String((req.body && req.body.name) || '').trim().slice(0, 24);
+    if (name.length < 2) return res.status(400).json({ ok: false, error: 'name too short' });
+    await db.run('UPDATE users SET name=? WHERE id=?', name, uid);
+    res.json({ ok: true, name });
+  }));
+
+  // update my bio (max 160 chars, empty clears)
+  r.post('/profile/bio', ah(async (req, res) => {
+    const uid = req.user.id;
+    const bio = String((req.body && req.body.bio) || '').trim().slice(0, 160);
+    await db.run('UPDATE users SET bio=? WHERE id=?', bio, uid);
+    res.json({ ok: true, bio });
+  }));
+
+  // upload my profile photo (data URL; png/jpeg/webp, validated by magic bytes)
+  const AVATAR_DIR = path.join(__dirname, '..', '..', 'public', 'uploads', 'avatars');
+  const AVATAR_MAX_B64 = 400 * 1024;
+  function parseAvatar(dataUrl) {
+    const m = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/.exec(String((dataUrl || '')).slice(0, AVATAR_MAX_B64 + 100));
+    if (!m || m[2].length > AVATAR_MAX_B64) return null;
+    const buf = Buffer.from(m[2], 'base64');
+    if (!buf.length || buf.length > 300 * 1024) return null;
+    const ext = m[1] === 'jpeg' ? 'jpg' : m[1];
+    const isPng = buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47;
+    const isJpg = buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF;
+    const isWebp = buf[0] === 0x52 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x46 &&
+      buf.length > 12 && buf.toString('ascii', 8, 12) === 'WEBP';
+    if (!((ext === 'png' && isPng) || (ext === 'jpg' && isJpg) || (ext === 'webp' && isWebp))) return null;
+    return { buf, ext };
+  }
+  r.post('/profile/avatar', ah(async (req, res) => {
+    const uid = req.user.id;
+    const parsed = parseAvatar(req.body && req.body.image);
+    if (!parsed) return res.status(400).json({ ok: false, error: 'bad image' });
+    fs.mkdirSync(AVATAR_DIR, { recursive: true });
+    for (const f of fs.readdirSync(AVATAR_DIR)) {
+      if (f.startsWith(uid + '_')) {
+        try { fs.unlinkSync(path.join(AVATAR_DIR, f)); } catch (e) { /* ignore */ }
+      }
+    }
+    const fname = `${uid}_${Date.now()}.${parsed.ext}`;
+    fs.writeFileSync(path.join(AVATAR_DIR, fname), parsed.buf);
+    await db.run('UPDATE users SET avatar=? WHERE id=?', fname, uid);
+    res.json({ ok: true, avatar_url: avatarUrl(fname) });
+  }));
+
+  // visit snapshot: a player's active tank (fish + decor), shaped for TankView.syncState
+  r.get('/profile/:id/tank', ah(async (req, res) => {
+    const id = Number(req.params.id);
+    if (!id || id === req.user.id) {
+      return res.status(400).json({ ok: false, error: 'invalid user' });
+    }
+    const tu = await db.get('SELECT id FROM users WHERE id=? AND COALESCE(is_guest,0)=0', id);
+    if (!tu) return res.status(404).json({ ok: false, error: 'user not found' });
+    const t = now();
+    const tanks = await H.getTanks(id);
+    const tier = (tanks && tanks.active) || 'small';
+    const tank_num = (tanks && tanks.active_num) || 1;
+    const fish = (await db.all(
+      `SELECT * FROM fish WHERE user_id=? AND location='tank' AND tank=? AND (tank_num IS NULL OR tank_num=?) ORDER BY id`,
+      id, tier, tank_num)).map((f) => H.fishJson(f, t));
+    const placements = await db.all(
+      'SELECT id,deco_id,tank,tank_num,x,y FROM decor_placements WHERE user_id=? AND tank=? AND tank_num=?',
+      id, tier, tank_num);
+    res.json({ ok: true, visit: { tier, tank_num, fish, placements } });
   }));
 
   // list one of your fish for sale (diamonds)

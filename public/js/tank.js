@@ -54,25 +54,38 @@ class TankView {
     this.userZoom = 1;  // 1 = normal, >1 = zoomed into aquarium (via zoom button)
     this.quality = "high";
     this.handlers = {};
+    this.readOnly = false; // visit mode: watch a friend's tank, no interactions
     this.lastT = 0;
     this.ambientT = 0;
 
     this.resize();
-    window.addEventListener("resize", () => this.resize());
-    window.addEventListener("orientationchange", () => setTimeout(() => this.resize(), 200));
+    this.bindPointer();
+    this._raf = 0;
+    this._onResize = () => this.resize();
+    window.addEventListener("resize", this._onResize);
+    window.addEventListener("orientationchange", this._onResizeO = () => setTimeout(() => this.resize(), 200));
     // Android Chrome's URL bar / gesture bar can resize the visual viewport
     // without a window resize event — keep the tap mapping in sync.
     if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", () => this.resize());
+      window.visualViewport.addEventListener("resize", this._onResize);
     }
-    this.bindPointer();
-    requestAnimationFrame((t) => this.loop(t));
+    this._raf = requestAnimationFrame((t) => this.loop(t));
+  }
+
+  destroy() {
+    // stop the rAF loop + listeners (used for throwaway visit views)
+    if (this._raf) cancelAnimationFrame(this._raf);
+    this._raf = 0;
+    window.removeEventListener("resize", this._onResize);
+    window.removeEventListener("orientationchange", this._onResizeO);
+    if (window.visualViewport) window.visualViewport.removeEventListener("resize", this._onResize);
   }
 
   on(evt, fn) { this.handlers[evt] = fn; }
   emit(evt, data) { const f = this.handlers[evt]; if (f) f(data); }
 
   setQuality(q) { this.quality = q || "high"; this.resize(); }
+  setReadOnly(v) { this.readOnly = !!v; }
   particleMul() { return this.quality === "low" ? .3 : this.quality === "medium" ? .6 : 1; }
 
   resize() {
@@ -341,7 +354,7 @@ class TankView {
     this.lastT = t;
     this.update(dt);
     this.draw();
-    requestAnimationFrame((tt) => this.loop(tt));
+    this._raf = requestAnimationFrame((tt) => this.loop(tt));
   }
 
   update(dt) {
@@ -940,7 +953,7 @@ Object.assign(TankView.prototype, {
             this.emit("decoMoved", { id: d.id, x: d.x, y: d.y });
           }
         }
-      } else if (quick) {
+      } else if (quick && !this.readOnly) {
         this.tapAt(x, y);
       }
       downPos = null;

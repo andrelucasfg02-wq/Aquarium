@@ -158,6 +158,12 @@ async function openDb() {
     if (!ucols.rows.some((c) => c.name === 'is_guest')) {
       await client.execute('ALTER TABLE users ADD COLUMN is_guest INTEGER NOT NULL DEFAULT 0');
     }
+    if (!ucols.rows.some((c) => c.name === 'avatar')) {
+      await client.execute('ALTER TABLE users ADD COLUMN avatar TEXT');
+    }
+    if (!ucols.rows.some((c) => c.name === 'bio')) {
+      await client.execute('ALTER TABLE users ADD COLUMN bio TEXT');
+    }
     const cols = await client.execute('PRAGMA table_info(fish)');
     if (!cols.rows.some((c) => c.name === 'nickname')) {
       await client.execute('ALTER TABLE fish ADD COLUMN nickname TEXT');

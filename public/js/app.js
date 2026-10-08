@@ -17,8 +17,15 @@ const App = (() => {
   }
 
   async function boot() {
+    // CrazyGames portal: init SDK + mark loading start (no-op elsewhere)
+    if (typeof CG !== "undefined") {
+      CG.loadingStart(); CG.init();
+      if (CG.isCGBuild()) document.body.classList.add("cg-mode");
+    }
     // translate static HTML (auth screen etc.) before first paint
     if (typeof I18N !== "undefined") I18N.applyI18n();
+    // decorative home cottage on the tank screen
+    { const hh = document.getElementById("home-house"); if (hh) hh.src = DATA.SCENES.house; }
     // if the server is cold (Render wake-up), show a hint after 8s
     const wakeTimer = setTimeout(() => {
       const sub = document.getElementById("loading-sub");
@@ -38,6 +45,7 @@ const App = (() => {
     const me = await Api.me();
     clearTimeout(wakeTimer);
     hideLoading();
+    if (typeof CG !== "undefined") CG.loadingStop();
     // opened from a password-reset email: show the reset form, not the game
     // (check before the session, so it works even if already logged in)
     if (new URLSearchParams(location.search).get("reset")) { showAuth(); return; }
@@ -56,6 +64,7 @@ const App = (() => {
 
   function showAuth() {
     stopPoll();
+    if (typeof CG !== "undefined") CG.gameplayStop();
     $("game").hidden = true;
     $("auth-screen").hidden = false;
   }
@@ -81,6 +90,7 @@ const App = (() => {
     }
     await refresh();
     startPoll();
+    if (typeof CG !== "undefined") CG.gameplayStart();
     // guest reminders: nudge to create an account — first at 5min, then every 10min
     startGuestNudges();
     // first-run tutorial takes precedence over the promos this once

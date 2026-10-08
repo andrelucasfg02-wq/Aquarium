@@ -78,6 +78,8 @@
 <!-- ============ GAME ============ -->
 <div id="game" hidden>
   <canvas id="tank"></canvas>
+  <!-- decorative home cottage (pointer-events:none so taps pass through to the tank) -->
+  <img id="home-house" alt="" draggable="false">
 
   <!-- slim top HUD -->
   <header id="hud-top">
@@ -157,6 +159,8 @@
 </div>
 
 <script src="js/offline.js"></script>
+<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+<script src="js/cg-sdk.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/data.js"></script>
 <script src="js/api.js"></script>

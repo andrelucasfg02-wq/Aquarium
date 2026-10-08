@@ -58,6 +58,8 @@ const SCHEMA = `
     CREATE TABLE IF NOT EXISTS chat_messages(
       id INTEGER PRIMARY KEY, user_id INTEGER, name TEXT, text TEXT,
       created_at INTEGER);
+    CREATE TABLE IF NOT EXISTS rewarded_ads(
+      id INTEGER PRIMARY KEY, user_id INTEGER, created_at INTEGER);
     CREATE TABLE IF NOT EXISTS event_progress(
       user_id INTEGER, event_id TEXT, run INTEGER NOT NULL DEFAULT 1,
       score INTEGER, level INTEGER, moves INTEGER,

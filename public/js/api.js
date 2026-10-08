@@ -93,6 +93,7 @@ const Api = (() => {
     buyCoins: (pack) => post("/api/shop/coins/buy", { pack }),
     diamondPrices: () => get("/api/shop/diamonds/prices"),
     diamondCheckout: (gems) => post("/api/shop/diamonds/checkout", { gems }),
+    rewardedDiamonds: (gems) => post("/api/shop/diamonds/rewarded", { gems }),
     friends: () => get("/api/friends"),
     friendsSearch: (q) => get(`/api/friends/search?q=${encodeURIComponent(q)}`),
     friendRequest: (user_id) => post("/api/friends/request", { user_id }),

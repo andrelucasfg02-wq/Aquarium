@@ -486,7 +486,7 @@ const UI = (() => {
   let shopTab = "fish";
   async function renderShopScreen() {
     const body = $("screen-body");
-    body.innerHTML = `<div class="tabbar comm-tabs">
+    body.innerHTML = `<div class="shop-banner"><img src="${DATA.SCENES.fishstore}" alt="Fish Store"></div><div class="tabbar comm-tabs">
         <button class="pill-btn${shopTab === "fish" ? " active" : ""}" data-stab="fish"><img src="assets/icons/icon_fish.png" alt=""><span>${t("shop.fish")}</span></button>
         <button class="pill-btn${shopTab === "decor" ? " active" : ""}" data-stab="decor"><img src="assets/icons/icon_decor.png" alt=""><span>${t("deco.title")}</span></button>
       </div><div id="shop-body"></div>`;
@@ -536,6 +536,8 @@ const UI = (() => {
   /* ================= DIAMOND SHOP (via + on the HUD) ================= */
   async function renderGemShop() {
     const body = $("screen-body");
+    // CrazyGames portal build: Stripe packs hidden — rewarded ads only.
+    if (typeof CG !== "undefined" && CG.isCGBuild()) { renderGemShopCG(body); return; }
     // Localized prices from the server (geo-priced by country). Falls back
     // to the static list if offline / endpoint unavailable.
     let packs = null;
@@ -567,6 +569,44 @@ const UI = (() => {
     }
     btn.disabled = false;
     toast(t(r && r.error === "payments_not_configured" ? "gemshop.soon" : "gemshop.error"));
+  }
+
+  /* CrazyGames portal: diamonds via rewarded ad instead of Stripe. */
+  function renderGemShopCG(body) {
+    body.innerHTML = `<div class="sub" style="margin:2px 0 12px">${t("gemshop.subtitle")}</div>
+      <div class="card" style="text-align:center;padding:24px">
+        <img class="fish-prev" src="assets/icons/icon_diamond.png" alt="" style="width:64px;height:64px">
+        <div class="nm">10 ${t("gemshop.diamonds")}</div>
+        <div class="price">🎬 ${t("gemshop.watch_ad") || "Watch ad"}</div>
+        <button class="pill-btn" id="cg-rewarded-btn">▶ ${t("gemshop.watch_ad") || "Watch ad"}</button>
+      </div>`;
+    const btn = body.querySelector("#cg-rewarded-btn");
+    btn.onclick = () => {
+      btn.disabled = true;
+      if (typeof CG === "undefined") { btn.disabled = false; return; }
+      // pause game + mute during ad
+      if (typeof CG !== "undefined") CG.gameplayStop();
+      const wasMuted = (typeof AudioFX !== "undefined") && AudioFX.muted;
+      if (typeof AudioFX !== "undefined" && AudioFX.setMuted) AudioFX.setMuted(true);
+      CG.rewarded({
+        onFinished: async () => {
+          if (typeof AudioFX !== "undefined" && AudioFX.setMuted) AudioFX.setMuted(!!wasMuted);
+          if (typeof CG !== "undefined") CG.gameplayStart();
+          try {
+            const r = await Api.rewardedDiamonds(10);
+            if (r && r.ok) { toast(t("gemshop.success")); if (typeof App !== "undefined") App.refresh(); }
+            else toast(t("gemshop.error"));
+          } catch (e) { toast(t("gemshop.error")); }
+          btn.disabled = false;
+        },
+        onError: () => {
+          if (typeof AudioFX !== "undefined" && AudioFX.setMuted) AudioFX.setMuted(!!wasMuted);
+          if (typeof CG !== "undefined") CG.gameplayStart();
+          toast(t("gemshop.error"));
+          btn.disabled = false;
+        },
+      });
+    };
   }
 
   /* ================= COIN SHOP (via + on the coins HUD chip: diamonds -> coins) ================= */
@@ -807,7 +847,7 @@ const UI = (() => {
       });
       if (anyExpired) {
         clearInterval(eggTimer); eggTimer = null;
-        setTimeout(async () => { await App.refresh(); renderBreeding(); toast(t("toast.egg_hatched")); }, 2500);
+        setTimeout(async () => { await App.refresh(); renderBreeding(); toast(t("toast.egg_hatched")); if (typeof CG !== "undefined") CG.happytime(); }, 2500);
       }
     };
     tick();

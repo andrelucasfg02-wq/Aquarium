@@ -1579,5 +1579,19 @@ module.exports = function gameRoutes(db) {
     res.json({ ok: true, id: Number(r2.lastInsertRowid) });
   }));
 
+  // rewarded ad diamonds (CrazyGames portal): client calls this ONLY after
+  // the SDK fires adFinished. Rate-limited to prevent abuse.
+  r.post('/shop/diamonds/rewarded', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const last = await db.get(
+      "SELECT created_at FROM rewarded_ads WHERE user_id=? ORDER BY id DESC LIMIT 1", uid);
+    if (last && t - last.created_at < 180)
+      return res.status(429).json({ ok: false, error: 'too soon' });
+    await db.run('INSERT INTO rewarded_ads(user_id, created_at) VALUES(?,?)', uid, t);
+    await addGems(uid, 10);
+    const w = await db.get('SELECT gems FROM wallets WHERE user_id=?', uid);
+    res.json({ ok: true, gems: w ? w.gems : 0 });
+  }));
+
   return r;
 };

@@ -75,6 +75,7 @@ const Api = (() => {
     treatFish: (fish_id) => post("/api/fish/treat", { fish_id }),
     collectCoins: (fish_id) => post("/api/fish/collect", { fish_id }),
     buyMedicine: (qty) => post("/api/shop/medicine/buy", { qty }),
+    cureAll: () => post("/api/lab/cure-all", {}),
     buyTank: (tier) => post("/api/tanks/buy", { tier }),
     switchTank: (tier, num) => post("/api/tanks/switch", { tier, num }),
     buyExtraSlot: (tank) => post("/api/tanks/extra-slot", { tank }),

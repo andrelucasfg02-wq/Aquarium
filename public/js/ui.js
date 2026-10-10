@@ -681,12 +681,29 @@ const UI = (() => {
         <div class="sub">${t("shop.medicine_desc", { n: state.wallets.medicine || 0 })}</div></div>
         <button class="pill-btn gold" data-buymed="1">${CUR_GOLD} ${fmtCoins(DATA.MEDICINE_PRICE)}</button>
       </div>
+      <div class="row-card"><img src="assets/icons/icon_cure_all.jpg" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:12px;margin-right:10px;flex:none"><div class="grow"><b>${t("lab.cure_all")}</b>
+        <div class="sub">${t("lab.cure_all_desc")}</div></div>
+        <button class="pill-btn pink" data-cureall="1">💎 10 · ${t("lab.cure_all_use")}</button>
+      </div>
       <div class="sub" style="margin-top:10px">${t("lab.hint")}</div>`;
     body.querySelectorAll("[data-buymed]").forEach((b) => b.onclick = async () => {
       b.disabled = true;
       const r = await Api.buyMedicine(+b.dataset.buymed);
       if (r.ok) { AudioFX.coin(); toast(t("toast.medicine_bought", { qty: b.dataset.buymed })); }
       else { AudioFX.error(); toast(r.error || t("toast.couldnt_buy")); }
+      await App.refresh();
+      renderLab();
+    });
+    body.querySelectorAll("[data-cureall]").forEach((b) => b.onclick = async () => {
+      b.disabled = true;
+      const r = await Api.cureAll();
+      if (r.ok) { AudioFX.coin(); toast(t("toast.cured_all", { n: r.cured })); }
+      else {
+        AudioFX.error();
+        toast(r.error === "no sick fish" ? t("toast.no_sick")
+          : r.error === "not enough gems" ? t("toast.no_gems")
+          : (r.error || t("toast.couldnt_buy")));
+      }
       await App.refresh();
       renderLab();
     });

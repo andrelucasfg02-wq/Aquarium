@@ -646,6 +646,27 @@ module.exports = function gameRoutes(db) {
     res.json({ ok: true, medicine: (w.medicine || 0) + qty });
   }));
 
+  // Lab: cure ALL sick fish in the active tank at once — costs 10 diamonds.
+  const CURE_ALL_GEMS = 10;
+  r.post('/lab/cure-all', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const w = await H.getWallet(uid);
+    if ((w.gems || 0) < CURE_ALL_GEMS) return res.status(400).json({ ok: false, error: 'not enough gems' });
+    const tier = await H.activeTank(uid);
+    const num = await H.activeTankNum(uid);
+    const sick = await db.all(
+      "SELECT id FROM fish WHERE user_id=? AND tank=? AND tank_num=? AND location='tank' AND sick_at IS NOT NULL",
+      uid, tier, num);
+    if (!sick.length) return res.status(400).json({ ok: false, error: 'no sick fish' });
+    await db.tx(async (txDb) => {
+      await txDb.run('UPDATE wallets SET gems=gems-? WHERE user_id=?', CURE_ALL_GEMS, uid);
+      await txDb.run(
+        "UPDATE fish SET sick_at=NULL, fed_at=? WHERE user_id=? AND tank=? AND tank_num=? AND location='tank' AND sick_at IS NOT NULL",
+        t, uid, tier, num);
+    });
+    res.json({ ok: true, cured: sick.length });
+  }));
+
   r.post('/fish/treat', ah(async (req, res) => {
     const uid = req.user.id; const t = now();
     try {

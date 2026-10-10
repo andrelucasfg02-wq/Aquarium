@@ -113,6 +113,10 @@ const UI = (() => {
           <button class="pill-btn pink" id="fm-feed"><img class="btn-ic" src="assets/icons/icon_food.png" alt="">${t("fishmenu.feed")}</button>
           ${fish.sick ? `<button class="pill-btn gold" id="fm-treat"><img class="btn-ic" src="assets/icons/icon_medicine.png" alt=""> ${t("fishmenu.treat")}</button>` : ""}
         </div>
+        <div id="fm-treat-row" class="fish-menu-btns" hidden>
+          <button class="pill-btn gold" id="fm-treat-one"><img class="btn-ic" src="assets/icons/icon_medicine.png" alt="">${t("fishmenu.treat_single")} (${state.wallets.medicine || 0})</button>
+          ${fish.location === "tank" ? `<button class="pill-btn pink" id="fm-treat-all"><img class="btn-ic" src="assets/icons/icon_cure_all.jpg" alt="" style="border-radius:6px">${t("fishmenu.treat_all")} · 💎 10</button>` : ""}
+        </div>
         <div class="fish-menu-btns">
           <button class="pill-btn pink" id="fm-pet"><img class="btn-ic" src="assets/icons/icon_pet.png" alt="">${t("fishmenu.pet")}</button>
           <button class="pill-btn blue" id="fm-transfer">${fish.location === "inventory" ? "\uD83C\uDFE0 " + t("fishmenu.place_in_tank") : "\uD83D\uDD00 " + t("fishmenu.transfer")}</button>
@@ -176,7 +180,12 @@ const UI = (() => {
         await reopen();
       };
       const treatBtn = $("fm-treat");
-      if (treatBtn) treatBtn.onclick = async () => {
+      if (treatBtn) treatBtn.onclick = () => {
+        const row = $("fm-treat-row");
+        row.hidden = !row.hidden;
+      };
+      const treatOne = $("fm-treat-one");
+      if (treatOne) treatOne.onclick = async () => {
         let r = await Api.treatFish(fish.id);
         if (!r.ok && r.error === "no medicine") {
           if (!confirm(htmlToText(t("fishmenu.no_medicine", { price: fmtCoins(DATA.MEDICINE_PRICE) })))) return;
@@ -186,6 +195,18 @@ const UI = (() => {
         }
         if (r.ok) { AudioFX.coin(); toast(t("toast.all_better")); }
         else { AudioFX.error(); toast(r.error || t("toast.couldnt_treat")); }
+        await reopen();
+      };
+      const treatAll = $("fm-treat-all");
+      if (treatAll) treatAll.onclick = async () => {
+        const r = await Api.cureAll();
+        if (r.ok) { AudioFX.coin(); toast(t("toast.cured_all", { n: r.cured })); }
+        else {
+          AudioFX.error();
+          toast(r.error === "no sick fish" ? t("toast.no_sick")
+            : r.error === "not enough gems" ? t("toast.no_gems")
+            : (r.error || t("toast.couldnt_treat")));
+        }
         await reopen();
       };
       $("fm-pet").onclick = async () => { closeFishMenu(); await App.petFish(fish.id); };

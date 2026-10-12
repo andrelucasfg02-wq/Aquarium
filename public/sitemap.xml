@@ -1,9 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://www.aquanimgame.com/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://www.aquanimgame.com/assets/loading/betta-bubble.png</image:loc>
+      <image:title>AquaNim — Virtual Aquarium Game</image:title>
+      <image:caption>AquaNim loading art: betta fish in a bubble</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://www.aquanimgame.com/assets/icons/icon-512.png</image:loc>
+      <image:title>AquaNim game icon</image:title>
+      <image:caption>AquaNim app icon — betta fish in an aquarium</image:caption>
+    </image:image>
   </url>
   <url>
     <loc>https://www.aquanimgame.com/event-maze/</loc>

@@ -103,7 +103,7 @@ const DATA = {
 
 /** Frame roles: 0 idle, 1-4 swim, 5 eat (only while eating), 6 sleep, 7 rear/turn */
 // Bump SPRITE_V whenever shipped art changes so phones don't keep stale cached PNGs.
-const SPRITE_V = 78;
+const SPRITE_V = 79;
 // Species with a custom hybrid egg icon (assets/eggs/<species_id>.png).
 const EGG_V = 12;
 const EGG_ART = {

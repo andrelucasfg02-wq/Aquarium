@@ -166,6 +166,13 @@ async function openDb() {
     if (!ucols.rows.some((c) => c.name === 'bio')) {
       await client.execute('ALTER TABLE users ADD COLUMN bio TEXT');
     }
+    if (!ucols.rows.some((c) => c.name === 'welcome100_seen')) {
+      await client.execute('ALTER TABLE users ADD COLUMN welcome100_seen INTEGER NOT NULL DEFAULT 0');
+      // accounts created before the 100-diamond welcome bonus existed never got
+      // it: mark them seen so the promo ad only shows to new accounts
+      const nowSec = Math.floor(Date.now() / 1000);
+      await client.execute({ sql: 'UPDATE users SET welcome100_seen=1 WHERE created_at < ?', args: [nowSec] });
+    }
     const cols = await client.execute('PRAGMA table_info(fish)');
     if (!cols.rows.some((c) => c.name === 'nickname')) {
       await client.execute('ALTER TABLE fish ADD COLUMN nickname TEXT');

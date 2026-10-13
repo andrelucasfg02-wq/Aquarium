@@ -457,7 +457,7 @@ module.exports = function gameRoutes(db) {
       }
     }
     const user = await db.get(
-      `SELECT u.id,u.name,u.email,u.avatar,w.level,w.xp,w.coins,w.gems,w.food,w.food_special,w.medicine
+      `SELECT u.id,u.name,u.email,u.avatar,u.welcome100_seen,w.level,w.xp,w.coins,w.gems,w.food,w.food_special,w.medicine
        FROM users u JOIN wallets w ON w.user_id=u.id WHERE u.id=?`, uid);
     if (user && user.avatar) {
       user.avatar_url = user.avatar.startsWith('data:') ? user.avatar : '/uploads/avatars/' + user.avatar;
@@ -493,6 +493,7 @@ module.exports = function gameRoutes(db) {
       server_time: t,
       state: {
         user,
+        show_welcome100: !(user && user.welcome100_seen),
         wallets: { coins: user.coins, gems: user.gems, food: user.food, xp: user.xp, level: user.level, medicine: user.medicine || 0, food_special: user.food_special || 0 },
         tanks: {
           owned: ['small', 'medium', 'large', 'xl', 'nursery'].filter((k) => tanks[k]),
@@ -520,6 +521,13 @@ module.exports = function gameRoutes(db) {
     const uid = req.user.id; const t = now();
     const out = await getStateJson(uid, t);
     res.json({ ok: true, server_time: out.server_time, state: out.state });
+  }));
+
+  // ---------- welcome 100-diamond promo ----------
+  // Marks the one-time "YOU GOT 100 DIAMONDS!" ad as seen for this account.
+  r.post('/welcome/seen', ah(async (req, res) => {
+    await db.run('UPDATE users SET welcome100_seen=1 WHERE id=?', req.user.id);
+    res.json({ ok: true });
   }));
 
   // ---------- offline sync ----------

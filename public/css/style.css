@@ -660,3 +660,13 @@ body.cg-mode #btn-guest { font-size: 18px; padding: 16px 32px; margin-top: 12px;
 /* diamond shop hidden in portal build (ads only) */
 body.cg-mode [data-shop="diamonds"],
 body.cg-mode #shop-diamonds { display: none !important; }
+
+/* one-time 100-diamond welcome ad */
+#welcome100-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
+  background:rgba(10,20,40,.78);backdrop-filter:blur(3px);animation:w100pop .35s ease-out}
+@keyframes w100pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+.welcome100-card{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px;
+  max-width:min(92vw,440px)}
+.welcome100-art{width:100%;border-radius:18px;box-shadow:0 12px 48px rgba(0,0,0,.55),0 0 32px rgba(90,200,255,.35)}
+.welcome100-btn{font-size:20px !important;padding:14px 44px !important;animation:w100glow 1.6s ease-in-out infinite}
+@keyframes w100glow{0%,100%{box-shadow:0 0 12px rgba(255,215,0,.55)}50%{box-shadow:0 0 28px rgba(255,215,0,.95)}}

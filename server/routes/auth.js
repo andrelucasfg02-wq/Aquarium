@@ -14,7 +14,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 async function seedStarterKit(db, userId, now) {
   await db.run('INSERT INTO wallets (user_id,coins,gems,food,xp,level) VALUES (?,?,?,?,?,?)',
-    userId, 500, 10, 5, 0, 1);
+    userId, 500, 100, 5, 0, 1);
   await db.run('INSERT INTO user_tanks (user_id,small,medium,large,active) VALUES (?,?,?,?,?)',
     userId, 1, 0, 0, 'small');
   // New players start with a nursery too

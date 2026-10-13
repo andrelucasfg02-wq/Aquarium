@@ -134,6 +134,8 @@ const App = (() => {
     state = r.state;
     UI.updateHUD(state);
     tank.syncState(state);
+    // one-time 100-diamond welcome ad for new accounts
+    if (state.show_welcome100) UI.showWelcome100();
     if (r.synced) UI.toast(t("app.synced") + (r.failed ? ` (${r.failed} ⚠️)` : ""));
     if (typeof Offline !== "undefined") Offline.updateBadge();
     applySettings(state.settings, true);

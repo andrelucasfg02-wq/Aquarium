@@ -1797,10 +1797,29 @@ const UI = (() => {
     document.body.appendChild(el);
   }
 
+  // One-time "YOU GOT 100 DIAMONDS!" welcome ad for new accounts.
+  // The bonus is granted server-side at account creation; this just shows the
+  // promo art once and marks it seen.
+  function showWelcome100() {
+    if ($("welcome100-overlay")) return; // already showing
+    const overlay = document.createElement("div");
+    overlay.id = "welcome100-overlay";
+    overlay.innerHTML = `
+      <div class="welcome100-card">
+        <img class="welcome100-art" src="assets/promo/welcome100.jpg" alt="You got 100 diamonds!">
+        <button class="pill-btn gold welcome100-btn" id="welcome100-collect">💎 ${t("welcome100.collect")}</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    $("welcome100-collect").onclick = async () => {
+      try { await Api.welcomeSeen(); } catch (e) { /* non-fatal */ }
+      overlay.remove();
+    };
+  }
+
   return {
     toast, updateHUD, updateTankSwitcher, open, close, showTankFullPopup, closeTankFullPopup,
     openFishMenu, closeFishMenu, openBreedingWith, openFeedChoice, closeFeedChoice, guestLeaveDialog,
-    guestNudge,
+    guestNudge, showWelcome100,
     setCatalogs(f, d) { fishCatalog = f; decorCatalog = d; },
     get decorCatalog() { return decorCatalog; },
     refreshCurrent() {

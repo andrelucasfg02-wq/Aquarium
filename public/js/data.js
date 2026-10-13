@@ -86,7 +86,7 @@ const DATA = {
   GEM_PACKS: [
     { gems: 50, price: "R$ 4,99" },
     { gems: 100, price: "R$ 8,99" },
-    { gems: 300, price: "R$ 24,99" },
+    { gems: 300, price: "R$ 29,99" },
     { gems: 600, price: "R$ 44,99" },
     { gems: 1000, price: "R$ 69,99" },
   ],

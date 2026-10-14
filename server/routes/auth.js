@@ -8,7 +8,7 @@ const {
   hashPassword, checkPassword, createSession,
   setSessionCookie, destroySession, authRequired, COOKIE_NAME,
 } = require('../auth');
-const { QUEST_DEFS, periodKey } = require('../catalog');
+const { QUEST_DEFS, periodKey, initialSickAt } = require('../catalog');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -25,12 +25,12 @@ async function seedStarterKit(db, userId, now) {
 
   const lineage = JSON.stringify({ mother: null, father: null, hybrid: 0, generation: 0 });
   const fishSql =
-    `INSERT INTO fish (user_id,species_id,grp,variant,gender,location,tank,x,y,born_at,fed_at,lineage)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`;
+    `INSERT INTO fish (user_id,species_id,grp,variant,gender,location,tank,x,y,born_at,fed_at,lineage,sick_next_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`;
   await db.run(fishSql, userId, 'sakura_goldfish', 'goldfish', 'sakura_goldfish', 'female',
-    'tank', 'small', 0.35, 0.5, now, now, lineage);
+    'tank', 'small', 0.35, 0.5, now, now, lineage, initialSickAt(now));
   await db.run(fishSql, userId, 'azure_tang', 'goldfish', 'azure_tang', 'male',
-    'tank', 'small', 0.6, 0.45, now, now, lineage);
+    'tank', 'small', 0.6, 0.45, now, now, lineage, initialSickAt(now));
   await db.run('INSERT INTO collection (user_id,species_id,count) VALUES (?,?,?)',
     userId, 'sakura_goldfish', 1);
   await db.run('INSERT INTO collection (user_id,species_id,count) VALUES (?,?,?)',

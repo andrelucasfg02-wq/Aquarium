@@ -126,10 +126,12 @@ const Offline = (() => {
 
     if (type === "feed") {
       const kind = p.kind === "special" ? "special" : "normal";
+      // only hungry fish get pellets — full fish ignore the food
       const targets = fish.filter((f) =>
         f.location === "tank" && f.tank === activeTank &&
-        ((kind === "special") === (f.group === "bottom_fish")));
-      if (!targets.length) return { ok: true };
+        ((kind === "special") === (f.group === "bottom_fish")) &&
+        hungerPct(f.fed_at, t) < 100);
+      if (!targets.length) return { ok: true, pellets: 0, kind };
       if (kind === "special") {
         if ((W.food_special || 0) < targets.length) return { ok: false, error: "no special food" };
         W.food_special -= targets.length;
@@ -137,11 +139,17 @@ const Offline = (() => {
         if ((W.food || 0) < targets.length) return { ok: false, error: "no food" };
         W.food -= targets.length;
       }
-      for (const f of targets) {
-        f.fed_at = t; f.hunger = 100; f.sick = false; f.mood = moodOf(false, 100);
-      }
+      // no fed_at change here: each fish gets full only when it catches its pellet
       W.xp = (W.xp || 0) + 2;
       return { ok: true, pellets: targets.length, kind };
+    }
+    if (type === "feed-catch") {
+      const f = byId(p.fish_id);
+      if (!f) return { ok: false, error: "fish not found" };
+      if (f.location !== "tank") return { ok: false, error: "not in tank" };
+      if (hungerPct(f.fed_at, t) >= 100) return { ok: false, error: "not hungry" };
+      f.fed_at = t; f.hunger = 100; f.mood = moodOf(f.sick, 100);
+      return { ok: true };
     }
     if (type === "feed-one") {
       const f = byId(p.fish_id);
@@ -222,6 +230,7 @@ const Offline = (() => {
     if (method !== "POST") return null;
     const b = body || {};
     if (path === "/api/fish/feed") return enqueue("feed", { kind: b.kind });
+    if (path === "/api/fish/feed/catch") return enqueue("feed-catch", { fish_id: b.fish_id });
     if (path === "/api/fish/feed-one") return enqueue("feed-one", { fish_id: b.fish_id });
     if (path === "/api/fish/treat") return enqueue("treat", { fish_id: b.fish_id });
     if (path === "/api/fish/collect") return enqueue("collect", { fish_id: b.fish_id });

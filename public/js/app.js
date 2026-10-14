@@ -360,8 +360,12 @@ const App = (() => {
       if (!state) return;
       const r = await Api.feed(kind);
       if (r.ok) {
-        tank.feedBurst(r.pellets || 1, r.kind || kind);
-        UI.toast(t("app.yum"));
+        if ((r.pellets || 0) > 0) {
+          tank.feedBurst(r.pellets, r.kind || kind);
+          UI.toast(t("app.yum"));
+        } else {
+          UI.toast(t("toast.all_full"));
+        }
       } else {
         AudioFX.error();
         UI.toast(r.error === "no food" || r.error === "no special food"
@@ -437,6 +441,18 @@ const App = (() => {
     tank.on("fishTap", (fishId) => {
       const f = (state.fish || []).find((x) => x.id === fishId);
       if (f) UI.openFishMenu(f);
+    });
+
+    tank.on("pelletCatch", (fishId) => {
+      // a fish caught its pellet: tell the server so it actually gets full.
+      // misses stay hungry — food was already spent when it was dropped.
+      Api.feedCatch(fishId).then(async (r) => {
+        if (r.ok) {
+          const s = await Api.state();
+          if (s.ok) { state = s.state; UI.updateHUD(state); tank.syncState(state); }
+        }
+        // "not hungry" just means it was already fed — ignore quietly
+      });
     });
 
     tank.on("coinTap", (fishId) => {

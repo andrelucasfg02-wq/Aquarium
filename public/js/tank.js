@@ -390,6 +390,8 @@ class TankView {
     if (this.pellets.length) {
       for (const e of this.fish.values()) {
         if (e.state === "eat" || e.state === "clean" || e.group === "snail") continue;
+        // only hungry fish chase food — a full fish ignores pellets
+        if (e.data && e.data.hunger != null && e.data.hunger >= 100) continue;
         // corys only eat green bottom pellets; everyone else eats normal food
         const wantKind = e.group === "bottom_fish" ? "special" : "normal";
         let best = null, bd = 1e9;
@@ -511,6 +513,9 @@ class TankView {
           p.gone = true; e.state = "eat"; e.eatT = .9;
           this.addEmoteImg(e.px, e.py - .035, "assets/icons/emote_love.png", 1.4);
           AudioFX.munch();
+          // the fish only gets full if it actually caught the pellet
+          if (e.data) { e.data.hunger = 100; e.data.mood = "happy"; }
+          if (e.data && e.data.id != null) this.emit("pelletCatch", e.data.id);
         }
         break;
       }

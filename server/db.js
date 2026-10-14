@@ -195,7 +195,20 @@ async function openDb() {
         args: [_t - 20 * 3600, _t - 20 * 3600],
       });
     }
-    // coin farming: pending coins waiting for collection + cycle start
+    // weekly sickness cycle: each fish carries its next scheduled sickness time.
+    // staggered so fish never all fall sick together; curing reschedules ~a week out.
+    if (!cols.rows.some((c) => c.name === 'sick_next_at')) {
+      await client.execute('ALTER TABLE fish ADD COLUMN sick_next_at INTEGER');
+      // one-time stagger for pre-existing fish: first sickness at a random
+      // point in the coming week (healthy fish only; sick ones reschedule on cure)
+      const _t = Math.floor(Date.now() / 1000);
+      const existing = await client.execute(
+        'SELECT id FROM fish WHERE sick_at IS NULL AND sick_next_at IS NULL');
+      for (const fr of existing.rows) {
+        const jitter = Math.floor(Math.random() * 8 * 24 * 3600);
+        await client.execute({ sql: 'UPDATE fish SET sick_next_at=? WHERE id=?', args: [_t + jitter, fr.id] });
+      }
+    }
     if (!cols.rows.some((c) => c.name === 'coin_pending')) {
       await client.execute('ALTER TABLE fish ADD COLUMN coin_pending INTEGER NOT NULL DEFAULT 0');
     }

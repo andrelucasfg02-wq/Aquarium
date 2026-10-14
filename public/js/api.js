@@ -69,6 +69,7 @@ const Api = (() => {
     buyFish: (species_id) => post("/api/shop/fish/buy", { species_id }),
     sellFish: (fish_id) => post("/api/fish/sell", { fish_id }),
     feed: (kind) => post("/api/fish/feed", { kind }),
+    feedCatch: (fish_id) => post("/api/fish/feed/catch", { fish_id }),
     coryClean: (spotId, fishId) => post("/api/dirt/cory-clean", { spot_id: spotId, fish_id: fishId }),
     tapFish: (fish_id) => post("/api/fish/tap", { fish_id }),
     feedOne: (fish_id) => post("/api/fish/feed-one", { fish_id }),

@@ -228,7 +228,19 @@ function growthStage(speciesId, level) {
 // ---- fish care: hunger, mood, sickness, levels ----
 const HUNGER_FULL_SECS = 6 * 3600;   // hunger stays 100% for 6h after feeding
 const HUNGER_EMPTY_SECS = 24 * 3600;  // hunger hits 0% 24h after feeding
-const SICK_AFTER_SECS = 36 * 3600;   // fish gets sick 36h after last feeding
+// sickness runs on a weekly cycle, staggered per fish: a fish gets sick about
+// once a week, and curing it schedules the next bout ~a week later
+const SICK_CYCLE_MIN_SECS = 6 * 24 * 3600;   // next sickness no earlier than 6d after cure
+const SICK_CYCLE_MAX_SECS = 8 * 24 * 3600;   // ... and no later than 8d after cure
+// when a fish is cured, its next sickness lands 6-8 days out
+function nextSickAt(from) {
+  return from + SICK_CYCLE_MIN_SECS + Math.floor(Math.random() * (SICK_CYCLE_MAX_SECS - SICK_CYCLE_MIN_SECS));
+}
+// a newborn/bought fish (or a pre-existing one at migration) gets its first
+// sickness at a random point in the coming week, so fish never all fall sick together
+function initialSickAt(from) {
+  return from + Math.floor(Math.random() * SICK_CYCLE_MAX_SECS);
+}
 const MEDICINE_PRICE = 250;          // coins per medicine
 const SPECIAL_FOOD_PRICE = 20;      // coins per special food (bottom fish)
 const SPECIAL_FOOD_PACKS = [1, 10];   // only packs sold for bottom food
@@ -356,7 +368,8 @@ module.exports = {
   speciesGroup, breedFamily, fishCatalog,
   HATCH_HOURS, GROWTH_DAYS, HYBRID_HATCH_HOURS, HYBRID_GROWTH_DAYS, growthStage,
   GROW_LEVEL, growLevel,
-  HUNGER_FULL_SECS, HUNGER_EMPTY_SECS, SICK_AFTER_SECS, MEDICINE_PRICE, SPECIAL_FOOD_PRICE,
+  HUNGER_FULL_SECS, HUNGER_EMPTY_SECS, SICK_CYCLE_MIN_SECS, SICK_CYCLE_MAX_SECS,
+  nextSickAt, initialSickAt, MEDICINE_PRICE, SPECIAL_FOOD_PRICE,
   SPECIAL_FOOD_PACKS,
   hungerPct, fishMood, fishLevel, COIN_FARM, EVENT_DIAMOND_DAILY, EVENT_DIAMOND_SECS,
   TANK_CAPACITY, DECOR_SLOTS, TANK_PRICES, DECOR_EXTRA_SLOT_MAX, DECOR_EXTRA_SLOT_COST,

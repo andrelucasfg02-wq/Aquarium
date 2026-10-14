@@ -181,12 +181,12 @@ function helpers(db) {
       : (Math.random() < 0.5 ? 'male' : 'female'));
     const lineage = opts.lineage || { mother: null, father: null, hybrid: 0, generation: 0 };
     const info = await db.run(
-      `INSERT INTO fish (user_id,species_id,grp,variant,gender,location,tank,tank_num,x,y,born_at,fed_at,lineage,origin,event_id,coin_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `INSERT INTO fish (user_id,species_id,grp,variant,gender,location,tank,tank_num,x,y,born_at,fed_at,lineage,origin,event_id,coin_at,sick_next_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       uid, speciesId, grp, opts.variant || speciesId, gender,
       opts.location || 'tank', tank, opts.tank_num || 1, pos.x, pos.y,
       opts.born_at || now, opts.fed_at || now, JSON.stringify(lineage),
-      opts.origin || 'shop', opts.event_id || null, now);
+      opts.origin || 'shop', opts.event_id || null, now, C.initialSickAt(now));
     await db.run(`INSERT INTO collection (user_id,species_id,count) VALUES (?,?,1)
                 ON CONFLICT(user_id,species_id) DO UPDATE SET count=count+1`, uid, speciesId);
     await questProgressMax(uid, 'own_8_fish', await totalFishCount(uid), now);
@@ -299,8 +299,10 @@ module.exports = function gameRoutes(db) {
     kind = kind === 'special' ? 'special' : 'normal';
     const tank = await H.activeTank(uid);
     const tankNum = await H.activeTankNum(uid);
-    const tankFish = await db.all("SELECT id, grp FROM fish WHERE user_id=? AND tank=? AND tank_num=? AND location='tank'", uid, tank, tankNum);
-    const targets = tankFish.filter((f) => (kind === 'special') === (f.grp === 'bottom_fish'));
+    const tankFish = await db.all("SELECT id, grp, fed_at FROM fish WHERE user_id=? AND tank=? AND tank_num=? AND location='tank'", uid, tank, tankNum);
+    // only hungry fish get pellets now: a fish only gets full when it actually
+    // catches its pellet (reported via /fish/feed/catch), not when food is dropped
+    const targets = tankFish.filter((f) => (kind === 'special') === (f.grp === 'bottom_fish') && C.hungerPct(f.fed_at, t) < 100);
     if (targets.length === 0) return { pellets: 0, kind };
     const w = await H.getWallet(uid);
     if (kind === 'special') {
@@ -312,14 +314,22 @@ module.exports = function gameRoutes(db) {
       const Ht = helpers(txDb);
       if (kind === 'special') await txDb.run('UPDATE wallets SET food_special=food_special-? WHERE user_id=?', targets.length, uid);
       else await txDb.run('UPDATE wallets SET food=food-? WHERE user_id=?', targets.length, uid);
-      const ids = targets.map((f) => f.id);
-      await txDb.run(`UPDATE fish SET fed_at=? WHERE id IN (${ids.map(() => '?').join(',')})`, t, ...ids);
       await Ht.questProgressAdd(uid, 'feed_3', 1, t);
       await Ht.addXp(uid, 2);
     });
     return { pellets: targets.length, kind };
   };
 
+  const doFeedCatch = async (uid, fish_id, t) => {
+    // the client reports this when a fish visually catches a pellet:
+    // only a genuinely hungry fish gets full from it (food was paid at drop time)
+    const fish = await db.get("SELECT id, fed_at, location FROM fish WHERE id=? AND user_id=?", fish_id, uid);
+    if (!fish) throw { status: 404, message: 'fish not found' };
+    if (fish.location !== 'tank') throw { status: 400, message: 'not in tank' };
+    if (C.hungerPct(fish.fed_at, t) >= 100) throw { status: 400, message: 'not hungry' };
+    await db.run('UPDATE fish SET fed_at=? WHERE id=?', t, fish_id);
+    return {};
+  };
   const doFeedOne = async (uid, fish_id, t) => {
     const fish = await db.get('SELECT id, grp FROM fish WHERE id=? AND user_id=?', fish_id, uid);
     if (!fish) throw { status: 404, message: 'fish not found' };
@@ -343,7 +353,8 @@ module.exports = function gameRoutes(db) {
     if ((w.medicine || 0) < 1) throw { status: 400, message: 'no medicine' };
     await db.tx(async (txDb) => {
       await txDb.run('UPDATE wallets SET medicine=medicine-1 WHERE user_id=?', uid);
-      await txDb.run('UPDATE fish SET sick_at=NULL, fed_at=? WHERE id=?', t, fish_id);
+      // cured: next sickness ~a week later (6-8 days, per-fish jitter)
+      await txDb.run('UPDATE fish SET sick_at=NULL, fed_at=?, sick_next_at=? WHERE id=?', t, C.nextSickAt(t), fish_id);
     });
     return {};
   };
@@ -431,9 +442,9 @@ module.exports = function gameRoutes(db) {
   // the offline queue. Returns {server_time, state}.
   const getStateJson = async (uid, t) => {
     const { green } = await H.maintain(uid, t);
-    // lazy sickness: unfed for SICK_AFTER_SECS -> sick
-    await db.run('UPDATE fish SET sick_at=? WHERE user_id=? AND sick_at IS NULL AND fed_at IS NOT NULL AND ? - fed_at > ?',
-      t, uid, t, C.SICK_AFTER_SECS);
+    // lazy sickness: weekly cycle — a fish falls sick when its scheduled time arrives
+    await db.run('UPDATE fish SET sick_at=? WHERE user_id=? AND sick_at IS NULL AND sick_next_at IS NOT NULL AND sick_next_at <= ?',
+      t, uid, t);
     // lazy coin farming: a finished cycle banks coins and waits for collection
     const coinFish = await db.all(
       "SELECT id, species_id, grp, born_at, lineage, event_id, coin_pending, coin_at, gem_pending, gem_at FROM fish WHERE user_id=? AND location='tank'", uid);
@@ -561,6 +572,7 @@ module.exports = function gameRoutes(db) {
         switch (a.type) {
           case 'feed': out = await doFeed(uid, a.kind, t); break;
           case 'feed-one': out = await doFeedOne(uid, a.fish_id, t); break;
+          case 'feed-catch': out = await doFeedCatch(uid, a.fish_id, t); break;
           case 'treat': out = await doTreat(uid, a.fish_id, t); break;
           case 'collect': out = await doCollect(uid, a.fish_id, t); break;
           case 'tap': out = await doTap(uid, a.fish_id, t); break;
@@ -642,6 +654,15 @@ module.exports = function gameRoutes(db) {
     } catch (e) { res.status(e.status || 500).json({ ok: false, error: e.message || 'feed failed' }); }
   }));
 
+  // client reports a pellet catch: the fish only gets full if it was hungry
+  r.post('/fish/feed/catch', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    try {
+      await doFeedCatch(uid, req.body && req.body.fish_id, t);
+      res.json({ ok: true });
+    } catch (e) { res.status(e.status || 500).json({ ok: false, error: e.message || 'feed failed' }); }
+  }));
+
   r.post('/shop/medicine/buy', ah(async (req, res) => {
     const uid = req.user.id;
     const qty = Math.max(1, Math.min(99, Math.floor(Number((req.body || {}).qty) || 1)));
@@ -668,9 +689,11 @@ module.exports = function gameRoutes(db) {
     if (!sick.length) return res.status(400).json({ ok: false, error: 'no sick fish' });
     await db.tx(async (txDb) => {
       await txDb.run('UPDATE wallets SET gems=gems-? WHERE user_id=?', CURE_ALL_GEMS, uid);
-      await txDb.run(
-        "UPDATE fish SET sick_at=NULL, fed_at=? WHERE user_id=? AND tank=? AND tank_num=? AND location='tank' AND sick_at IS NOT NULL",
-        t, uid, tier, num);
+      // each cured fish gets its own next-sickness time ~a week out, so they stay staggered
+      for (const f of sick) {
+        await txDb.run('UPDATE fish SET sick_at=NULL, fed_at=?, sick_next_at=? WHERE id=?',
+          t, C.nextSickAt(t), f.id);
+      }
     });
     res.json({ ok: true, cured: sick.length });
   }));

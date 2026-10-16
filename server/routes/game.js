@@ -278,11 +278,10 @@ function helpers(db) {
 
   // ---------- animated background FX ----------
   // One-time unlock per effect (account-wide); equip per tank tier.
-  // prices in diamonds (0 = free)
   const BGFX = {
-    rays:     { gems: 0 },
-    bubbles:  { gems: 20 },
-    plankton: { gems: 30 },
+    rays:     { gems: 1000 },
+    bubbles:  { coins: 2000 },
+    plankton: { gems: 1000 },
   };
   const bgfxState = async (uid) => {
     const owned = (await db.all('SELECT fx_id FROM bgfx_owned WHERE user_id=?', uid)).map((r) => r.fx_id);
@@ -722,7 +721,7 @@ module.exports = function gameRoutes(db) {
     const st = await H.bgfxState(uid);
     res.json({
       ok: true,
-      items: Object.entries(H.BGFX).map(([id, c]) => ({ id, gems: c.gems, owned: st.owned.includes(id) })),
+      items: Object.entries(H.BGFX).map(([id, c]) => ({ id, gems: c.gems || 0, coins: c.coins || 0, owned: st.owned.includes(id) })),
       equipped: st.equipped,
     });
   }));
@@ -734,9 +733,12 @@ module.exports = function gameRoutes(db) {
     const owned = await db.get('SELECT 1 FROM bgfx_owned WHERE user_id=? AND fx_id=?', uid, fx_id);
     if (owned) return res.status(400).json({ ok: false, error: 'already owned' });
     const w = await H.getWallet(uid);
-    if ((w.gems || 0) < item.gems) return res.status(400).json({ ok: false, error: 'not enough gems' });
+    const costGems = item.gems || 0, costCoins = item.coins || 0;
+    if ((w.gems || 0) < costGems) return res.status(400).json({ ok: false, error: 'not enough gems' });
+    if ((w.coins || 0) < costCoins) return res.status(400).json({ ok: false, error: 'not enough coins' });
     await db.tx(async (txDb) => {
-      if (item.gems > 0) await txDb.run('UPDATE wallets SET gems=gems-? WHERE user_id=?', item.gems, uid);
+      if (costGems > 0) await txDb.run('UPDATE wallets SET gems=gems-? WHERE user_id=?', costGems, uid);
+      if (costCoins > 0) await txDb.run('UPDATE wallets SET coins=coins-? WHERE user_id=?', costCoins, uid);
       await txDb.run('INSERT INTO bgfx_owned (user_id, fx_id) VALUES (?,?)', uid, fx_id);
     });
     res.json({ ok: true });

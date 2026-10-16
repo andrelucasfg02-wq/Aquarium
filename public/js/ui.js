@@ -539,7 +539,8 @@ const UI = (() => {
       let btn;
       if (equipped === it.id) btn = `<span class="tag">✨ ${t("bgfx.equipped")}</span>`;
       else if (it.owned) btn = `<button class="pill-btn pink" data-fxequip="${it.id}">${t("bgfx.equip")}</button>`;
-      else if (!it.gems) btn = `<button class="pill-btn gold" data-fxbuy="${it.id}">${t("bgfx.free")}</button>`;
+      else if (!it.gems && !it.coins) btn = `<button class="pill-btn gold" data-fxbuy="${it.id}">${t("bgfx.free")}</button>`;
+      else if (it.coins) btn = `<button class="pill-btn gold" data-fxbuy="${it.id}">${CUR_GOLD} ${fmtCoins(it.coins)}</button>`;
       else btn = `<button class="pill-btn gold" data-fxbuy="${it.id}">💎 ${it.gems}</button>`;
       html += `<div class="row-card"><span style="font-size:40px;margin-right:10px;flex:none">${meta.icon || "✨"}</span><div class="grow"><b>${name}</b><div class="sub">${desc}</div></div>${btn}</div>`;
     }
@@ -551,7 +552,12 @@ const UI = (() => {
       b.disabled = true;
       const r2 = await Api.buyBgfx(b.dataset.fxbuy);
       if (r2.ok) { AudioFX.coin(); toast(t("toast.bgfx_bought")); }
-      else { AudioFX.error(); toast(r2.error || t("toast.couldnt_buy")); }
+      else {
+        AudioFX.error();
+        toast(r2.error === "not enough gems" ? t("toast.no_gems")
+          : r2.error === "not enough coins" ? t("toast.no_coins")
+          : (r2.error || t("toast.couldnt_buy")));
+      }
       await App.refresh(); renderBgfxShop(body);
     });
     body.querySelectorAll("[data-fxequip]").forEach((b) => b.onclick = async () => {

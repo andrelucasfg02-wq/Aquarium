@@ -59,6 +59,7 @@ class TankView {
     this.ambientT = 0;
     // animated background FX (rays / bubbles / plankton) drawn behind decor
     this.bgfx = null;
+    this.bgfxTier = null;
     this.fxT = 0;
     this.fxBubbles = [];
     this.fxMotes = [];
@@ -670,29 +671,36 @@ class TankView {
 }
 Object.assign(TankView.prototype, {
 
-  /* ---------- animated background FX (behind decor & fish) ---------- */
+  /* ---------- animated background FX (inside the glass only) ---------- */
+  fxGlass() { return DATA.GLASS[this.tier] || { left: 0, right: 1, top: 0, bottom: 1 }; },
   setBgfx(id) {
-    if (this.bgfx === id) return;
+    if (this.bgfx === id && this.bgfxTier === this.tier) return;
     this.bgfx = id;
+    this.bgfxTier = this.tier;
     this.fxBubbles = [];
     this.fxMotes = [];
     const mul = this.particleMul();
+    const g = this.fxGlass();
+    const gx = (a, b) => a + Math.random() * (b - a);
     if (id === "bubbles") {
       const n = Math.max(4, Math.round(14 * mul));
-      for (let i = 0; i < n; i++) this.fxBubbles.push(this.newFxBubble(true));
+      for (let i = 0; i < n; i++) this.fxBubbles.push(this.newFxBubble(true, g, gx));
     } else if (id === "plankton") {
       const n = Math.max(6, Math.round(22 * mul));
       for (let i = 0; i < n; i++) this.fxMotes.push({
-        x: Math.random(), y: Math.random(),
+        x: gx(g.left, g.right), y: gx(g.top, g.bottom),
         ph: Math.random() * 6.28, sp: .3 + Math.random() * .7,
         r: 1.5 + Math.random() * 2.5,
         hue: Math.random() < .55 ? "170,225,255" : "255,220,160",
       });
     }
   },
-  newFxBubble(anywhere) {
+  newFxBubble(anywhere, g, gx) {
+    g = g || this.fxGlass();
+    gx = gx || ((a, b) => a + Math.random() * (b - a));
     return {
-      x: Math.random(), y: anywhere ? Math.random() * 1.05 - .02 : 1.03,
+      x: gx(g.left + .01, g.right - .01),
+      y: anywhere ? gx(g.top, g.bottom + .02) : g.bottom + .02,
       r: 2 + Math.random() * 5, sp: .05 + Math.random() * .09,
       ph: Math.random() * 6.28, wob: .004 + Math.random() * .008,
     };
@@ -700,11 +708,12 @@ Object.assign(TankView.prototype, {
   updateFx(dt) {
     this.fxT = (this.fxT || 0) + dt;
     if (this.bgfx === "bubbles") {
+      const g = this.fxGlass();
       for (const b of this.fxBubbles) {
         b.y -= b.sp * dt;
         b.ph += dt * 2;
         b.x += Math.sin(b.ph) * b.wob * dt;
-        if (b.y < -0.04 || b.x < -0.03 || b.x > 1.03) Object.assign(b, this.newFxBubble(false));
+        if (b.y < g.top - .02 || b.x < g.left - .02 || b.x > g.right + .02) Object.assign(b, this.newFxBubble(false));
       }
     } else if (this.bgfx === "plankton") {
       for (const m of this.fxMotes) m.ph += dt * m.sp;
@@ -717,15 +726,18 @@ Object.assign(TankView.prototype, {
     const t = this.fxT || 0;
     const S = T.w * v.s; // artwork px on screen (width)
     if (fx === "rays") {
-      // soft god-rays swaying down from the top
+      // soft god-rays swaying down from the top of the glass
+      const gr0 = this.fxGlass();
+      const [, gyTop] = fracToPx(0, gr0.top, v, T.w, T.h);
+      const rayH = (gr0.bottom - gr0.top) * T.h * v.s * 1.08;
       for (let i = 0; i < 5; i++) {
-        const fx0 = .1 + i * .2 + Math.sin(t * .35 + i * 1.7) * .02;
+        const fx0 = gr0.left + (gr0.right - gr0.left) * (.1 + i * .2) + Math.sin(t * .35 + i * 1.7) * .012;
         const [x0] = fracToPx(fx0, 0, v, T.w, T.h);
         const wTop = Math.max(16, .045 * S);
         const wBot = wTop * 2.8;
-        const hgt = T.h * v.s * 1.15;
+        const hgt = rayH;
         ctx.save();
-        ctx.translate(x0, v.oy - 30);
+        ctx.translate(x0, gyTop - 24);
         ctx.rotate(-.26 + Math.sin(t * .3 + i * 1.3) * .06);
         const g = ctx.createLinearGradient(0, 0, 0, hgt);
         const a = .16 + .05 * Math.sin(t * .5 + i * 2.1);

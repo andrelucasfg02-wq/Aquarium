@@ -1503,6 +1503,17 @@ const UI = (() => {
       return new Date(ts * 1000).toLocaleDateString(undefined, { year: "numeric", month: "short" });
     } catch (e) { return ""; }
   }
+  function timeAgo(ts) {
+    const s = Math.max(1, Math.floor(Date.now() / 1000) - (ts || 0));
+    if (s < 60) return t("time.now");
+    const m = Math.floor(s / 60);
+    if (m < 60) return t("time.min", { n: m });
+    const h = Math.floor(m / 60);
+    if (h < 24) return t("time.hour", { n: h });
+    const d = Math.floor(h / 24);
+    if (d < 30) return t("time.day", { n: d });
+    return memberSince(ts);
+  }
   function downscaleImage(file, maxSize) {
     // profile photos: shrink to <=maxSize px, JPEG — keeps uploads tiny
     return new Promise((resolve) => {
@@ -1537,6 +1548,7 @@ const UI = (() => {
     const stats = [
       { ic: "🐠", v: p.fish, l: t("profile.fish") },
       { ic: "👥", v: p.friends, l: t("profile.friends") },
+      { ic: "❤️", v: p.hearts || 0, l: t("profile.hearts") },
     ];
     if (p.mine) {
       stats.push({ ic: "🪑", v: p.tanks, l: t("profile.tanks") });
@@ -1574,7 +1586,9 @@ const UI = (() => {
       html += `<div class="prof-edit">
           <input id="prof-name" maxlength="24" value="${esc(p.name)}" autocomplete="off">
           <button class="pill-btn" id="prof-save">${t("profile.save_name")}</button>
-        </div>`;
+        </div>
+        <div class="sec-title">💬 ${t("guestbook.title")}</div>
+        <div id="prof-guestbook"><div class="empty">${t("common.loading")}</div></div>`;
     } else {
       html += `<div class="prof-actions">
           <button class="pill-btn" id="prof-visit">🐠 ${t("profile.visit")}</button>`;
@@ -1583,6 +1597,15 @@ const UI = (() => {
     }
     body.innerHTML = html;
     if (p.mine) {
+      Api.guestbook().then((gr) => {
+        const gb = $("prof-guestbook");
+        if (!gb) return;
+        if (!gr.ok) { gb.innerHTML = `<div class="empty">${esc(gr.error || "")}</div>`; return; }
+        const notes = gr.notes || [];
+        gb.innerHTML = notes.length
+          ? notes.map((n) => `<div class="row-card">${avatarHtml(n, "gb-avatar")}<div class="grow"><b>${esc(n.name)}</b> <span class="sub">· ${timeAgo(n.created_at)}</span><div>${esc(n.message)}</div></div></div>`).join("")
+          : `<div class="empty">${t("guestbook.empty")}</div>`;
+      });
       $("prof-save").onclick = async () => {
         const nm = $("prof-name").value.trim();
         const rr = await Api.profileRename(nm);
@@ -1637,8 +1660,50 @@ const UI = (() => {
     body.innerHTML = `<div class="visit-bar">
         <button class="pill-btn" id="visit-back">← ${esc(visitName)}</button>
         <span class="muted">${t("profile.visit_hint")}</span>
-      </div><canvas id="visit-canvas" class="visit-canvas"></canvas>`;
+        <span style="flex:1"></span>
+        <button class="pill-btn" id="visit-heart" title="${t("guestbook.heart")}" style="${r.visit.liked ? "border-color:#e0508a" : ""}">${r.visit.liked ? "❤️" : "🤍"} <span id="visit-hearts">${r.visit.hearts || 0}</span></button>
+        <button class="pill-btn" id="visit-note" title="${t("guestbook.note")}">✏️</button>
+      </div>
+      <div class="visit-bar" id="visit-note-row" hidden>
+        <input id="visit-note-input" maxlength="80" placeholder="${t("guestbook.note_ph")}" autocomplete="off"
+          style="flex:1;padding:9px 12px;border-radius:12px;border:2px solid var(--pink-d);font-size:14px">
+        <button class="pill-btn pink" id="visit-note-send">${t("guestbook.send")}</button>
+      </div>
+      <canvas id="visit-canvas" class="visit-canvas"></canvas>`;
     $("visit-back").onclick = () => open("profile", visitId);
+    $("visit-heart").onclick = async () => {
+      const b = $("visit-heart");
+      b.disabled = true;
+      const hr = await Api.heartTank(visitId);
+      b.disabled = false;
+      if (hr.ok) {
+        AudioFX.coin();
+        b.innerHTML = `${hr.liked ? "❤️" : "🤍"} <span id="visit-hearts">${hr.hearts}</span>`;
+        b.style.borderColor = hr.liked ? "#e0508a" : "";
+        toast(hr.liked ? t("toast.hearted") : t("toast.unhearted"));
+      } else { AudioFX.error(); toast(hr.error || t("toast.couldnt_heart")); }
+    };
+    $("visit-note").onclick = () => {
+      const row = $("visit-note-row");
+      row.hidden = !row.hidden;
+      if (!row.hidden) $("visit-note-input").focus();
+    };
+    $("visit-note-send").onclick = async () => {
+      const inp = $("visit-note-input");
+      const msg = inp.value.trim();
+      if (!msg) return;
+      const b = $("visit-note-send");
+      b.disabled = true;
+      const nr = await Api.guestNote(visitId, msg);
+      b.disabled = false;
+      if (nr.ok) {
+        AudioFX.coin(); toast(t("toast.note_sent"));
+        inp.value = ""; $("visit-note-row").hidden = true;
+      } else {
+        AudioFX.error();
+        toast(nr.error === "too many notes" ? t("toast.too_many_notes") : (nr.error || t("toast.couldnt_note")));
+      }
+    };
     visitView = new TankView($("visit-canvas"));
     visitView.setReadOnly(true);
     const dc = await Api.decorCatalog();
@@ -1648,6 +1713,7 @@ const UI = (() => {
       fish: r.visit.fish || [],
       placements: r.visit.placements || [],
       dirt: { spots: [], green: false },
+      bgfx: { equipped: r.visit.bgfx ? { [r.visit.tier]: r.visit.bgfx } : {} },
     });
   }
 

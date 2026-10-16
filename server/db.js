@@ -31,6 +31,14 @@ const SCHEMA = `
       user_id INTEGER, fx_id TEXT, PRIMARY KEY(user_id, fx_id));
     CREATE TABLE IF NOT EXISTS bgfx_equipped(
       user_id INTEGER, tank TEXT, fx_id TEXT, PRIMARY KEY(user_id, tank));
+    -- visit guestbook: hearts on a player's tanks + short visitor notes
+    CREATE TABLE IF NOT EXISTS tank_hearts(
+      visitor_id INTEGER, owner_id INTEGER, created_at INTEGER,
+      PRIMARY KEY(visitor_id, owner_id));
+    CREATE TABLE IF NOT EXISTS guestbook(
+      id INTEGER PRIMARY KEY, owner_id INTEGER, visitor_id INTEGER,
+      message TEXT, created_at INTEGER);
+    CREATE INDEX IF NOT EXISTS idx_guestbook_owner ON guestbook(owner_id, created_at DESC);
     CREATE TABLE IF NOT EXISTS fish(
       id INTEGER PRIMARY KEY, user_id INTEGER, species_id TEXT, grp TEXT,
       variant TEXT, gender TEXT, location TEXT, tank TEXT,

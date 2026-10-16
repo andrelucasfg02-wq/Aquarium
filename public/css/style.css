@@ -616,6 +616,9 @@ select.sel{padding:10px;border-radius:12px;border:2px solid var(--green-border);
   color:#fff;font-size:32px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .prof-cam{position:absolute;right:-2px;bottom:-2px;width:30px;height:30px;border-radius:50%;
   border:2px solid var(--green-border);background:#f2fdf5;font-size:14px;cursor:pointer;padding:0}
+.gb-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:none;margin-right:10px;
+  border:2px solid var(--green-border);background:linear-gradient(135deg,#5ccb52,#2f9e44);
+  color:#fff;font-size:17px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .prof-id{min-width:0;flex:1}
 .prof-name{font-size:20px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .prof-sub{margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}

@@ -1498,6 +1498,7 @@ module.exports = function gameRoutes(db) {
       id: p.id, name: p.name, level: p.level || 1, xp: p.xp || 0,
       created_at: p.created_at, coins: p.coins || 0, gems: p.gems || 0,
       avatar_url: avatarUrl(p.avatar), bio: p.bio || '',
+      hearts: await heartCount(uid),
       ...s, mine: true,
     }});
   }));
@@ -1519,6 +1520,7 @@ module.exports = function gameRoutes(db) {
     res.json({ ok: true, profile: {
       id: p.id, name: p.name, level: p.level || 1, created_at: p.created_at,
       avatar_url: avatarUrl(p.avatar), bio: p.bio || '',
+      hearts: await heartCount(id),
       fish: s.fish, friends: s.friends, collection: s.collection, mine: false,
       relation: rel ? rel.status : null,
     }});
@@ -1584,7 +1586,59 @@ module.exports = function gameRoutes(db) {
     const placements = await db.all(
       'SELECT id,deco_id,tank,tank_num,x,y FROM decor_placements WHERE user_id=? AND tank=? AND tank_num=?',
       id, tier, tank_num);
-    res.json({ ok: true, visit: { tier, tank_num, fish, placements } });
+    res.json({ ok: true, visit: { tier, tank_num, fish, placements,
+      hearts: await heartCount(id),
+      liked: !!(await db.get('SELECT 1 FROM tank_hearts WHERE visitor_id=? AND owner_id=?', req.user.id, id)),
+      bgfx: ((await db.get('SELECT fx_id FROM bgfx_equipped WHERE user_id=? AND tank=?', id, tier)) || {}).fx_id || null,
+    } });
+  }));
+
+  // ---------- visit guestbook: hearts + short notes on a player's tanks ----------
+  const heartCount = (owner_id) =>
+    db.get('SELECT COUNT(*) c FROM tank_hearts WHERE owner_id=?', owner_id).then((r) => r.c || 0);
+  r.post('/guestbook/heart', ah(async (req, res) => {
+    const uid = req.user.id;
+    const owner_id = Number(req.body && req.body.owner_id);
+    if (!owner_id || owner_id === uid) return res.status(400).json({ ok: false, error: 'invalid user' });
+    const tu = await db.get('SELECT id FROM users WHERE id=? AND COALESCE(is_guest,0)=0', owner_id);
+    if (!tu) return res.status(404).json({ ok: false, error: 'user not found' });
+    const existing = await db.get('SELECT 1 FROM tank_hearts WHERE visitor_id=? AND owner_id=?', uid, owner_id);
+    let liked;
+    if (existing) {
+      await db.run('DELETE FROM tank_hearts WHERE visitor_id=? AND owner_id=?', uid, owner_id);
+      liked = false;
+    } else {
+      await db.run('INSERT INTO tank_hearts (visitor_id, owner_id, created_at) VALUES (?,?,?)', uid, owner_id, now());
+      liked = true;
+    }
+    res.json({ ok: true, liked, hearts: await heartCount(owner_id) });
+  }));
+  r.post('/guestbook/note', ah(async (req, res) => {
+    const uid = req.user.id;
+    const owner_id = Number(req.body && req.body.owner_id);
+    const message = String((req.body && req.body.message) || '').trim().slice(0, 80);
+    if (!owner_id || owner_id === uid) return res.status(400).json({ ok: false, error: 'invalid user' });
+    if (!message) return res.status(400).json({ ok: false, error: 'empty note' });
+    const tu = await db.get('SELECT id FROM users WHERE id=? AND COALESCE(is_guest,0)=0', owner_id);
+    if (!tu) return res.status(404).json({ ok: false, error: 'user not found' });
+    const t = now();
+    const recent = await db.get(
+      'SELECT COUNT(*) c FROM guestbook WHERE visitor_id=? AND owner_id=? AND created_at>?',
+      uid, owner_id, t - 86400);
+    if ((recent.c || 0) >= 5) return res.status(429).json({ ok: false, error: 'too many notes' });
+    await db.run('INSERT INTO guestbook (owner_id, visitor_id, message, created_at) VALUES (?,?,?,?)',
+      owner_id, uid, message, t);
+    res.json({ ok: true });
+  }));
+  r.get('/guestbook', ah(async (req, res) => {
+    const uid = req.user.id;
+    const notes = await db.all(
+      `SELECT g.message, g.created_at, u.id AS visitor_id, u.name, u.avatar
+       FROM guestbook g JOIN users u ON u.id=g.visitor_id
+       WHERE g.owner_id=? ORDER BY g.created_at DESC LIMIT 30`, uid);
+    res.json({ ok: true, hearts: await heartCount(uid),
+      notes: notes.map((n) => ({ visitor_id: n.visitor_id, name: n.name,
+        avatar_url: avatarUrl(n.avatar), message: n.message, created_at: n.created_at })) });
   }));
 
   // list one of your fish for sale (diamonds)

@@ -57,7 +57,7 @@ class TankView {
     this.readOnly = false; // visit mode: watch a friend's tank, no interactions
     this.lastT = 0;
     this.ambientT = 0;
-    // animated background FX (rays / bubbles / plankton) drawn behind decor
+    // animated background FX (bubbles / plankton) drawn behind decor
     this.bgfx = null;
     this.bgfxTier = null;
     this.fxT = 0;
@@ -725,32 +725,7 @@ Object.assign(TankView.prototype, {
     const { ctx } = this;
     const t = this.fxT || 0;
     const S = T.w * v.s; // artwork px on screen (width)
-    if (fx === "rays") {
-      // soft god-rays swaying down from the top of the glass
-      const gr0 = this.fxGlass();
-      const [, gyTop] = fracToPx(0, gr0.top, v, T.w, T.h);
-      const rayH = (gr0.bottom - gr0.top) * T.h * v.s * 1.08;
-      for (let i = 0; i < 5; i++) {
-        const fx0 = gr0.left + (gr0.right - gr0.left) * (.1 + i * .2) + Math.sin(t * .35 + i * 1.7) * .012;
-        const [x0] = fracToPx(fx0, 0, v, T.w, T.h);
-        const wTop = Math.max(16, .045 * S);
-        const wBot = wTop * 2.8;
-        const hgt = rayH;
-        ctx.save();
-        ctx.translate(x0, gyTop - 24);
-        ctx.rotate(-.26 + Math.sin(t * .3 + i * 1.3) * .06);
-        const g = ctx.createLinearGradient(0, 0, 0, hgt);
-        const a = .16 + .05 * Math.sin(t * .5 + i * 2.1);
-        g.addColorStop(0, `rgba(255,255,238,${a.toFixed(3)})`);
-        g.addColorStop(1, "rgba(255,255,238,0)");
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.moveTo(-wTop / 2, 0); ctx.lineTo(wTop / 2, 0);
-        ctx.lineTo(wBot / 2, hgt); ctx.lineTo(-wBot / 2, hgt);
-        ctx.closePath(); ctx.fill();
-        ctx.restore();
-      }
-    } else if (fx === "bubbles") {
+    if (fx === "bubbles") {
       ctx.save();
       for (const b of this.fxBubbles) {
         const [x, y] = fracToPx(b.x, b.y, v, T.w, T.h);

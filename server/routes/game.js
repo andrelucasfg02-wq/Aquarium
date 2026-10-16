@@ -279,7 +279,6 @@ function helpers(db) {
   // ---------- animated background FX ----------
   // One-time unlock per effect (account-wide); equip per tank tier.
   const BGFX = {
-    rays:     { gems: 1000 },
     bubbles:  { coins: 2000 },
     plankton: { gems: 1000 },
   };

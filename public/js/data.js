@@ -99,9 +99,8 @@ const DATA = {
   ],
   FOOD_PACKS: [1, 5, 10, 20, 50],
   SPECIAL_FOOD_PACKS: [1, 10],
-  // animated background FX: id -> {icon emoji}; prices live server-side (gems)
+  // animated background FX: id -> {icon emoji}; prices live server-side
   BGFX: {
-    rays:     { icon: "☀️" },
     bubbles:  { icon: "🫧" },
     plankton: { icon: "✨" },
   },

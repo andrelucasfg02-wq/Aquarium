@@ -271,6 +271,22 @@ function helpers(db) {
     }
     const green = (now - ds.last_cleaned_at) >= 5 * 3600;
 
+    // shrimp: each shrimp auto-collects banked coins from 1 fish every 3 hours
+    const shrimps = await t.all(
+      "SELECT id, tank, tank_num, clean_at FROM fish WHERE user_id=? AND grp='shrimp' AND location='tank'", uid);
+    for (const sh of shrimps) {
+      if (sh.clean_at && now - sh.clean_at < 3 * 3600) continue;
+      const target = await t.get(
+        `SELECT id, coin_pending FROM fish WHERE user_id=? AND location='tank'
+         AND tank=? AND tank_num=? AND coin_pending > 0 AND id != ?
+         ORDER BY coin_pending DESC LIMIT 1`,
+        uid, sh.tank, sh.tank_num || 1, sh.id);
+      if (!target) continue;
+      await t.run('UPDATE wallets SET coins=coins+? WHERE user_id=?', target.coin_pending, uid);
+      await t.run('UPDATE fish SET coin_pending=0, coin_at=? WHERE id=?', now, target.id);
+      await t.run('UPDATE fish SET clean_at=? WHERE id=?', now, sh.id);
+    }
+
     const due = await t.all('SELECT * FROM eggs WHERE user_id=? AND hatch_at<=?', uid, now);
     const hatched = [];
     for (const egg of due) hatched.push(await H.hatchEgg(uid, egg, now));

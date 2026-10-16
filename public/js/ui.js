@@ -512,13 +512,55 @@ const UI = (() => {
     body.innerHTML = `${banner}<div class="tabbar comm-tabs">
         <button class="pill-btn${shopTab === "fish" ? " active" : ""}" data-stab="fish"><img src="assets/icons/icon_fish.png" alt=""><span>${t("shop.fish")}</span></button>
         <button class="pill-btn${shopTab === "decor" ? " active" : ""}" data-stab="decor"><img src="assets/icons/icon_decor.png" alt=""><span>${t("deco.title")}</span></button>
+        <button class="pill-btn${shopTab === "bgfx" ? " active" : ""}" data-stab="bgfx"><span>✨</span><span>${t("bgfx.title")}</span></button>
       </div><div id="shop-body"></div>`;
     body.querySelectorAll("[data-stab]").forEach((b) => b.onclick = () => { shopTab = b.dataset.stab; renderShopScreen(); });
     const sub = $("shop-body");
-    if (shopTab === "decor") renderDecorShop(sub); else renderShopFish(sub);
+    if (shopTab === "decor") renderDecorShop(sub);
+    else if (shopTab === "bgfx") renderBgfxShop(sub);
+    else renderShopFish(sub);
     } catch (e) {
       body.innerHTML = `<div class="empty">Shop error: ${esc(String(e.message || e))}</div>`;
     }
+  }
+
+  /* ================= SHOP: animated background FX ================= */
+  async function renderBgfxShop(root) {
+    const body = (typeof root === "string" || !root) ? $("screen-body") : root;
+    body.innerHTML = `<div class="empty">${t("common.loading")}</div>`;
+    const r = await Api.bgfxShop();
+    if (!r.ok) { body.innerHTML = `<div class="empty">${esc(r.error || "")}</div>`; return; }
+    const active = (state.tanks && state.tanks.active) || "small";
+    const equipped = (r.equipped || {})[active] || null;
+    let html = `<div class="sub" style="margin-bottom:10px">✨ ${t("bgfx.pick_hint")}</div>`;
+    for (const it of (r.items || [])) {
+      const meta = ((typeof DATA !== "undefined" && DATA.BGFX) || {})[it.id] || {};
+      const name = t("bgfx." + it.id), desc = t("bgfx." + it.id + "_desc");
+      let btn;
+      if (equipped === it.id) btn = `<span class="tag">✨ ${t("bgfx.equipped")}</span>`;
+      else if (it.owned) btn = `<button class="pill-btn pink" data-fxequip="${it.id}">${t("bgfx.equip")}</button>`;
+      else if (!it.gems) btn = `<button class="pill-btn gold" data-fxbuy="${it.id}">${t("bgfx.free")}</button>`;
+      else btn = `<button class="pill-btn gold" data-fxbuy="${it.id}">💎 ${it.gems}</button>`;
+      html += `<div class="row-card"><span style="font-size:40px;margin-right:10px;flex:none">${meta.icon || "✨"}</span><div class="grow"><b>${name}</b><div class="sub">${desc}</div></div>${btn}</div>`;
+    }
+    if (equipped) {
+      html += `<div class="row-card"><span style="font-size:40px;margin-right:10px;flex:none">🚫</span><div class="grow"><b>${t("bgfx.none")}</b><div class="sub">${t("bgfx.none_desc")}</div></div><button class="pill-btn" data-fxequip="">${t("bgfx.equip")}</button></div>`;
+    }
+    body.innerHTML = html;
+    body.querySelectorAll("[data-fxbuy]").forEach((b) => b.onclick = async () => {
+      b.disabled = true;
+      const r2 = await Api.buyBgfx(b.dataset.fxbuy);
+      if (r2.ok) { AudioFX.coin(); toast(t("toast.bgfx_bought")); }
+      else { AudioFX.error(); toast(r2.error || t("toast.couldnt_buy")); }
+      await App.refresh(); renderBgfxShop(body);
+    });
+    body.querySelectorAll("[data-fxequip]").forEach((b) => b.onclick = async () => {
+      b.disabled = true;
+      const r2 = await Api.equipBgfx(b.dataset.fxequip || null);
+      if (r2.ok) { AudioFX.coin(); toast(t("toast.bgfx_equipped")); }
+      else { AudioFX.error(); toast(r2.error || t("toast.couldnt_buy")); }
+      await App.refresh(); renderBgfxShop(body);
+    });
   }
 
   async function renderShopFish(root) {

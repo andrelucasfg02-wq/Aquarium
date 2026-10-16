@@ -317,6 +317,11 @@ const App = (() => {
       tank.userZoom = tank.userZoom === 1 ? 2.2 : 1;
       tank.camX = 0; tank.camY = 0;
     };
+    $("btn-bgfx").onclick = () => {
+      cancelPlace();
+      document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));
+      UI.open("shop", "bgfx");
+    };
     // tank switcher arrows (table edge) — cycles through all tank instances
     const cycleTank = (dir) => {
       const instances = (state.tanks && state.tanks.instances) || [{ tier: "small", num: 1 }];

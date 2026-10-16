@@ -276,10 +276,25 @@ function helpers(db) {
     return { green, hatched };
   });
 
+  // ---------- animated background FX ----------
+  // One-time unlock per effect (account-wide); equip per tank tier.
+  // prices in diamonds (0 = free)
+  const BGFX = {
+    rays:     { gems: 0 },
+    bubbles:  { gems: 20 },
+    plankton: { gems: 30 },
+  };
+  const bgfxState = async (uid) => {
+    const owned = (await db.all('SELECT fx_id FROM bgfx_owned WHERE user_id=?', uid)).map((r) => r.fx_id);
+    const eq = await db.all('SELECT tank, fx_id FROM bgfx_equipped WHERE user_id=?', uid);
+    return { owned, equipped: Object.fromEntries(eq.map((r) => [r.tank, r.fx_id])) };
+  };
+
   return {
     getWallet, addCoins, addGems, addXp, getTanks, activeTank, activeTankNum,
     tankFishCount, totalFishCount, ensureQuests, questRow, questProgressAdd,
     questProgressMax, questList, fishJson, addFish, hatchEgg, maintain,
+    BGFX, bgfxState,
   };
 }
 
@@ -499,6 +514,7 @@ module.exports = function gameRoutes(db) {
     const collection = (await db.all('SELECT species_id,count FROM collection WHERE user_id=?', uid))
       .map((c) => ({ species_id: c.species_id, seen: 1, count: c.count }));
     const settings = await db.get('SELECT music,sfx,quality FROM settings WHERE user_id=?', uid);
+    const bgfx = await H.bgfxState(uid);
 
     return {
       server_time: t,
@@ -506,6 +522,7 @@ module.exports = function gameRoutes(db) {
         user,
         show_welcome100: !(user && user.welcome100_seen),
         wallets: { coins: user.coins, gems: user.gems, food: user.food, xp: user.xp, level: user.level, medicine: user.medicine || 0, food_special: user.food_special || 0 },
+        bgfx,
         tanks: {
           owned: ['small', 'medium', 'large', 'xl', 'nursery'].filter((k) => tanks[k]),
           // instances: list of {tier, num} for all owned tanks (up to 3 per tier)
@@ -696,6 +713,47 @@ module.exports = function gameRoutes(db) {
       }
     });
     res.json({ ok: true, cured: sick.length });
+  }));
+
+  // ---------- animated background FX ----------
+  // (catalog + state live on H — see helpers() above)
+  r.get('/shop/bgfx', ah(async (req, res) => {
+    const uid = req.user.id;
+    const st = await H.bgfxState(uid);
+    res.json({
+      ok: true,
+      items: Object.entries(H.BGFX).map(([id, c]) => ({ id, gems: c.gems, owned: st.owned.includes(id) })),
+      equipped: st.equipped,
+    });
+  }));
+  r.post('/shop/bgfx/buy', ah(async (req, res) => {
+    const uid = req.user.id;
+    const fx_id = (req.body && req.body.fx_id) || '';
+    const item = H.BGFX[fx_id];
+    if (!item) return res.status(400).json({ ok: false, error: 'unknown effect' });
+    const owned = await db.get('SELECT 1 FROM bgfx_owned WHERE user_id=? AND fx_id=?', uid, fx_id);
+    if (owned) return res.status(400).json({ ok: false, error: 'already owned' });
+    const w = await H.getWallet(uid);
+    if ((w.gems || 0) < item.gems) return res.status(400).json({ ok: false, error: 'not enough gems' });
+    await db.tx(async (txDb) => {
+      if (item.gems > 0) await txDb.run('UPDATE wallets SET gems=gems-? WHERE user_id=?', item.gems, uid);
+      await txDb.run('INSERT INTO bgfx_owned (user_id, fx_id) VALUES (?,?)', uid, fx_id);
+    });
+    res.json({ ok: true });
+  }));
+  r.post('/bgfx/equip', ah(async (req, res) => {
+    const uid = req.user.id;
+    const fx_id = (req.body && req.body.fx_id) || null;
+    if (fx_id !== null) {
+      if (!H.BGFX[fx_id]) return res.status(400).json({ ok: false, error: 'unknown effect' });
+      const owned = await db.get('SELECT 1 FROM bgfx_owned WHERE user_id=? AND fx_id=?', uid, fx_id);
+      if (!owned) return res.status(400).json({ ok: false, error: 'not owned' });
+    }
+    const tier = await H.activeTank(uid);
+    if (fx_id === null) await db.run('DELETE FROM bgfx_equipped WHERE user_id=? AND tank=?', uid, tier);
+    else await db.run(`INSERT INTO bgfx_equipped (user_id, tank, fx_id) VALUES (?,?,?)
+      ON CONFLICT(user_id, tank) DO UPDATE SET fx_id=excluded.fx_id`, uid, tier, fx_id);
+    res.json({ ok: true });
   }));
 
   r.post('/fish/treat', ah(async (req, res) => {

@@ -26,6 +26,11 @@ const SCHEMA = `
       small_extra INTEGER NOT NULL DEFAULT 0,
       medium_extra INTEGER NOT NULL DEFAULT 0,
       large_extra INTEGER NOT NULL DEFAULT 0);
+    -- animated background FX: owned unlocks + equipped effect per tank tier
+    CREATE TABLE IF NOT EXISTS bgfx_owned(
+      user_id INTEGER, fx_id TEXT, PRIMARY KEY(user_id, fx_id));
+    CREATE TABLE IF NOT EXISTS bgfx_equipped(
+      user_id INTEGER, tank TEXT, fx_id TEXT, PRIMARY KEY(user_id, tank));
     CREATE TABLE IF NOT EXISTS fish(
       id INTEGER PRIMARY KEY, user_id INTEGER, species_id TEXT, grp TEXT,
       variant TEXT, gender TEXT, location TEXT, tank TEXT,

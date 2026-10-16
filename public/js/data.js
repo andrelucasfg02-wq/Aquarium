@@ -99,6 +99,12 @@ const DATA = {
   ],
   FOOD_PACKS: [1, 5, 10, 20, 50],
   SPECIAL_FOOD_PACKS: [1, 10],
+  // animated background FX: id -> {icon emoji}; prices live server-side (gems)
+  BGFX: {
+    rays:     { icon: "☀️" },
+    bubbles:  { icon: "🫧" },
+    plankton: { icon: "✨" },
+  },
 };
 
 /** Frame roles: 0 idle, 1-4 swim, 5 eat (only while eating), 6 sleep, 7 rear/turn */

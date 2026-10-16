@@ -57,6 +57,11 @@ class TankView {
     this.readOnly = false; // visit mode: watch a friend's tank, no interactions
     this.lastT = 0;
     this.ambientT = 0;
+    // animated background FX (rays / bubbles / plankton) drawn behind decor
+    this.bgfx = null;
+    this.fxT = 0;
+    this.fxBubbles = [];
+    this.fxMotes = [];
 
     this.resize();
     this.bindPointer();
@@ -214,6 +219,9 @@ class TankView {
     if (!state) return;
     this.setTank(state.tanks.active);
     this.activeNum = state.tanks.activeNum || 1;
+    // animated background effect equipped on this tank tier (if any)
+    const fxFor = (state.bgfx && state.bgfx.equipped) || {};
+    this.setBgfx(fxFor[state.tanks.active] || null);
     // fish
     const seen = new Set();
     for (const f of (state.fish || [])) {
@@ -418,6 +426,8 @@ class TankView {
       pt.vy -= pt.buoy * dt;
     }
     this.particles = this.particles.filter((p) => p.life > 0);
+    // animated background FX
+    this.updateFx(dt);
     // ambient bubbles
     this.ambientT -= dt;
     if (this.ambientT <= 0) {
@@ -660,6 +670,107 @@ class TankView {
 }
 Object.assign(TankView.prototype, {
 
+  /* ---------- animated background FX (behind decor & fish) ---------- */
+  setBgfx(id) {
+    if (this.bgfx === id) return;
+    this.bgfx = id;
+    this.fxBubbles = [];
+    this.fxMotes = [];
+    const mul = this.particleMul();
+    if (id === "bubbles") {
+      const n = Math.max(4, Math.round(14 * mul));
+      for (let i = 0; i < n; i++) this.fxBubbles.push(this.newFxBubble(true));
+    } else if (id === "plankton") {
+      const n = Math.max(6, Math.round(22 * mul));
+      for (let i = 0; i < n; i++) this.fxMotes.push({
+        x: Math.random(), y: Math.random(),
+        ph: Math.random() * 6.28, sp: .3 + Math.random() * .7,
+        r: 1.5 + Math.random() * 2.5,
+        hue: Math.random() < .55 ? "170,225,255" : "255,220,160",
+      });
+    }
+  },
+  newFxBubble(anywhere) {
+    return {
+      x: Math.random(), y: anywhere ? Math.random() * 1.05 - .02 : 1.03,
+      r: 2 + Math.random() * 5, sp: .05 + Math.random() * .09,
+      ph: Math.random() * 6.28, wob: .004 + Math.random() * .008,
+    };
+  },
+  updateFx(dt) {
+    this.fxT = (this.fxT || 0) + dt;
+    if (this.bgfx === "bubbles") {
+      for (const b of this.fxBubbles) {
+        b.y -= b.sp * dt;
+        b.ph += dt * 2;
+        b.x += Math.sin(b.ph) * b.wob * dt;
+        if (b.y < -0.04 || b.x < -0.03 || b.x > 1.03) Object.assign(b, this.newFxBubble(false));
+      }
+    } else if (this.bgfx === "plankton") {
+      for (const m of this.fxMotes) m.ph += dt * m.sp;
+    }
+  },
+  drawBgfx(v, T) {
+    const fx = this.bgfx;
+    if (!fx) return;
+    const { ctx } = this;
+    const t = this.fxT || 0;
+    const S = T.w * v.s; // artwork px on screen (width)
+    if (fx === "rays") {
+      // soft god-rays swaying down from the top
+      for (let i = 0; i < 5; i++) {
+        const fx0 = .1 + i * .2 + Math.sin(t * .35 + i * 1.7) * .02;
+        const [x0] = fracToPx(fx0, 0, v, T.w, T.h);
+        const wTop = Math.max(16, .045 * S);
+        const wBot = wTop * 2.8;
+        const hgt = T.h * v.s * 1.15;
+        ctx.save();
+        ctx.translate(x0, v.oy - 30);
+        ctx.rotate(-.26 + Math.sin(t * .3 + i * 1.3) * .06);
+        const g = ctx.createLinearGradient(0, 0, 0, hgt);
+        const a = .16 + .05 * Math.sin(t * .5 + i * 2.1);
+        g.addColorStop(0, `rgba(255,255,238,${a.toFixed(3)})`);
+        g.addColorStop(1, "rgba(255,255,238,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.moveTo(-wTop / 2, 0); ctx.lineTo(wTop / 2, 0);
+        ctx.lineTo(wBot / 2, hgt); ctx.lineTo(-wBot / 2, hgt);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
+    } else if (fx === "bubbles") {
+      ctx.save();
+      for (const b of this.fxBubbles) {
+        const [x, y] = fracToPx(b.x, b.y, v, T.w, T.h);
+        const r = Math.max(1.5, b.r * S * .004);
+        ctx.globalAlpha = .5;
+        ctx.strokeStyle = "rgba(230,245,255,.85)";
+        ctx.lineWidth = Math.max(1, r * .18);
+        ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.stroke();
+        ctx.globalAlpha = .75;
+        ctx.fillStyle = "rgba(255,255,255,.9)";
+        ctx.beginPath(); ctx.arc(x - r * .35, y - r * .35, Math.max(.6, r * .22), 0, 7); ctx.fill();
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    } else if (fx === "plankton") {
+      ctx.save();
+      for (const m of this.fxMotes) {
+        const [x, y] = fracToPx(m.x + Math.sin(m.ph * 1.3) * .02, m.y + Math.cos(m.ph) * .015, v, T.w, T.h);
+        const r = Math.max(2, m.r * S * .006);
+        const a = .32 + .28 * Math.sin(m.ph * 2);
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r * 3);
+        g.addColorStop(0, `rgba(${m.hue},${a.toFixed(3)})`);
+        g.addColorStop(1, `rgba(${m.hue},0)`);
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(x, y, r * 3, 0, 7); ctx.fill();
+        ctx.fillStyle = `rgba(255,255,255,${(a + .3).toFixed(3)})`;
+        ctx.beginPath(); ctx.arc(x, y, Math.max(.8, r * .45), 0, 7); ctx.fill();
+      }
+      ctx.restore();
+    }
+  },
+
   /* ---------- drawing ---------- */
   draw() {
     const { ctx, cssW, cssH } = this;
@@ -698,6 +809,9 @@ Object.assign(TankView.prototype, {
       ctx.fillStyle = "rgba(30,90,35,.12)";
       ctx.fillRect(0, 0, cssW, cssH);
     }
+
+    // animated background FX (behind decor & fish)
+    this.drawBgfx(v, T);
 
     // decorations (behind fish)
     for (const p of this.placements) this.drawPlacement(p, v, T);

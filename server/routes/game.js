@@ -254,16 +254,17 @@ function helpers(db) {
     const hours = Math.floor((now - billedFrom) / 3600);
     const existing = (await t.get('SELECT COUNT(*) c FROM dirt_spots WHERE user_id=?', uid)).c;
     const toAdd = Math.max(0, Math.min(hours * 2, 15 - existing)); // 2/hr, cap 15
-    // spawn dirt inside the active tank's glass area (not outside the aquarium)
+    // spawn dirt inside the fish swim area (glass minus the padding fish keep from edges)
     const tanks = await t.get('SELECT active FROM user_tanks WHERE user_id=?', uid);
     const glass = (C.GLASS || {})[(tanks && tanks.active) || 'small'] || { left: .17, right: .82, top: .38, bottom: .79 };
-    // remove any existing spots that fell outside the glass
+    const swim = { left: glass.left + .025, right: glass.right - .025, top: glass.top + .04, bottom: glass.bottom - .06 };
+    // remove any existing spots that fell outside the swim area
     await t.run(`DELETE FROM dirt_spots WHERE user_id=? AND
       (x < ? OR x > ? OR y < ? OR y > ?)`,
-      uid, glass.left, glass.right, glass.top, glass.bottom);
+      uid, swim.left, swim.right, swim.top, swim.bottom);
     for (let i = 0; i < toAdd; i++) {
       await t.run('INSERT INTO dirt_spots (user_id,x,y,created_at) VALUES (?,?,?,?)',
-        uid, rand(glass.left + .03, glass.right - .03), rand(glass.top + .05, glass.bottom - .05), now);
+        uid, rand(swim.left + .01, swim.right - .01), rand(swim.top + .01, swim.bottom - .01), now);
     }
     if (hours > 0) {
       await t.run('UPDATE dirt_state SET spawned_at=? WHERE user_id=?', billedFrom + hours * 3600, uid);

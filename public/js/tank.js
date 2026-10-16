@@ -673,6 +673,11 @@ Object.assign(TankView.prototype, {
 
   /* ---------- animated background FX (inside the glass only) ---------- */
   fxGlass() { return DATA.GLASS[this.tier] || { left: 0, right: 1, top: 0, bottom: 1 }; },
+  // fish swim area: glass minus the padding fish keep from edges (matches pickTarget)
+  fxSwim() {
+    const g = this.fxGlass();
+    return { left: g.left + .025, right: g.right - .025, top: g.top + .04, bottom: g.bottom - .06 };
+  },
   setBgfx(id) {
     if (this.bgfx === id && this.bgfxTier === this.tier) return;
     this.bgfx = id;
@@ -680,7 +685,7 @@ Object.assign(TankView.prototype, {
     this.fxBubbles = [];
     this.fxMotes = [];
     const mul = this.particleMul();
-    const g = this.fxGlass();
+    const g = this.fxSwim();
     const gx = (a, b) => a + Math.random() * (b - a);
     if (id === "bubbles") {
       const n = Math.max(4, Math.round(14 * mul));
@@ -696,7 +701,7 @@ Object.assign(TankView.prototype, {
     }
   },
   newFxBubble(anywhere, g, gx) {
-    g = g || this.fxGlass();
+    g = g || this.fxSwim();
     gx = gx || ((a, b) => a + Math.random() * (b - a));
     return {
       x: gx(g.left + .01, g.right - .01),
@@ -708,7 +713,7 @@ Object.assign(TankView.prototype, {
   updateFx(dt) {
     this.fxT = (this.fxT || 0) + dt;
     if (this.bgfx === "bubbles") {
-      const g = this.fxGlass();
+      const g = this.fxSwim();
       for (const b of this.fxBubbles) {
         b.y -= b.sp * dt;
         b.ph += dt * 2;

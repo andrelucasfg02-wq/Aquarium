@@ -271,11 +271,13 @@ function helpers(db) {
     }
     const green = (now - ds.last_cleaned_at) >= 5 * 3600;
 
-    // shrimp: each shrimp auto-collects banked coins from 1 fish every 3 hours
+    // shrimp: each shrimp auto-collects banked coins from 1 fish every 3 hours;
+    // the royal shrimp does it every hour
     const shrimps = await t.all(
-      "SELECT id, tank, tank_num, clean_at FROM fish WHERE user_id=? AND grp='shrimp' AND location='tank'", uid);
+      "SELECT id, species_id, tank, tank_num, clean_at FROM fish WHERE user_id=? AND grp='shrimp' AND location='tank'", uid);
     for (const sh of shrimps) {
-      if (sh.clean_at && now - sh.clean_at < 3 * 3600) continue;
+      const cooldown = sh.species_id === 'royal_shrimp' ? 3600 : 3 * 3600;
+      if (sh.clean_at && now - sh.clean_at < cooldown) continue;
       const target = await t.get(
         `SELECT id, coin_pending FROM fish WHERE user_id=? AND location='tank'
          AND tank=? AND tank_num=? AND coin_pending > 0 AND id != ?

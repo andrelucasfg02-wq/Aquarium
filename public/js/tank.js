@@ -26,7 +26,7 @@ const TAILBEAT_SEQ = [1, 2];
    a tank — side by side and synchronized, then they split up for a while
    and regroup. They also skip the front pose (idle shows a side frame). */
 const SCHOOL_IDS = new Set(["tetra_neon", "danio_zebra", "danio_tetra"]);
-const NO_FRONT_IDS = new Set(["tetra_neon", "danio_zebra", "danio_tetra"]);
+const NO_FRONT_IDS = new Set(["tetra_neon", "danio_zebra", "danio_tetra", "royal_shrimp"]);
 
 class TankView {
   constructor(canvas) {

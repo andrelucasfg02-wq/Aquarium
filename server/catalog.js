@@ -13,7 +13,7 @@ const GROUPS = {
     'maple_lilac_betta', 'maple_petal_betta', 'maple_tide_betta', 'maple_coral_betta',
     'maple_veil_betta',
     'golden_veil_betta', 'rose_halfmoon_betta', 'ember_crown_betta', 'bloom_maple_betta', 'azure_plakat_betta'],
-  shrimp: ['red_shrimp', 'blue_shrimp', 'yellow_shrimp'],
+  shrimp: ['red_shrimp', 'blue_shrimp', 'yellow_shrimp', 'royal_shrimp'],
   snail: ['snail'],
   bottom_fish: ['bottom_fish', 'pleco', 'blackleaf', 'pleco_cory'],
   danio: ['danio_zebra', 'danio_tetra'],
@@ -78,6 +78,7 @@ const SPECIES_NAMES = {
   cinder_goldfish: 'Cinder Goldfish', gilded_goldfish: 'Gilded Goldfish',
   nebula_goldfish: 'Nebula Goldfish', ember_night_goldfish: 'Ember Night Goldfish',
   red_shrimp: 'Red Shrimp', blue_shrimp: 'Blue Shrimp', yellow_shrimp: 'Yellow Shrimp',
+  royal_shrimp: 'Royal Shrimp',
   snail: 'Snail', bottom_fish: 'Cory Fish', pleco: 'Pleco', blackleaf: 'Blackleaf',
   pleco_cory: 'Pleco Cory',
   danio_zebra: 'Zebra Danio',
@@ -97,6 +98,7 @@ const SPECIES_PRICES = {
   autumn_fish: { coins: null, gems: null },
   red_shrimp: { coins: 200, gems: null }, blue_shrimp: { coins: 200, gems: null },
   yellow_shrimp: { coins: 200, gems: null },
+  royal_shrimp: { coins: null, gems: 500 },
   snail: { coins: 250, gems: null }, bottom_fish: { coins: 3000, gems: null }, pleco: { coins: null, gems: 500 },
   blackleaf: { coins: null, gems: null }, pleco_cory: { coins: null, gems: null },
   danio_zebra: { coins: 900, gems: null },
@@ -144,6 +146,7 @@ const SPECIES_RARITY = {
   ember_night_goldfish: 'epic',
   swordtail_blue: 'epic', swordtail_gold: 'epic', swordtail_red: 'epic',
   red_shrimp: 'common', blue_shrimp: 'common', yellow_shrimp: 'common',
+  royal_shrimp: 'epic',
   snail: 'common', bottom_fish: 'uncommon', pleco: 'epic',
   blackleaf: 'epic', pleco_cory: 'epic',
   danio_zebra: 'epic',
@@ -183,6 +186,8 @@ function fishCatalog() {
         price_gems: p.gems,
         desc: species_id === 'pleco'
           ? 'Cleans 4 dirt per hour. The tank he\'s in stays clean!'
+          : species_id === 'royal_shrimp'
+          ? 'Collects banked coins from 1 fish every hour.'
           : `${SPECIES_NAMES[species_id] || species_id} — ${group.replace('_', ' ')}.`,
       });
     }

@@ -1,0 +1,1406 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" href="data:," />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@500;650;750;850&display=swap" rel="stylesheet">
+  <title>Casa · AquaNim</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --page: #e9e4dc;
+      --panel: #f8f5ef;
+      --panel-2: #eee9df;
+      --ink: #282a2d;
+      --muted: #65605a;
+      --line: #cec5b8;
+      --accent: #a84f36;
+      --accent-ink: #fff9f2;
+      --selected: #f0b544;
+      --danger: #a43d39;
+      --shadow: rgba(47, 38, 30, .16);
+      --canvas-edge: #bbb0a0;
+      --button: #fffdf8;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --page: #1e2022;
+        --panel: #292c2e;
+        --panel-2: #343739;
+        --ink: #f5efe7;
+        --muted: #c5bdb3;
+        --line: #505254;
+        --accent: #d77655;
+        --accent-ink: #201914;
+        --selected: #f2bf55;
+        --danger: #df716c;
+        --shadow: rgba(0, 0, 0, .34);
+        --canvas-edge: #4a4947;
+        --button: #36393b;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      font-family: "Nunito Sans", ui-rounded, sans-serif;
+      background: var(--page);
+      color: var(--ink);
+      overflow-x: hidden;
+    }
+    button, input { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+    .app {
+      width: min(1180px, 100%);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 12px 14px calc(20px + env(safe-area-inset-bottom));
+      display: grid;
+      grid-template-rows: auto minmax(340px, 1fr) auto;
+      gap: 10px;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-width: 0;
+    }
+    .mode {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-weight: 750;
+    }
+    .mode-dot {
+      width: 11px;
+      height: 11px;
+      flex: 0 0 auto;
+      background: var(--accent);
+      border: 2px solid var(--panel);
+      outline: 1px solid var(--accent);
+      border-radius: 50%;
+    }
+    #status { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tools { display: flex; gap: 7px; align-items: center; }
+    .tool-btn, .lang-btn {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      background: var(--button);
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 7px 12px;
+      font-weight: 750;
+      cursor: pointer;
+      box-shadow: 0 2px 0 var(--shadow);
+    }
+    .tool-btn:hover, .lang-btn:hover { border-color: var(--accent); }
+    .tool-btn:active, .lang-btn:active { transform: translateY(1px); box-shadow: none; }
+    .tool-btn:disabled { opacity: .42; cursor: default; transform: none; }
+    .tool-btn.icon { width: 44px; padding: 6px; font-size: 21px; line-height: 1; }
+    .tool-btn.danger:not(:disabled) { color: var(--danger); }
+    .lang-btn { min-width: 51px; }
+    .gold-hud {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      background: var(--button);
+      border-radius: 10px;
+      padding: 7px 12px;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+      box-shadow: 0 2px 0 var(--shadow);
+      white-space: nowrap;
+    }
+    .catalog-item .price { color: var(--accent); font-weight: 850; }
+    .canvas-shell {
+      position: relative;
+      min-height: 340px;
+      border: 1px solid var(--canvas-edge);
+      background: #25282a;
+      border-radius: 14px 14px 7px 7px;
+      overflow: hidden;
+      box-shadow: 0 10px 24px var(--shadow);
+      isolation: isolate;
+    }
+    canvas#room {
+      width: 100%;
+      height: 100%;
+      min-height: 340px;
+      display: block;
+      touch-action: none;
+      cursor: crosshair;
+    }
+    .hint {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      max-width: min(390px, calc(100% - 24px));
+      padding: 8px 11px;
+      background: rgba(31, 33, 35, .86);
+      color: #fff9f0;
+      font-size: 13px;
+      font-weight: 650;
+      border-radius: 8px;
+      pointer-events: none;
+      transition: opacity .2s;
+    }
+    .play-controls {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 4;
+    }
+    .joystick {
+      position: absolute;
+      right: 18px;
+      bottom: 18px;
+      width: 116px;
+      height: 116px;
+      border: 1px solid rgba(255,255,255,.42);
+      border-radius: 50%;
+      background: rgba(28,31,33,.58);
+      box-shadow: inset 0 0 0 12px rgba(255,255,255,.05), 0 5px 18px rgba(0,0,0,.18);
+      pointer-events: auto;
+      touch-action: none;
+      user-select: none;
+    }
+    .joystick::before, .joystick::after {
+      content: '';
+      position: absolute;
+      background: rgba(255,255,255,.24);
+      border-radius: 2px;
+      pointer-events: none;
+    }
+    .joystick::before { width: 2px; height: 72px; left: 57px; top: 22px; }
+    .joystick::after { width: 72px; height: 2px; left: 22px; top: 57px; }
+    .joystick-knob {
+      position: absolute;
+      width: 48px;
+      height: 48px;
+      left: 34px;
+      top: 34px;
+      border-radius: 50%;
+      background: #fff8eb;
+      border: 2px solid #b96648;
+      box-shadow: 0 4px 10px rgba(0,0,0,.3);
+      pointer-events: none;
+    }
+    .sit-btn {
+      position: absolute;
+      right: 18px;
+      bottom: 146px;
+      min-height: 46px;
+      border: 1px solid rgba(255,255,255,.52);
+      border-radius: 12px;
+      padding: 8px 13px;
+      color: #27241f;
+      background: #fff8e8;
+      box-shadow: 0 5px 14px rgba(0,0,0,.24);
+      font-weight: 850;
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    .play-controls[hidden], .sit-btn[hidden] { display: none; }
+    body.play-mode .bottom-panel { display: none; }
+    body.play-mode .app { grid-template-rows: auto minmax(430px, 1fr); }
+    body.play-mode canvas#room { cursor: pointer; }
+    .mode-switch { min-width: 94px; }
+    .toast {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      translate: -50% 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: calc(100% - 24px);
+      padding: 9px 12px;
+      border-radius: 9px;
+      background: #fff8e8;
+      color: #33281f;
+      border: 1px solid #d4b77b;
+      box-shadow: 0 5px 18px rgba(0,0,0,.2);
+      font-weight: 750;
+      z-index: 3;
+    }
+    .toast[hidden] { display: none; }
+    .toast button { border: 0; background: #3d342b; color: #fff; padding: 5px 8px; border-radius: 6px; cursor: pointer; }
+    .bottom-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px 8px 14px 14px;
+      box-shadow: 0 7px 18px var(--shadow);
+      overflow: hidden;
+    }
+    .action-row {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+    .action-row .spacer { flex: 1; }
+    .action-row .tool-btn { min-height: 38px; padding: 6px 11px; }
+    .catalog-wrap { padding: 8px; }
+    .catalog-tabs { display: flex; gap: 5px; margin: 0 2px 7px; }
+    .catalog-tab {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-weight: 850;
+      cursor: pointer;
+    }
+    .catalog-tab:hover { color: var(--ink); border-color: var(--accent); }
+    .catalog-tab.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+    .catalog-label { font-size: 12px; font-weight: 850; color: var(--muted); margin: 0 4px 6px; }
+    .catalog {
+      display: grid;
+      grid-template-columns: repeat(12, minmax(74px, 1fr));
+      gap: 6px;
+    }
+    .catalog-item {
+      min-width: 0;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--ink);
+      border-radius: 9px;
+      padding: 3px 2px 6px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .catalog-item:hover { background: var(--panel-2); }
+    .catalog-item.active {
+      background: color-mix(in srgb, var(--selected) 22%, var(--panel));
+      border-color: var(--selected);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--selected) 65%, transparent);
+    }
+    .catalog-item canvas, .catalog-item img { width: 68px; height: 49px; max-width: 100%; display: block; margin: 0 auto 1px; object-fit: contain; image-rendering: auto; }
+    .catalog-item span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 750; }
+    .save-state { font-size: 12px; color: var(--muted); font-weight: 750; min-width: 76px; text-align: right; white-space: nowrap; }
+    .login-overlay { position: fixed; inset: 0; background: rgba(20,18,16,.74); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+    .login-overlay[hidden] { display: none; }
+    .login-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 26px 30px; max-width: 380px; text-align: center; box-shadow: 0 8px 30px var(--shadow); }
+    .login-card p { margin: 0 0 16px; font-weight: 650; }
+    .login-card a { display: inline-block; background: var(--accent); color: var(--accent-ink); border-radius: 10px; padding: 10px 22px; font-weight: 800; text-decoration: none; }
+    @media (max-width: 780px) {
+      .app { padding: 8px 8px calc(12px + env(safe-area-inset-bottom)); grid-template-rows: auto minmax(310px, 57vh) auto; }
+      .mode { font-size: 13px; }
+      .tool-btn.texty { display: none; }
+      .canvas-shell { min-height: 310px; border-radius: 10px 10px 5px 5px; }
+      canvas#room { min-height: 310px; }
+      .bottom-panel { border-radius: 6px 6px 11px 11px; }
+      .catalog { grid-template-columns: repeat(6, minmax(48px, 1fr)); gap: 4px; }
+      .catalog-item canvas, .catalog-item img { width: 55px; height: 39px; }
+      .catalog-item span { font-size: 10px; }
+      .catalog-wrap { padding: 6px; }
+      .action-row { padding: 7px; flex-wrap: wrap; }
+      .action-row .tool-btn { flex: 1; padding: 6px 5px; font-size: 12px; }
+      .action-row .spacer { display: none; }
+      .hint { font-size: 12px; bottom: 8px; left: 8px; max-width: calc(100% - 150px); }
+      .joystick { width: 96px; height: 96px; right: 12px; bottom: 12px; }
+      .joystick::before { height: 62px; left: 47px; top: 17px; }
+      .joystick::after { width: 62px; left: 17px; top: 47px; }
+      .joystick-knob { width: 42px; height: 42px; left: 27px; top: 27px; }
+      .sit-btn { right: 12px; bottom: 118px; }
+      body.play-mode .app { grid-template-rows: auto minmax(420px, calc(100vh - 78px)); }
+    }
+    @media (max-width: 430px) {
+      .catalog { grid-template-columns: repeat(4, minmax(54px, 1fr)); }
+      .topbar { gap: 5px; }
+      .tools { gap: 4px; }
+      .tool-btn.icon { width: 40px; }
+      .lang-btn { min-width: 45px; padding-inline: 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="topbar">
+      <div class="mode"><span class="mode-dot"></span><span id="status">Escolha um móvel abaixo</span></div>
+      <div class="tools">
+        <button class="tool-btn" id="backBtn" aria-label="Back">← <span data-t="back">Voltar</span></button>
+        <span class="gold-hud" id="goldHud" aria-label="Gold">🪙 <span id="goldVal">2000</span></span>
+        <button class="tool-btn mode-switch" id="modeBtn">✎ <span id="modeBtnText">Editar</span></button>
+        <button class="tool-btn icon" id="mirrorTop" disabled aria-label="Espelhar">↩️</button>
+        <button class="tool-btn icon danger" id="deleteTop" disabled aria-label="Excluir">×</button>
+        <button class="lang-btn" id="langBtn" aria-label="Change language">EN</button>
+      </div>
+    </div>
+
+    <section class="canvas-shell" aria-label="Quarto isométrico decorável">
+      <canvas id="room" width="900" height="620" tabindex="0" role="application" aria-label="Área do quarto: toque no piso para colocar o item selecionado"></canvas>
+      <div class="hint" id="hint">Toque no piso para caminhar ou use o controle.</div>
+      <div class="play-controls" id="playControls">
+        <button class="sit-btn" id="sitBtn" hidden>🪑 <span id="sitBtnText">Sentar</span></button>
+        <div class="joystick" id="joystick" role="button" aria-label="Controle de movimento" tabindex="0"><span class="joystick-knob" id="joystickKnob"></span></div>
+      </div>
+      <div class="toast" id="toast" hidden><span id="toastText"></span><button id="undoBtn" hidden>Desfazer</button></div>
+    </section>
+
+    <section class="bottom-panel">
+      <div class="action-row">
+        <button class="tool-btn" id="mirrorBtn" disabled>↩️ <span data-t="mirror">Espelhar</span></button>
+        <button class="tool-btn danger" id="deleteBtn" disabled>× <span data-t="delete">Excluir</span></button>
+        <div class="spacer"></div>
+        <span class="save-state" id="saveState"></span>
+        <button class="tool-btn" id="clearBtn"><span data-t="clear">Limpar quarto</span></button>
+      </div>
+      <div class="catalog-wrap">
+        <div class="catalog-tabs" role="tablist" aria-label="Categorias de móveis">
+          <button class="catalog-tab active" id="oceanTab" role="tab" aria-selected="true" data-category="ocean">Oceano</button>
+          <button class="catalog-tab" id="aquaTab" role="tab" aria-selected="false" data-category="aqua">Aquários</button>
+          <button class="catalog-tab" id="woodTab" role="tab" aria-selected="false" data-category="wood">Madeira</button>
+        </div>
+        <p class="catalog-label" id="catalogLabel">CATÁLOGO · PISO E PAREDE</p>
+        <div class="catalog" id="catalog" role="tabpanel"></div>
+      </div>
+    </section>
+  </main>
+  <div class="login-overlay" id="loginOverlay" hidden>
+    <div class="login-card">
+      <p data-t="loginNeeded">Entre no AquaNim para usar sua Casa 🏠</p>
+      <a href="/" data-t="loginGo">Ir para o jogo</a>
+    </div>
+  </div>
+
+<script>
+(function () {
+  'use strict';
+
+  var ROOM = 10;
+  var canvas = document.getElementById('room');
+  var ctx = canvas.getContext('2d');
+  var catalogEl = document.getElementById('catalog');
+  var statusEl = document.getElementById('status');
+  var hintEl = document.getElementById('hint');
+  var toastEl = document.getElementById('toast');
+  var toastText = document.getElementById('toastText');
+  var undoBtn = document.getElementById('undoBtn');
+  var modeBtn = document.getElementById('modeBtn');
+  var playControls = document.getElementById('playControls');
+  var sitBtn = document.getElementById('sitBtn');
+  var sitBtnText = document.getElementById('sitBtnText');
+  var joystick = document.getElementById('joystick');
+  var joystickKnob = document.getElementById('joystickKnob');
+
+  var lang = 'pt';
+  var gold = 0; // loaded from server (/api/house)
+  var FURNITURE_PRICE = 400;
+  var appMode = 'play';
+  var catalogCategory = 'ocean';
+  var selectedType = null;
+  var selectedId = null;
+  var items = [];
+  var lastCleared = null;
+  var drag = null;
+  var pointerDown = null;
+  var hover = null;
+  var toastTimer = null;
+  var nextId = 1;
+  var metrics = { w: 900, h: 620, tw: 58, th: 29, ox: 450, oy: 210, wallH: 112, scale: 1 };
+  var avatar = { x:8.5, y:8.5, target:null, path:[], moving:false, facing:1, north:false, sitting:false, seatId:null, frame:0, frameAt:0, lastAt:0 };
+  var avatarImages = { walk:[], idle:[], sit:[], back:null };
+  var keys = {};
+  var joystickDir = null;
+  var joystickPointer = null;
+  var lastAvatarDraw = 0;
+  var AVATAR_SPRITE_SCALE = .72;
+
+  var TXT = {
+    pt: {
+      choose: 'Escolha um móvel abaixo', playStatus: 'Modo jogar · explore o quarto', playHint: 'Toque no piso para caminhar ou use o controle.', editMode: 'Editar', playMode: 'Jogar', sit: 'Sentar', stand: 'Levantar', joystick: 'Controle de movimento', placing: 'Toque no piso para colocar: ',
+      wallPlacing: 'Toque em uma das paredes para colocar: ', selected: 'Selecionado: ',
+      hint: 'Escolha um item e toque no piso. Arraste um móvel para mudar de lugar.',
+      wallHint: 'Este item vai na parede. Toque em um quadrado da parede.',
+      mirror: 'Espelhar', delete: 'Excluir', clear: 'Limpar quarto', back: 'Voltar', saved: 'Salvo ✓', saving: 'Salvando…', loginNeeded: 'Entre no AquaNim para usar sua Casa 🏠', loginGo: 'Ir para o jogo',
+      basicTab: 'Básicos', oceanTab: 'Oceano', aquaTab: 'Aquários', woodTab: 'Madeira', catalog: 'CATÁLOGO · PISO E PAREDE', oceanCatalog: 'LOJA · OCEANO · 🪙 400 CADA', aquaCatalog: 'AQUÁRIOS · COMPRAR NO AQUANIM', woodCatalog: 'LOJA · MADEIRA · 🪙 400 CADA', blocked: 'Esse espaço está ocupado.',
+      notEnoughGold: 'Gold insuficiente 🪙', openingTank: 'Abrindo seu aquário... 🐠', buyOnAquaNim: 'Comprar no AquaNim',
+      wrongSurface: 'Escolha um quadrado da parede.', outside: 'Escolha um quadrado dentro do quarto.',
+      cleared: 'Quarto limpo.', undo: 'Desfazer', restored: 'Quarto restaurado.',
+      downloaded: 'Projeto baixado.', loaded: 'Projeto carregado.', invalid: 'Não foi possível abrir este arquivo.',
+      names: { bed:'Cama', table:'Mesa', chair:'Cadeira', sofa:'Sofá', plant:'Planta', lamp:'Luminária', rug:'Tapete', shelf:'Estante', tv:'Rack TV', coffee:'Mesa centro', painting:'Quadro', walllamp:'Luz parede' }
+    },
+    en: {
+      choose: 'Choose a piece below', playStatus: 'Play mode · explore the room', playHint: 'Tap the floor to walk or use the control.', editMode: 'Edit', playMode: 'Play', sit: 'Sit', stand: 'Stand', joystick: 'Movement control', placing: 'Tap the floor to place: ',
+      wallPlacing: 'Tap either wall to place: ', selected: 'Selected: ',
+      hint: 'Choose an item and tap the floor. Drag furniture to move it.',
+      wallHint: 'This item goes on a wall. Tap a wall square.',
+      mirror: 'Mirror', delete: 'Delete', clear: 'Clear room', back: 'Back', saved: 'Saved ✓', saving: 'Saving…', loginNeeded: 'Log in to AquaNim to use your House 🏠', loginGo: 'Go to the game',
+      basicTab: 'Basics', oceanTab: 'Ocean', aquaTab: 'Aquariums', woodTab: 'Wood', catalog: 'CATALOG · FLOOR & WALL', oceanCatalog: 'SHOP · OCEAN · 🪙 400 EACH', aquaCatalog: 'AQUARIUMS · BUY ON AQUANIM', woodCatalog: 'SHOP · WOOD · 🪙 400 EACH', blocked: 'That space is occupied.',
+      notEnoughGold: 'Not enough gold 🪙', openingTank: 'Opening your aquarium... 🐠', buyOnAquaNim: 'Buy on AquaNim',
+      wrongSurface: 'Choose a square on either wall.', outside: 'Choose a square inside the room.',
+      cleared: 'Room cleared.', undo: 'Undo', restored: 'Room restored.',
+      downloaded: 'Project downloaded.', loaded: 'Project loaded.', invalid: 'This file could not be opened.',
+      names: { bed:'Bed', table:'Table', chair:'Chair', sofa:'Sofa', plant:'Plant', lamp:'Floor lamp', rug:'Rug', shelf:'Bookcase', tv:'TV stand', coffee:'Coffee table', painting:'Painting', walllamp:'Wall lamp' }
+    }
+  };
+
+  // Every piece uses one of three exact floor footprints: 1 tile, 2 tiles, or 4 tiles.
+  // Two-tile pieces are 2 x 1 (and rotate to 1 x 2); four-tile pieces are 2 x 2.
+  var TYPES = {
+    bed:      { w:2, d:2, blocks:4, h:34, color:'#c9846d', layer:'floor' },
+    table:    { w:2, d:1, blocks:2, h:34, color:'#9a6a3f', layer:'floor' },
+    chair:    { w:2, d:1, blocks:2, h:38, color:'#c39562', layer:'floor' },
+    sofa:     { w:2, d:2, blocks:4, h:46, color:'#73978f', layer:'floor' },
+    plant:    { w:2, d:1, blocks:2, h:55, color:'#73985e', layer:'floor' },
+    lamp:     { w:1, d:1, blocks:1, h:72, color:'#d4a954', layer:'floor' },
+    rug:      { w:2, d:2, blocks:4, h:2, color:'#b95d4a', layer:'rug' },
+    shelf:    { w:2, d:1, blocks:2, h:68, color:'#7d5a42', layer:'floor' },
+    tv:       { w:2, d:1, blocks:2, h:48, color:'#4d5558', layer:'floor' },
+    coffee:   { w:2, d:1, blocks:2, h:20, color:'#a8754b', layer:'floor' },
+    painting: { w:1, d:1, blocks:1, h:42, color:'#cc8c53', layer:'wall' },
+    walllamp: { w:1, d:1, blocks:1, h:38, color:'#d7aa59', layer:'wall' }
+  };
+  var OCEAN_ITEMS = [
+    ['shell_bed',4], ['shell_armchair',2], ['vanity',2],
+    ['wardrobe',4], ['ottoman',1], ['treasure_chest',2],
+    ['shell_sofa',4], ['coral_table',4], ['jellyfish_lamp',1],
+    ['room_divider',2], ['bookshelf',2], ['nightstand',1],
+    ['standing_mirror',1], ['jellyfish_lamp2',1], ['snowglobe_table',1]
+  ];
+  var OCEAN_ORDER = [];
+  OCEAN_ITEMS.forEach(function(def){
+    var key=def[0], id='ocean_'+key, blocks=def[1], dims=blocks===4?{w:2,d:2}:blocks===2?{w:2,d:1}:{w:1,d:1};
+    var layer=key==='cloud_rug'?'rug':(key==='chandelier'||key==='wall_shelf')?'wall':'floor';
+    TYPES[id]={w:dims.w,d:dims.d,blocks:blocks,h:blocks===4?110:blocks===2?78:58,color:'#83b9c0',layer:layer,image:'assets/ocean/'+key+'.png'};
+    OCEAN_ORDER.push(id);
+  });
+  var OCEAN_NAMES = {
+    pt: {
+      shell_bed:'Cama concha', shell_armchair:'Poltrona concha', vanity:'Penteadeira', wardrobe:'Guarda-roupa', ottoman:'Pufe', treasure_chest:'Baú do tesouro', shell_sofa:'Sofá concha', coral_table:'Mesa coral', jellyfish_lamp:'Luminária água-viva', room_divider:'Divisória', bookshelf:'Estante de livros', nightstand:'Mesa de cabeceira', standing_mirror:'Espelho de chão', jellyfish_lamp2:'Luminária água-viva 2', snowglobe_table:'Mesa globo de neve'
+    },
+    en: {
+      shell_bed:'Shell bed', shell_armchair:'Shell armchair', vanity:'Vanity', wardrobe:'Wardrobe', ottoman:'Ottoman', treasure_chest:'Treasure chest', shell_sofa:'Shell sofa', coral_table:'Coral table', jellyfish_lamp:'Jellyfish lamp', room_divider:'Room divider', bookshelf:'Bookcase', nightstand:'Nightstand', standing_mirror:'Standing mirror', jellyfish_lamp2:'Jellyfish lamp 2', snowglobe_table:'Snow globe table'
+    }
+  };
+  var OCEAN_IMAGES = {};
+  OCEAN_ORDER.forEach(function(type){var im=new Image();im.onload=draw;im.src=TYPES[type].image;OCEAN_IMAGES[type]=im;});
+  // Aquariums: isometric glass tanks on stands in three colors (light wood,
+  // dark wood, white). Footprints follow the same 1/2/4-block rule, and the
+  // art is drawn with the standard furniture renderer like every other piece.
+  var AQUA_ITEMS = [
+    ['aquarium_cube_light',1], ['aquarium_medium_light',2], ['aquarium_large_light',4],
+    ['aquarium_cube_dark',1], ['aquarium_medium_dark',2], ['aquarium_large_dark',4],
+    ['aquarium_cube_white',1], ['aquarium_medium_white',2], ['aquarium_large_white',4]
+  ];
+  var AQUA_ORDER = [];
+  AQUA_ITEMS.forEach(function(def){
+    var key=def[0], id='aq_'+key, blocks=def[1], dims=blocks===4?{w:2,d:2}:blocks===2?{w:2,d:1}:{w:1,d:1};
+    TYPES[id]={w:dims.w,d:dims.d,blocks:blocks,h:blocks===4?110:blocks===2?78:58,color:'#5aa7d8',layer:'floor',image:'assets/items/'+key+'.png'};
+    AQUA_ORDER.push(id);
+  });
+  // Default spawn rotation (degrees) per aquarium type: large tanks lean
+  // -9° (351°), medium and cube tanks lean -6° (354°). Users can still
+  // change it freely with the Rotacionar slider after placing.
+  var DEFAULT_ANGLE = {
+    aq_aquarium_large_light:351, aq_aquarium_large_dark:351, aq_aquarium_large_white:351,
+    aq_aquarium_medium_light:354, aq_aquarium_medium_dark:354, aq_aquarium_medium_white:354,
+    aq_aquarium_cube_light:354, aq_aquarium_cube_dark:354, aq_aquarium_cube_white:354
+  };
+  function defaultAngle(type){ return DEFAULT_ANGLE[type]||0; }
+  var AQUA_NAMES = {
+    pt: {
+      aquarium_cube_light:'Aquário cubo · madeira clara', aquarium_medium_light:'Aquário médio · madeira clara', aquarium_large_light:'Aquário grande · madeira clara',
+      aquarium_cube_dark:'Aquário cubo · madeira escura', aquarium_medium_dark:'Aquário médio · madeira escura', aquarium_large_dark:'Aquário grande · madeira escura',
+      aquarium_cube_white:'Aquário cubo · branco', aquarium_medium_white:'Aquário médio · branco', aquarium_large_white:'Aquário grande · branco'
+    },
+    en: {
+      aquarium_cube_light:'Cube aquarium · light wood', aquarium_medium_light:'Medium aquarium · light wood', aquarium_large_light:'Large aquarium · light wood',
+      aquarium_cube_dark:'Cube aquarium · dark wood', aquarium_medium_dark:'Medium aquarium · dark wood', aquarium_large_dark:'Large aquarium · dark wood',
+      aquarium_cube_white:'Cube aquarium · white', aquarium_medium_white:'Medium aquarium · white', aquarium_large_white:'Large aquarium · white'
+    }
+  };
+  // Wood furniture set: [key, blocks, layer]. Rugs lie flat; hanging plant and
+  // wall shelf mount on the walls and take no floor space.
+  var WOOD_ITEMS = [
+    ['wood_bed',4,'floor'], ['wood_wardrobe',4,'floor'], ['wood_sofa',4,'floor'], ['wood_bookshelf',4,'floor'],
+    ['wood_armchair',2,'floor'], ['wood_chair',1,'floor'], ['wood_ottoman',1,'floor'], ['wood_coffee_table',2,'floor'],
+    ['wood_bench',2,'floor'], ['wood_vanity',2,'floor'], ['wood_dresser',2,'floor'], ['wood_divider',2,'floor'],
+    ['wood_nightstand',1,'floor'], ['table_lamp',1,'floor'], ['potted_plant',1,'floor'], ['basket',1,'floor'],
+    ['storage_box',1,'floor'], ['floor_lamp',1,'floor'], ['wood_mirror',1,'floor'],
+    ['hanging_plant',1,'wall'], ['wood_wall_shelf',1,'wall'],
+    ['oval_rug',4,'rug'], ['square_rug',4,'rug'], ['flower_rug',4,'rug']
+  ];
+  var WOOD_ORDER = [];
+  WOOD_ITEMS.forEach(function(def){
+    var key=def[0], blocks=def[1], layer=def[2], dims=blocks===4?{w:2,d:2}:blocks===2?{w:2,d:1}:{w:1,d:1};
+    TYPES[key]={w:dims.w,d:dims.d,blocks:blocks,h:blocks===4?110:blocks===2?78:58,color:'#b98d5f',layer:layer,image:'assets/items/'+key+'.png'};
+    WOOD_ORDER.push(key);
+  });
+  var WOOD_NAMES = {
+    pt: {
+      wood_bed:'Cama de madeira', wood_nightstand:'Criado-mudo', wood_wardrobe:'Guarda-roupa de madeira', wood_dresser:'Cômoda', wood_vanity:'Penteadeira de madeira', wood_bookshelf:'Estante de madeira', wood_armchair:'Poltrona de madeira', wood_sofa:'Sofá de madeira', wood_coffee_table:'Mesa de centro', wood_bench:'Banco de madeira', wood_chair:'Cadeira de madeira', wood_ottoman:'Pufe de madeira', hanging_plant:'Planta suspensa', table_lamp:'Abajur', potted_plant:'Planta em vaso', wood_wall_shelf:'Prateleira de parede', oval_rug:'Tapete oval', wood_mirror:'Espelho de madeira', square_rug:'Tapete quadrado', wood_divider:'Biombo de madeira', floor_lamp:'Luminária de chão', storage_box:'Caixa de armazenamento', basket:'Cesta', flower_rug:'Tapete flor'
+    },
+    en: {
+      wood_bed:'Wood bed', wood_nightstand:'Wood nightstand', wood_wardrobe:'Wood wardrobe', wood_dresser:'Dresser', wood_vanity:'Wood vanity', wood_bookshelf:'Wood bookshelf', wood_armchair:'Wood armchair', wood_sofa:'Wood sofa', wood_coffee_table:'Coffee table', wood_bench:'Wood bench', wood_chair:'Wood chair', wood_ottoman:'Wood ottoman', hanging_plant:'Hanging plant', table_lamp:'Table lamp', potted_plant:'Potted plant', wood_wall_shelf:'Wall shelf', oval_rug:'Oval rug', wood_mirror:'Wood mirror', square_rug:'Square rug', wood_divider:'Wood divider', floor_lamp:'Floor lamp', storage_box:'Storage box', basket:'Basket', flower_rug:'Flower rug'
+    }
+  };
+  AQUA_ORDER.concat(WOOD_ORDER).forEach(function(type){var im=new Image();im.onload=draw;im.src=TYPES[type].image;OCEAN_IMAGES[type]=im;});
+  for(var avi=0;avi<8;avi++){var wi=new Image();wi.onload=draw;wi.src='assets/avatar/walk_'+avi+'.png';avatarImages.walk.push(wi);}
+  for(var aii=0;aii<5;aii++){var ii=new Image();ii.onload=draw;ii.src='assets/avatar/idle_'+aii+'.png';avatarImages.idle.push(ii);}
+  for(var asi=0;asi<2;asi++){var si=new Image();si.onload=draw;si.src='assets/avatar/sit_'+asi+'.png';avatarImages.sit.push(si);}
+  avatarImages.back=new Image();avatarImages.back.onload=draw;avatarImages.back.src='assets/avatar/back.png';
+
+  function t(key) { return TXT[lang][key]; }
+
+  // AquaNim server API. Auth rides the HttpOnly aq_session cookie
+  // (credentials:'same-origin'), same as the main game — no token needed.
+  function apiFetch(path, opts) {
+    opts = opts || {};
+    opts.credentials = 'same-origin';
+    return fetch(path, opts).then(function (res) {
+      return res.json().then(function (data) {
+        data = data || {};
+        data.ok = res.ok && data.ok !== false;
+        data.status = res.status;
+        return data;
+      }).catch(function () { return { ok: res.ok, status: res.status }; });
+    }).catch(function () { return { ok: false, error: 'network' }; });
+  }
+  function apiGet(path) { return apiFetch(path); }
+  function apiPost(path, body) {
+    return apiFetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body || {})
+    });
+  }
+  function nameOf(type) {
+    if(type.indexOf('ocean_')===0)return OCEAN_NAMES[lang][type.slice(6)]||type.slice(6);
+    if(type.indexOf('aq_')===0)return AQUA_NAMES[lang][type.slice(3)]||type.slice(3);
+    if(WOOD_NAMES[lang][type])return WOOD_NAMES[lang][type];
+    return TXT[lang].names[type] || type;
+  }
+
+  function shade(hex, amt) {
+    var c = hex.replace('#','');
+    var n = parseInt(c,16), r=(n>>16)+amt, g=((n>>8)&255)+amt, b=(n&255)+amt;
+    r=Math.max(0,Math.min(255,r)); g=Math.max(0,Math.min(255,g)); b=Math.max(0,Math.min(255,b));
+    return '#' + (b | (g<<8) | (r<<16)).toString(16).padStart(6,'0');
+  }
+  function poly(c, pts, fill, stroke, width) {
+    c.beginPath(); c.moveTo(pts[0][0],pts[0][1]);
+    for (var i=1;i<pts.length;i++) c.lineTo(pts[i][0],pts[i][1]);
+    c.closePath(); c.fillStyle=fill; c.fill();
+    if(stroke){ c.strokeStyle=stroke; c.lineWidth=width||1; c.stroke(); }
+  }
+  function line(c,a,b,color,width){ c.beginPath(); c.moveTo(a[0],a[1]); c.lineTo(b[0],b[1]); c.strokeStyle=color; c.lineWidth=width||1; c.stroke(); }
+  function ellipse(c,x,y,rx,ry,fill,stroke){ c.beginPath(); c.ellipse(x,y,rx,ry,0,0,Math.PI*2); c.fillStyle=fill;c.fill(); if(stroke){c.strokeStyle=stroke;c.stroke();} }
+
+  function iso(x,y,z) {
+    return [metrics.ox + (x-y)*metrics.tw/2, metrics.oy + (x+y)*metrics.th/2 - (z||0)];
+  }
+  function footprint(type, rot) {
+    var o=TYPES[type], swap=rot%2===1;
+    return { w:swap?o.d:o.w, d:swap?o.w:o.d };
+  }
+  // Effective horizontal mirror of a sprite: rotating through 4 orientations
+  // mirrors the art at 90° and 180° (rot 1 and 2); the Espelhar/Mirror toggle
+  // (item.flip) mirrors it once more on top of that.
+  function itemMirrored(item) {
+    var r=((item.rot||0)%4+4)%4;
+    return (r===1||r===2)!==!!item.flip;
+  }
+  function seatFacing(rot) {
+    var r=((rot||0)%4+4)%4;
+    return (r===1||r===2)?1:-1;
+  }
+  function tileFromScreen(sx,sy) {
+    var dx=(sx-metrics.ox)/(metrics.tw/2), dy=(sy-metrics.oy)/(metrics.th/2);
+    return { x:Math.floor((dx+dy)/2), y:Math.floor((dy-dx)/2) };
+  }
+  function screenPoint(ev) {
+    var r=canvas.getBoundingClientRect();
+    return { x:(ev.clientX-r.left)*canvas.width/r.width, y:(ev.clientY-r.top)*canvas.height/r.height };
+  }
+
+  function resize() {
+    var shell=canvas.parentElement, rect=shell.getBoundingClientRect();
+    var dpr=Math.min(window.devicePixelRatio||1,2);
+    var cssW=Math.max(320,rect.width), cssH=Math.max(310,rect.height);
+    canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr);
+    metrics.w=canvas.width; metrics.h=canvas.height;
+    var availableW=canvas.width*0.82, availableH=canvas.height*0.58;
+    metrics.tw=Math.min(70*dpr, availableW/ROOM, availableH/(ROOM*.5));
+    metrics.th=metrics.tw/2;
+    metrics.wallH=Math.min(126*dpr, canvas.height*.27);
+    metrics.ox=canvas.width/2;
+    metrics.oy=Math.max(metrics.wallH+18*dpr, canvas.height*.30);
+    metrics.scale=dpr;
+    draw();
+  }
+
+  function drawRoom() {
+    var dark=window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var bg=dark?'#202325':'#d6d0c7';
+    var wallL=dark?'#3a3d3f':'#505356', wallR=dark?'#45484a':'#606366';
+    var wallLine=dark?'#565a5d':'#777a7c';
+    var woodA=dark?'#956d47':'#d3a46e', woodB=dark?'#8b6240':'#c79863';
+    var grout=dark?'rgba(47,34,26,.55)':'rgba(96,61,32,.38)';
+    ctx.fillStyle=bg;ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    var corner=iso(0,0,0), xr=iso(ROOM,0,0), yl=iso(0,ROOM,0);
+    poly(ctx,[corner,xr,[xr[0],xr[1]-metrics.wallH],[corner[0],corner[1]-metrics.wallH]],wallR);
+    poly(ctx,[yl,corner,[corner[0],corner[1]-metrics.wallH],[yl[0],yl[1]-metrics.wallH]],wallL);
+
+    var wallRows=4;
+    for(var i=0;i<=ROOM;i++){
+      var a=iso(i,0,0), au=[a[0],a[1]-metrics.wallH];
+      line(ctx,a,au,wallLine,Math.max(1,metrics.scale*.7));
+      var b=iso(0,i,0), bu=[b[0],b[1]-metrics.wallH];
+      line(ctx,b,bu,wallLine,Math.max(1,metrics.scale*.7));
+    }
+    for(var r=0;r<=wallRows;r++){
+      var z=metrics.wallH*r/wallRows;
+      line(ctx,[corner[0],corner[1]-z],[xr[0],xr[1]-z],wallLine,Math.max(1,metrics.scale*.7));
+      line(ctx,[yl[0],yl[1]-z],[corner[0],corner[1]-z],wallLine,Math.max(1,metrics.scale*.7));
+    }
+
+    for(var y=0;y<ROOM;y++) for(var x=0;x<ROOM;x++){
+      var p0=iso(x,y,0),p1=iso(x+1,y,0),p2=iso(x+1,y+1,0),p3=iso(x,y+1,0);
+      poly(ctx,[p0,p1,p2,p3],((x+y)%2?woodB:woodA),grout,Math.max(1,metrics.scale*.55));
+      if((x+y)%2===0){
+        var m1=iso(x+.12,y+.5,0),m2=iso(x+.88,y+.5,0);
+        line(ctx,m1,m2,dark?'rgba(255,230,190,.07)':'rgba(255,248,224,.28)',Math.max(1,metrics.scale*.45));
+      }
+    }
+    var front=iso(ROOM,ROOM,0);
+    poly(ctx,[iso(0,ROOM,0),front,[front[0],front[1]+8*metrics.scale],[yl[0],yl[1]+8*metrics.scale]],dark?'#68482f':'#98704c');
+    poly(ctx,[iso(ROOM,0,0),front,[front[0],front[1]+8*metrics.scale],[xr[0],xr[1]+8*metrics.scale]],dark?'#765238':'#a77b52');
+  }
+
+  function prism(c, x,y,w,d,h,color, lift) {
+    lift=lift||0;
+    var a=iso(x,y,lift),b=iso(x+w,y,lift),cc=iso(x+w,y+d,lift),dd=iso(x,y+d,lift);
+    var au=iso(x,y,lift+h),bu=iso(x+w,y,lift+h),cu=iso(x+w,y+d,lift+h),du=iso(x,y+d,lift+h);
+    poly(c,[dd,cc,cu,du],shade(color,-22),'rgba(37,31,27,.35)',metrics.scale*.65);
+    poly(c,[b,cc,cu,bu],shade(color,-40),'rgba(37,31,27,.35)',metrics.scale*.65);
+    poly(c,[au,bu,cu,du],color,'rgba(37,31,27,.42)',metrics.scale*.75);
+    return {top:[au,bu,cu,du], bounds:boundsOf([a,b,cc,dd,au,bu,cu,du])};
+  }
+  function boundsOf(points){
+    var xs=points.map(function(p){return p[0]}), ys=points.map(function(p){return p[1]});
+    return {x0:Math.min.apply(null,xs),x1:Math.max.apply(null,xs),y0:Math.min.apply(null,ys),y1:Math.max.apply(null,ys)};
+  }
+  function mergeBounds(a,b){ if(!a)return b;if(!b)return a;return{x0:Math.min(a.x0,b.x0),x1:Math.max(a.x1,b.x1),y0:Math.min(a.y0,b.y0),y1:Math.max(a.y1,b.y1)}; }
+
+  function drawImageRug(c,item,preview) {
+    var type=item.type,im=OCEAN_IMAGES[type],f=footprint(type,item.rot||0),s=metrics.scale;
+    // Rugs are textures on the floor plane: the image rectangle is affinely
+    // mapped to the same isometric diamond as its tiles, with no upright lift.
+    // Free rotation turns the rug inside the floor plane, so it stays flat.
+    var angR=(item.angle||0)*Math.PI/180, rcx=item.x+f.w/2, rcy=item.y+f.d/2;
+    function rugPt(px,py){
+      if(angR){var dx=px-rcx,dy=py-rcy,cs=Math.cos(angR),sn=Math.sin(angR);px=rcx+dx*cs-dy*sn;py=rcy+dx*sn+dy*cs;}
+      return iso(px,py,.25*s);
+    }
+    var a=rugPt(item.x+.08,item.y+.08),b=rugPt(item.x+f.w-.08,item.y+.08);
+    var d=rugPt(item.x+.08,item.y+f.d-.08),cc=rugPt(item.x+f.w-.08,item.y+f.d-.08);
+    if(im&&im.complete&&im.naturalWidth){
+      c.save();c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';
+      c.beginPath();c.moveTo(a[0],a[1]);c.lineTo(b[0],b[1]);c.lineTo(cc[0],cc[1]);c.lineTo(d[0],d[1]);c.closePath();c.clip();
+      if(itemMirrored(item))c.transform((a[0]-b[0])/im.naturalWidth,(a[1]-b[1])/im.naturalWidth,(cc[0]-b[0])/im.naturalHeight,(cc[1]-b[1])/im.naturalHeight,b[0],b[1]);
+      else c.transform((b[0]-a[0])/im.naturalWidth,(b[1]-a[1])/im.naturalWidth,(d[0]-a[0])/im.naturalHeight,(d[1]-a[1])/im.naturalHeight,a[0],a[1]);
+      c.drawImage(im,0,0,im.naturalWidth,im.naturalHeight);c.restore();
+    }
+    var bounds=boundsOf([a,b,cc,d]);item._bounds=bounds;
+    if(selectedId===item.id&&!preview){c.save();c.strokeStyle='#f6c24f';c.lineWidth=3*s;c.setLineDash([7*s,5*s]);poly(c,[a,b,cc,d],'rgba(0,0,0,0)','#f6c24f',3*s);c.restore();}
+    return bounds;
+  }
+
+  function drawImageFurniture(c,item,preview) {
+    var type=item.type,o=TYPES[type],im=OCEAN_IMAGES[type],f=footprint(type,item.rot||0),s=metrics.scale;
+    if(o.layer==='rug')return drawImageRug(c,item,preview);
+    var anchor=iso(item.x+f.w/2,item.y+f.d/2,1*s);
+    var ratio=(im&&im.naturalWidth)?im.naturalHeight/im.naturalWidth:1;
+    var footprintSpan=(f.w+f.d)*metrics.tw/2;
+    var drawW=footprintSpan*.9;
+    if(type==='ocean_ottoman')drawW*=.78;
+    if(type==='ocean_towel_rack')drawW*=1.45;
+    var drawH=drawW*ratio;
+    var maxH=(o.blocks===4?168:o.blocks===2?124:92)*s;
+    if(drawH>maxH){drawW*=maxH/drawH;drawH=maxH;}
+    var shrink={wood_dresser:.85,wood_bookshelf:.8,wood_wardrobe:.8,wood_chair:.82,wood_ottoman:.8}[type];
+    if(shrink){drawW*=shrink;drawH*=shrink;}
+    var x0=anchor[0]-drawW/2,y0=anchor[1]-drawH+10*s;
+    var angF=(item.angle||0)*Math.PI/180, cxF=anchor[0], cyF=y0+drawH/2;
+    c.save();c.globalAlpha=.19;ellipse(c,anchor[0],anchor[1]+3*s,Math.max(15*s,drawW*.32),Math.max(5*s,drawW*.08),'#1f2b2d');c.restore();
+    if(im&&im.complete&&im.naturalWidth){
+      c.save();c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';
+      if(angF){c.translate(cxF,cyF);c.rotate(angF);if(itemMirrored(item))c.scale(-1,1);c.drawImage(im,-drawW/2,-drawH/2,drawW,drawH);}
+      else if(itemMirrored(item)){c.translate(anchor[0],0);c.scale(-1,1);c.drawImage(im,-drawW/2,y0,drawW,drawH);}else c.drawImage(im,x0,y0,drawW,drawH);
+      c.restore();
+    } else {
+      c.save();c.globalAlpha=.45;ellipse(c,anchor[0],anchor[1]-drawH*.32,drawW*.3,drawH*.28,o.color);c.restore();
+    }
+    var b={x0:x0,x1:x0+drawW,y0:y0,y1:y0+drawH+5*s};
+    if(angF){
+      var csF=Math.cos(angF),snF=Math.sin(angF);
+      var rotPts=[[x0,y0],[x0+drawW,y0],[x0,y0+drawH],[x0+drawW,y0+drawH]].map(function(p){var dx=p[0]-cxF,dy=p[1]-cyF;return[cxF+dx*csF-dy*snF,cyF+dx*snF+dy*csF];});
+      b=boundsOf(rotPts);b.y1+=5*s;
+    }
+    item._bounds=b;
+    if(selectedId===item.id&&!preview){
+      c.save();c.strokeStyle='#f6c24f';c.lineWidth=3*s;c.setLineDash([7*s,5*s]);c.strokeRect(b.x0-5*s,b.y0-5*s,b.x1-b.x0+10*s,b.y1-b.y0+10*s);c.restore();
+    }
+    return b;
+  }
+
+  function drawFurniture(c,item,preview) {
+    var type=item.type, o=TYPES[type], f=footprint(type,item.rot||0), x=item.x,y=item.y;
+    if(o.image)return drawImageFurniture(c,item,preview);
+    var s=metrics.scale, b=null, p, q;
+    var angV=(item.angle||0)*Math.PI/180, tiltedV=false;
+    if(angV){var cenV=iso(x+f.w/2,y+f.d/2,0);c.save();c.translate(cenV[0],cenV[1]);c.rotate(angV);c.translate(-cenV[0],-cenV[1]);tiltedV=true;}
+    if(type==='rug'){
+      var a=iso(x+.06,y+.06,2*s),bb=iso(x+f.w-.06,y+.06,2*s),cc=iso(x+f.w-.06,y+f.d-.06,2*s),dd=iso(x+.06,y+f.d-.06,2*s);
+      poly(c,[a,bb,cc,dd],o.color,shade(o.color,-34),1*s);
+      var cen=iso(x+f.w/2,y+f.d/2,2.5*s);
+      c.save(); c.globalAlpha=.35; line(c,iso(x+.35,y+f.d/2,3*s),iso(x+f.w-.35,y+f.d/2,3*s),'#f5c28e',2*s); c.restore();
+      b=boundsOf([a,bb,cc,dd]);
+    } else if(type==='bed'){
+      p=prism(c,x,y,f.w,f.d,10*s,'#94694e',0); b=p.bounds;
+      var inset=.12, headRot=(item.rot||0)%4;
+      p=prism(c,x+inset,y+inset,f.w-inset*2,f.d-inset*2,13*s,o.color,10*s); b=mergeBounds(b,p.bounds);
+      var pillowX=x+.28,pillowY=y+.28,pw=Math.min(.95,f.w-.4),pd=Math.min(.8,f.d-.4);
+      p=prism(c,pillowX,pillowY,pw,pd,6*s,'#eee5d7',23*s); b=mergeBounds(b,p.bounds);
+      var stripe1=iso(x+.12,y+f.d*.64,24*s),stripe2=iso(x+f.w-.12,y+f.d*.64,24*s);
+      line(c,stripe1,stripe2,shade(o.color,-30),3*s);
+    } else if(type==='table'){
+      p=prism(c,x+.1,y+.1,f.w-.2,f.d-.2,8*s,o.color,34*s); b=p.bounds;
+      [[.22,.22],[f.w-.36,.22],[.22,f.d-.36],[f.w-.36,f.d-.36]].forEach(function(k){ b=mergeBounds(b,prism(c,x+k[0],y+k[1],.16,.16,34*s,shade(o.color,-35),0).bounds); });
+    } else if(type==='chair'){
+      var cw=Math.min(1.35,f.w-.28),cd=Math.min(.76,f.d-.22),cx=x+(f.w-cw)/2,cy=y+(f.d-cd)/2;
+      p=prism(c,cx,cy,cw,cd,7*s,o.color,21*s);b=p.bounds;
+      [[.05,.05],[cw-.17,.05],[.05,cd-.17],[cw-.17,cd-.17]].forEach(function(k){b=mergeBounds(b,prism(c,cx+k[0],cy+k[1],.12,.12,22*s,shade(o.color,-30),0).bounds)});
+      var rot=(item.rot||0)%4,bx=cx-.04,by=cy-.04,bw=cw+.08,bd=.14;
+      if(rot===1){bx=cx+cw-.1;by=cy-.04;bw=.14;bd=cd+.08;} if(rot===2){bx=cx-.04;by=cy+cd-.1;bw=cw+.08;bd=.14;} if(rot===3){bx=cx-.04;by=cy-.04;bw=.14;bd=cd+.08;}
+      b=mergeBounds(b,prism(c,bx,by,bw,bd,31*s,shade(o.color,-5),26*s).bounds);
+    } else if(type==='sofa'){
+      p=prism(c,x+.08,y+.12,f.w-.16,f.d-.2,18*s,o.color,5*s);b=p.bounds;
+      var rotS=(item.rot||0)%4, backX=x+.06,backY=y+.06,backW=f.w-.12,backD=.16;
+      if(rotS===1){backX=x+f.w-.22;backY=y+.06;backW=.16;backD=f.d-.12;}
+      if(rotS===2){backX=x+.06;backY=y+f.d-.22;backW=f.w-.12;backD=.16;}
+      if(rotS===3){backX=x+.06;backY=y+.06;backW=.16;backD=f.d-.12;}
+      b=mergeBounds(b,prism(c,backX,backY,backW,backD,38*s,shade(o.color,-9),10*s).bounds);
+      for(var si=1;si<3;si++) line(c,iso(x+f.w*si/3,y+.18,25*s),iso(x+f.w*si/3,y+f.d-.2,25*s),shade(o.color,-24),1*s);
+    } else if(type==='plant'){
+      var plantX=x+f.w/2,plantY=y+f.d/2;
+      p=prism(c,plantX-.34,plantY-.34,.68,.68,18*s,'#a56c45',0);b=p.bounds;
+      var base=iso(plantX,plantY,20*s);
+      c.save();c.lineCap='round';
+      line(c,base,[base[0],base[1]-35*s],'#557846',4*s);
+      var leaves=[[-20,-24,19,10],[18,-31,20,10],[-14,-42,17,9],[15,-49,18,9],[0,-61,15,9]];
+      leaves.forEach(function(l,i){c.save();c.translate(base[0]+l[0]*s,base[1]+l[1]*s);c.rotate((i%2?-.35:.35));ellipse(c,0,0,l[2]*s,l[3]*s,i%2?'#7ea665':'#688f54','#476c3c');c.restore();});c.restore();
+      b=mergeBounds(b,{x0:base[0]-34*s,x1:base[0]+34*s,y0:base[1]-72*s,y1:base[1]});
+    } else if(type==='lamp'){
+      p=prism(c,x+.3,y+.3,.4,.4,5*s,'#80664f',0);b=p.bounds; var lp=iso(x+.5,y+.5,5*s);
+      line(c,lp,[lp[0],lp[1]-57*s],'#59585a',4*s);
+      poly(c,[[lp[0]-18*s,lp[1]-67*s],[lp[0]+18*s,lp[1]-67*s],[lp[0]+11*s,lp[1]-47*s],[lp[0]-11*s,lp[1]-47*s]],'#e8c778','#7d6539',1*s);
+      b=mergeBounds(b,{x0:lp[0]-20*s,x1:lp[0]+20*s,y0:lp[1]-69*s,y1:lp[1]});
+    } else if(type==='shelf'){
+      p=prism(c,x+.08,y+.08,f.w-.16,f.d-.16,65*s,o.color,0);b=p.bounds;
+      for(var sh=1;sh<4;sh++) line(c,iso(x+.08,y+f.d*.92,sh*15*s),iso(x+f.w-.08,y+f.d*.92,sh*15*s),shade(o.color,-30),3*s);
+      var books=['#bb6755','#5d8494','#d0a14d','#708a5f'];
+      for(var bk=0;bk<4;bk++){
+        var bp=iso(x+.24+bk*.15,y+f.d-.03,16*s); c.fillStyle=books[bk];c.fillRect(bp[0]-4*s,bp[1]-14*s,7*s,15*s);
+      }
+    } else if(type==='tv'){
+      p=prism(c,x+.06,y+.1,f.w-.12,f.d-.18,13*s,'#865d42',0);b=p.bounds;
+      var center=iso(x+f.w/2,y+f.d/2,17*s), ww=48*s,hh=32*s;
+      poly(c,[[center[0]-ww/2,center[1]-hh],[center[0]+ww/2,center[1]-hh*.6],[center[0]+ww/2,center[1]+3*s],[center[0]-ww/2,center[1]-hh*.4]],'#22282b','#101315',2*s);
+      line(c,[center[0]-ww*.18,center[1]-hh*.63],[center[0]+ww*.28,center[1]-hh*.38],'#596b70',2*s);
+      b=mergeBounds(b,{x0:center[0]-ww/2,x1:center[0]+ww/2,y0:center[1]-hh,y1:center[1]+4*s});
+    } else if(type==='coffee'){
+      p=prism(c,x+.08,y+.1,f.w-.16,f.d-.2,7*s,o.color,18*s);b=p.bounds;
+      b=mergeBounds(b,prism(c,x+.25,y+.25,.16,.16,18*s,shade(o.color,-30),0).bounds);
+      b=mergeBounds(b,prism(c,x+f.w-.41,y+f.d-.41,.16,.16,18*s,shade(o.color,-30),0).bounds);
+    }
+    item._bounds=b;
+    if(selectedId===item.id && !preview && b){
+      c.save();c.strokeStyle='#f6c24f';c.lineWidth=3*s;c.setLineDash([7*s,5*s]);c.strokeRect(b.x0-5*s,b.y0-5*s,b.x1-b.x0+10*s,b.y1-b.y0+10*s);c.restore();
+    }
+    if(tiltedV)c.restore();
+    return b;
+  }
+
+  function wallAnchor(item) {
+    var tile=item.tile||0, z=(item.z||1)*metrics.wallH/4;
+    var base=item.wall==='right'?iso(tile+.5,0,0):iso(0,tile+.5,0);
+    return [base[0],base[1]-z];
+  }
+  function drawWallItem(c,item) {
+    var a=wallAnchor(item),s=metrics.scale,o=TYPES[item.type],im=o.image&&OCEAN_IMAGES[item.type];
+    var w=(item.type==='painting'?54:34)*s,h=(item.type==='painting'?42:38)*s;
+    if(im&&im.complete&&im.naturalWidth){
+      var base=item.wall==='right'?iso((item.tile||0)+.5,0,0):iso(0,(item.tile||0)+.5,0);
+      var ratio=im.naturalHeight/im.naturalWidth;w=64*s;
+      if(item.type==='hanging_plant'||item.type==='wood_wall_shelf')w*=.68;
+      h=w*ratio;
+      var maxH=Math.max(48*s,metrics.wallH-14*s);if(h>maxH){w*=maxH/h;h=maxH;}
+      var top=(item.type==='ocean_wall_shelf'||item.type==='wood_wall_shelf')?a[1]-h/2:base[1]-metrics.wallH+7*s;
+      var skew=item.wall==='right'?.16:-.16;
+      var flip=(item.wall!=='right'&&item.type==='wood_wall_shelf')?-1:1;
+      if(item.flip)flip=-flip;
+      var angW=(item.angle||0)*Math.PI/180;
+      c.save();c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';
+      if(angW){c.translate(base[0],top+h/2);c.rotate(angW);c.transform(flip,skew,0,1,0,0);c.drawImage(im,-w/2,-h/2,w,h);}
+      else {c.translate(base[0],top);c.transform(flip,skew,0,1,0,0);c.drawImage(im,-w/2,0,w,h);}
+      c.restore();
+      var skewDrop=Math.abs(skew*w/2);item._bounds={x0:base[0]-w/2-5*s,x1:base[0]+w/2+5*s,y0:top-skewDrop-5*s,y1:top+h+skewDrop+5*s};
+      if(angW){var bwW=w*Math.abs(Math.cos(angW))+h*Math.abs(Math.sin(angW)),bhW=w*Math.abs(Math.sin(angW))+h*Math.abs(Math.cos(angW));item._bounds={x0:base[0]-bwW/2-5*s,x1:base[0]+bwW/2+5*s,y0:top+h/2-bhW/2-5*s,y1:top+h/2+bhW/2+5*s};}
+    } else if(item.type==='painting'){
+      var skewPx=item.wall==='right'?10*s:-10*s;
+      poly(c,[[a[0]-w/2,a[1]-h/2],[a[0]+w/2,a[1]-h/2+skewPx],[a[0]+w/2,a[1]+h/2+skewPx],[a[0]-w/2,a[1]+h/2]],'#7c5138','#3b2b22',3*s);
+      var pad=5*s;poly(c,[[a[0]-w/2+pad,a[1]-h/2+pad],[a[0]+w/2-pad,a[1]-h/2+skewPx+pad],[a[0]+w/2-pad,a[1]+h/2+skewPx-pad],[a[0]-w/2+pad,a[1]+h/2-pad]],'#d9ad6f');
+      var hillY=a[1]+8*s; poly(c,[[a[0]-w*.38,hillY],[a[0]-w*.1,a[1]-5*s],[a[0]+w*.12,hillY],[a[0]+w*.36,a[1]-7*s],[a[0]+w*.42,a[1]+h*.3],[a[0]-w*.4,a[1]+h*.3]],'#667c61');
+      item._bounds={x0:a[0]-w/2-5*s,x1:a[0]+w/2+5*s,y0:a[1]-h/2-8*s,y1:a[1]+h/2+18*s};
+    } else {
+      line(c,[a[0],a[1]-5*s],[a[0],a[1]+15*s],'#393b3c',3*s);
+      poly(c,[[a[0]-15*s,a[1]-10*s],[a[0]+15*s,a[1]-10*s],[a[0]+10*s,a[1]+4*s],[a[0]-10*s,a[1]+4*s]],'#e0b95f','#725b32',1*s);
+      ellipse(c,a[0],a[1]+17*s,7*s,4*s,'rgba(248,213,126,.55)');
+      item._bounds={x0:a[0]-w/2-5*s,x1:a[0]+w/2+5*s,y0:a[1]-h/2-8*s,y1:a[1]+h/2+18*s};
+    }
+    if(selectedId===item.id){ctx.save();ctx.strokeStyle='#f6c24f';ctx.lineWidth=3*s;ctx.setLineDash([6*s,4*s]);ctx.strokeRect(item._bounds.x0,item._bounds.y0,item._bounds.x1-item._bounds.x0,item._bounds.y1-item._bounds.y0);ctx.restore();}
+  }
+
+  function drawFloorFootprint(type,x,y,rot,good) {
+    var f=footprint(type,rot),s=metrics.scale;
+    ctx.save();ctx.globalAlpha=.72;
+    for(var fy=0;fy<f.d;fy++)for(var fx=0;fx<f.w;fx++){
+      var a=iso(x+fx+.04,y+fy+.04,4*s),b=iso(x+fx+.96,y+fy+.04,4*s);
+      var cc=iso(x+fx+.96,y+fy+.96,4*s),d=iso(x+fx+.04,y+fy+.96,4*s);
+      poly(ctx,[a,b,cc,d],good?'rgba(96,190,109,.72)':'rgba(213,70,62,.76)',good?'#e2ffdf':'#ffe0dc',2*s);
+    }
+    ctx.restore();
+  }
+  function drawWallFootprint(target,good) {
+    var s=metrics.scale,step=metrics.wallH/4,z=target.z;
+    var lo=(z-.5)*step,hi=(z+.5)*step,a,b,c,d;
+    if(target.wall==='right'){
+      a=iso(target.tile,0,0);b=iso(target.tile+1,0,0);
+    }else{
+      a=iso(0,target.tile,0);b=iso(0,target.tile+1,0);
+    }
+    c=[b[0],b[1]-hi];d=[a[0],a[1]-hi];a=[a[0],a[1]-lo];b=[b[0],b[1]-lo];
+    ctx.save();ctx.globalAlpha=.72;
+    poly(ctx,[a,b,c,d],good?'rgba(96,190,109,.72)':'rgba(213,70,62,.76)',good?'#e2ffdf':'#ffe0dc',2*s);
+    ctx.restore();
+  }
+  function avatarTileBlocked(x,y){
+    if(x<0||y<0||x>=ROOM||y>=ROOM)return true;
+    for(var i=0;i<items.length;i++){
+      var it=items[i],o=TYPES[it.type];
+      if(o.layer==='wall'||o.layer==='rug')continue;
+      var f=footprint(it.type,it.rot||0);
+      if(x>=it.x&&x<it.x+f.w&&y>=it.y&&y<it.y+f.d)return true;
+    }
+    return false;
+  }
+  function nearestFreeTile(tx,ty){
+    tx=Math.max(0,Math.min(ROOM-1,Math.floor(tx)));ty=Math.max(0,Math.min(ROOM-1,Math.floor(ty)));
+    if(!avatarTileBlocked(tx,ty))return{x:tx,y:ty};
+    var q=[{x:tx,y:ty}],seen={};seen[tx+','+ty]=1;
+    while(q.length){var n=q.shift(),ds=[[1,0],[-1,0],[0,1],[0,-1]];
+      for(var i=0;i<ds.length;i++){var x=n.x+ds[i][0],y=n.y+ds[i][1],k=x+','+y;if(x<0||y<0||x>=ROOM||y>=ROOM||seen[k])continue;seen[k]=1;if(!avatarTileBlocked(x,y))return{x:x,y:y};q.push({x:x,y:y});}
+    }
+    return{x:0,y:0};
+  }
+  function findPath(tx,ty){
+    var sx=Math.max(0,Math.min(ROOM-1,Math.floor(avatar.x))),sy=Math.max(0,Math.min(ROOM-1,Math.floor(avatar.y)));
+    tx=Math.max(0,Math.min(ROOM-1,Math.floor(tx)));ty=Math.max(0,Math.min(ROOM-1,Math.floor(ty)));
+    if(avatarTileBlocked(tx,ty))return [];
+    var q=[[sx,sy]],seen={};seen[sx+','+sy]=null;var dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+    while(q.length){var cur=q.shift();if(cur[0]===tx&&cur[1]===ty)break;
+      for(var i=0;i<4;i++){var nx=cur[0]+dirs[i][0],ny=cur[1]+dirs[i][1],k=nx+','+ny;if(nx<0||ny<0||nx>=ROOM||ny>=ROOM||seen.hasOwnProperty(k)||avatarTileBlocked(nx,ny))continue;seen[k]=cur[0]+','+cur[1];q.push([nx,ny]);}
+    }
+    var key=tx+','+ty;if(!seen.hasOwnProperty(key))return[];var path=[];
+    while(key!==sx+','+sy){var bits=key.split(',');path.unshift({x:Number(bits[0])+.5,y:Number(bits[1])+.5});key=seen[key];}
+    return path;
+  }
+  function stopSitting(){
+    if(!avatar.sitting)return;
+    var seat=items.find(function(i){return i.id===avatar.seatId});avatar.sitting=false;avatar.seatId=null;
+    if(seat){var f=footprint(seat.type,seat.rot||0),free=nearestFreeTile(seat.x+f.w,seat.y+f.d/2);avatar.x=free.x+.5;avatar.y=free.y+.5;}
+    updateSitButton();draw();
+  }
+  function walkTo(tx,ty){
+    if(avatar.sitting)stopSitting();avatar.path=findPath(tx,ty);avatar.target=avatar.path.shift()||null;avatar.moving=!!avatar.target;updateSitButton();
+  }
+  var SITTABLE_TYPES = {
+    ocean_shell_sofa:true, ocean_shell_armchair:true, ocean_ottoman:true,
+    wood_sofa:true, wood_armchair:true, wood_chair:true, wood_bench:true, wood_ottoman:true
+  };
+  function isSeat(item){
+    return !!item&&!!SITTABLE_TYPES[item.type];
+  }
+  function seatDistance(item){
+    var f=footprint(item.type,item.rot||0);
+    var dx=Math.max(item.x-avatar.x,0,avatar.x-(item.x+f.w));
+    var dy=Math.max(item.y-avatar.y,0,avatar.y-(item.y+f.d));
+    return Math.hypot(dx,dy);
+  }
+  function nearbySeat(){
+    if(avatar.sitting){var current=items.find(function(i){return i.id===avatar.seatId});return isSeat(current)?current:null;}
+    var best=null,bestD=Infinity;
+    items.forEach(function(it){
+      if(!isSeat(it))return;
+      var d=seatDistance(it);if(d<=1.5&&d<bestD){best=it;bestD=d;}
+    });return best;
+  }
+  function syncAvatarSeat(){
+    if(!avatar.sitting)return;
+    var seat=items.find(function(i){return i.id===avatar.seatId});
+    if(!isSeat(seat)){avatar.sitting=false;avatar.seatId=null;var free=nearestFreeTile(avatar.x,avatar.y);avatar.x=free.x+.5;avatar.y=free.y+.5;return;}
+    var f=footprint(seat.type,seat.rot||0);avatar.x=seat.x+f.w/2;avatar.y=seat.y+f.d/2;avatar.facing=seatFacing(seat.rot);
+  }
+  function updateSitButton(){
+    if(appMode!=='play'){sitBtn.hidden=true;return;}
+    var seat=nearbySeat();sitBtn.hidden=!seat;sitBtnText.textContent=avatar.sitting?t('stand'):t('sit');
+  }
+  function sitOrStand(){
+    if(avatar.sitting){stopSitting();return;}var seat=nearbySeat();if(!seat)return;
+    var f=footprint(seat.type,seat.rot||0);avatar.sitting=true;avatar.seatId=seat.id;avatar.path=[];avatar.target=null;avatar.moving=false;avatar.x=seat.x+f.w/2;avatar.y=seat.y+f.d/2;avatar.facing=seatFacing(seat.rot);updateSitButton();draw();
+  }
+  function drawAvatar(c){
+    var s=metrics.scale,anchor=iso(avatar.x,avatar.y,0),im,drawH,frame;
+    if(avatar.sitting){
+      var seat=items.find(function(i){return i.id===avatar.seatId});
+      var wideSeat=seat&&(seat.type==='ocean_shell_sofa'||seat.type==='ocean_daybed'||seat.type==='wood_sofa');
+      im=avatarImages.sit[wideSeat?1:0];drawH=68*s*AVATAR_SPRITE_SCALE;anchor[1]-=2*s;
+    }
+    else if(avatar.moving&&avatar.north){im=avatarImages.back;drawH=92*s*AVATAR_SPRITE_SCALE;}
+    else if(avatar.moving){frame=Math.floor(avatar.frame)%8;im=avatarImages.walk[frame];drawH=90*s*AVATAR_SPRITE_SCALE;}
+    else {frame=Math.floor(avatar.frame)%5;im=avatarImages.idle[frame];drawH=94*s*AVATAR_SPRITE_SCALE;}
+    if(!im||!im.complete||!im.naturalWidth)return;
+    var drawW=drawH*(im.naturalWidth/im.naturalHeight);c.save();c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';
+    if(!avatar.north&&avatar.facing<0){c.translate(anchor[0],0);c.scale(-1,1);c.drawImage(im,-drawW/2,anchor[1]-drawH,drawW,drawH);}else c.drawImage(im,anchor[0]-drawW/2,anchor[1]-drawH,drawW,drawH);
+    c.restore();
+  }
+  function setMode(mode){
+    appMode=mode;document.body.classList.toggle('play-mode',mode==='play');playControls.hidden=mode!=='play';
+    document.getElementById('modeBtnText').textContent=mode==='play'?t('editMode'):t('playMode');modeBtn.firstChild.nodeValue=mode==='play'?'✎ ':'▶ ';
+    if(mode==='play'){selectedType=null;selectedId=null;drag=null;hover=null;syncAvatarSeat();if(!avatar.sitting){var free=nearestFreeTile(avatar.x,avatar.y);if(avatarTileBlocked(Math.floor(avatar.x),Math.floor(avatar.y))){avatar.x=free.x+.5;avatar.y=free.y+.5;}}statusEl.textContent=t('playStatus');hintEl.textContent=t('playHint');}
+    else {avatar.path=[];avatar.target=null;avatar.moving=false;updateUI();}
+    updateSitButton();renderCatalog();resize();
+  }
+  function manualDirection(){
+    var dx=0,dy=0;if(keys.ArrowLeft||keys.a)dx--;if(keys.ArrowRight||keys.d)dx++;if(keys.ArrowUp||keys.w)dy--;if(keys.ArrowDown||keys.s)dy++;if(joystickDir){dx+=joystickDir.x;dy+=joystickDir.y;}var len=Math.hypot(dx,dy);return len>.15?{x:dx/len,y:dy/len}:null;
+  }
+  function moveAvatar(dt){
+    if(appMode!=='play'||avatar.sitting)return false;var dir=manualDirection(),speed=.0032*dt,dx=0,dy=0;
+    if(dir){avatar.path=[];avatar.target=null;dx=dir.x*speed;dy=dir.y*speed;}
+    else if(avatar.target){var vx=avatar.target.x-avatar.x,vy=avatar.target.y-avatar.y,dist=Math.hypot(vx,vy);if(dist<=speed){avatar.x=avatar.target.x;avatar.y=avatar.target.y;avatar.target=avatar.path.shift()||null;if(!avatar.target)avatar.moving=false;return true;}dx=vx/dist*speed;dy=vy/dist*speed;}
+    else {avatar.moving=false;return false;}
+    var nx=Math.max(.08,Math.min(ROOM-.08,avatar.x+dx)),ny=Math.max(.08,Math.min(ROOM-.08,avatar.y+dy));
+    if(!avatarTileBlocked(Math.floor(nx),Math.floor(avatar.y)))avatar.x=nx;else dx=0;
+    if(!avatarTileBlocked(Math.floor(avatar.x),Math.floor(ny)))avatar.y=ny;else dy=0;
+    avatar.moving=Math.abs(dx)+Math.abs(dy)>.0001;avatar.north=avatar.moving&&dy<-.18;var screenDx=dx-dy;if(Math.abs(screenDx)>.0001)avatar.facing=screenDx>0?1:-1;return avatar.moving;
+  }
+  function animateAvatar(now){
+    var dt=avatar.lastAt?Math.min(40,now-avatar.lastAt):16;avatar.lastAt=now;var moved=moveAvatar(dt);
+    var interval=avatar.moving?82:360;if(now-avatar.frameAt>interval){avatar.frame=(avatar.frame+1)%(avatar.moving?8:5);avatar.frameAt=now;moved=true;}
+    if(moved||now-lastAvatarDraw>450){lastAvatarDraw=now;updateSitButton();draw();}
+    requestAnimationFrame(animateAvatar);
+  }
+
+  function drawHover() {
+    if(!hover||!selectedType)return;
+    var o=TYPES[selectedType];
+    if(o.layer==='wall'&&hover.wall){
+      drawWallFootprint(hover,!wallOccupied(hover.wall,hover.tile,hover.z,null));
+    }else if(o.layer!=='wall'&&hover.x>=0){
+      drawFloorFootprint(selectedType,hover.x,hover.y,0,canPlace(selectedType,hover.x,hover.y,0,null));
+    }
+  }
+  function drawDragFootprint() {
+    if(!drag||!drag.active||!drag.preview)return;
+    var it=items.find(function(i){return i.id===drag.id});if(!it)return;
+    if(TYPES[it.type].layer==='wall')drawWallFootprint(drag.preview,drag.preview.good);
+    else drawFloorFootprint(it.type,drag.preview.x,drag.preview.y,it.rot||0,drag.preview.good);
+  }
+
+  function drawSitMarker(item){
+    if(!item||!item._bounds||avatar.sitting)return;
+    var b=item._bounds,s=metrics.scale,x=(b.x0+b.x1)/2,y=b.y0-13*s,r=12*s;
+    ctx.save();
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle='rgba(255,248,232,.96)';ctx.fill();
+    ctx.strokeStyle='rgba(70,54,40,.62)';ctx.lineWidth=Math.max(1,1.2*s);ctx.stroke();
+    ctx.font=Math.round(14*s)+'px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#2f2923';ctx.fillText('🪑',x,y+1*s);
+    ctx.restore();
+  }
+
+  function draw() {
+    if(!ctx)return;
+    drawRoom();
+    var walls=items.filter(function(i){return TYPES[i.type].layer==='wall'});
+    walls.sort(function(a,b){return (a.wall+a.tile).localeCompare(b.wall+b.tile)}).forEach(function(i){drawWallItem(ctx,i)});
+    var floors=items.filter(function(i){return TYPES[i.type].layer!=='wall'});
+    floors.sort(function(a,b){
+      var la=TYPES[a.type].layer==='rug'?-100:0, lb=TYPES[b.type].layer==='rug'?-100:0;
+      return (la+a.x+a.y)-(lb+b.x+b.y) || (a.x-b.x);
+    });
+    var avatarDepth=avatar.x+avatar.y,avatarDrawn=false;
+    floors.forEach(function(i){
+      if(appMode==='play'&&!avatar.sitting&&!avatarDrawn&&TYPES[i.type].layer!=='rug'&&i.x+i.y>avatarDepth){drawAvatar(ctx);avatarDrawn=true;}
+      drawFurniture(ctx,i,false);
+    });
+    if(appMode==='play'&&!avatarDrawn)drawAvatar(ctx);
+    if(appMode==='play'&&!avatar.sitting)drawSitMarker(nearbySeat());
+    drawHover();
+    drawDragFootprint();
+  }
+
+  function renderCatalog() {
+    catalogEl.innerHTML='';
+    var order=catalogCategory==='aqua'?AQUA_ORDER:catalogCategory==='wood'?WOOD_ORDER:OCEAN_ORDER;
+    [['oceanTab','ocean'],['aquaTab','aqua'],['woodTab','wood']].forEach(function(pair){
+      var tabEl=document.getElementById(pair[0]),on=catalogCategory===pair[1];
+      tabEl.classList.toggle('active',on);tabEl.setAttribute('aria-selected',on?'true':'false');
+    });
+    document.getElementById('catalogLabel').textContent=catalogCategory==='aqua'?t('aquaCatalog'):catalogCategory==='wood'?t('woodCatalog'):t('oceanCatalog');
+    order.forEach(function(type){
+      var btn=document.createElement('button');btn.className='catalog-item'+(selectedType===type?' active':'');btn.dataset.type=type;btn.title=nameOf(type);
+      var label=document.createElement('span');label.textContent=nameOf(type);
+      if(TYPES[type].image){
+        var image=document.createElement('img');image.src=TYPES[type].image;image.alt='';image.draggable=false;btn.appendChild(image);
+      } else {
+        var cv=document.createElement('canvas');cv.width=136;cv.height=98;btn.appendChild(cv);
+        var pc=cv.getContext('2d');pc.clearRect(0,0,cv.width,cv.height);
+        var old=Object.assign({},metrics);metrics={w:136,h:98,tw:31,th:15.5,ox:68,oy:69,wallH:35,scale:.68};
+        if(TYPES[type].layer==='wall'){
+          if(type==='painting'){
+            poly(pc,[[32,25],[103,38],[103,76],[32,63]],'#7c5138','#3b2b22',3);
+            poly(pc,[[39,32],[96,43],[96,67],[39,57]],'#d9ad6f');
+            poly(pc,[[39,53],[58,39],[72,55],[89,43],[96,60],[39,55]],'#667c61');
+          } else {
+            line(pc,[68,41],[68,68],'#393b3c',4);poly(pc,[[44,30],[92,30],[84,51],[52,51]],'#e0b95f','#725b32',2);ellipse(pc,68,70,16,8,'rgba(230,184,86,.45)');
+          }
+        } else drawFurniture(pc,{type:type,x:0,y:0,rot:0,id:-99},true);
+        metrics=old;
+      }
+      btn.appendChild(label);
+      var price=document.createElement('span');price.className='price';
+      price.textContent=type.indexOf('aq_')===0?t('buyOnAquaNim'):'🪙 '+FURNITURE_PRICE;
+      btn.appendChild(price);
+      catalogEl.appendChild(btn);
+      btn.addEventListener('click',function(){if(type.indexOf('aq_')===0)buyAquariumOnAquaNim();else buyFurniture(type);});
+    });
+  }
+
+  function chooseType(type) {
+    selectedType=(selectedType===type?null:type);selectedId=null;
+    hover=null;updateUI();renderCatalog();draw();
+  }
+  function updateGold() {
+    document.getElementById('goldVal').textContent=gold;
+  }
+  // Shop: furniture costs 400 coins, charged server-side. On success the
+  // client drops straight into placement mode. Aquariums keep their
+  // AquaNim prices: buying one opens the game instead.
+  function buyFurniture(type) {
+    apiPost('/api/house/buy', { item_type: type }).then(function (r) {
+      if (!r.ok) {
+        showToast(r.status === 402 ? t('notEnoughGold') : (r.error || 'error'));
+        return;
+      }
+      gold = r.coins; updateGold();
+      selectedType = type; selectedId = null; hover = null;
+      updateUI(); renderCatalog(); draw();
+    });
+  }
+  function buyAquariumOnAquaNim() {
+    window.open('https://aquanimgame.com','_blank');
+  }
+  // Play mode: tapping a placed aquarium opens its tank in AquaNim.
+  function tankParamFor(type) {
+    if(type.indexOf('aq_aquarium_cube_')===0)return 'nursery';
+    if(type.indexOf('aq_aquarium_medium_')===0)return 'small';
+    if(type.indexOf('aq_aquarium_large_')===0)return 'large';
+    return null;
+  }
+  function updateUI() {
+    if(appMode==='play'){statusEl.textContent=t('playStatus');hintEl.textContent=t('playHint');return;}
+    var item=items.find(function(i){return i.id===selectedId});
+    document.getElementById('mirrorBtn').disabled=!item;
+    document.getElementById('mirrorTop').disabled=!item;
+    document.getElementById('deleteBtn').disabled=!item;
+    document.getElementById('deleteTop').disabled=!item;
+    if(selectedType){
+      statusEl.textContent=(TYPES[selectedType].layer==='wall'?t('wallPlacing'):t('placing'))+nameOf(selectedType);
+      hintEl.textContent=TYPES[selectedType].layer==='wall'?t('wallHint'):t('hint');
+    } else if(item){ statusEl.textContent=t('selected')+nameOf(item.type);hintEl.textContent=t('hint'); }
+    else { statusEl.textContent=t('choose');hintEl.textContent=t('hint'); }
+  }
+  function translateUI(){
+    document.documentElement.lang=lang==='pt'?'pt-BR':'en';
+    document.getElementById('langBtn').textContent=lang==='pt'?'EN':'PT';
+    document.getElementById('modeBtnText').textContent=appMode==='play'?t('editMode'):t('playMode');
+    sitBtnText.textContent=avatar.sitting?t('stand'):t('sit');
+    joystick.setAttribute('aria-label',t('joystick'));
+    document.getElementById('oceanTab').textContent=t('oceanTab');
+    document.getElementById('aquaTab').textContent=t('aquaTab');
+    document.getElementById('woodTab').textContent=t('woodTab');
+    document.querySelectorAll('[data-t]').forEach(function(el){el.textContent=t(el.dataset.t)});
+    document.getElementById('mirrorTop').setAttribute('aria-label',t('mirror'));
+    document.getElementById('deleteTop').setAttribute('aria-label',t('delete'));
+    updateUI();renderCatalog();
+  }
+
+  function canPlace(type,x,y,rot,ignoreId){
+    var f=footprint(type,rot);
+    if(x<0||y<0||x+f.w>ROOM||y+f.d>ROOM)return false;
+    var layer=TYPES[type].layer;
+    for(var i=0;i<items.length;i++){
+      var it=items[i];if(it.id===ignoreId||TYPES[it.type].layer==='wall')continue;
+      var il=TYPES[it.type].layer;if(layer==='rug'&&il!=='rug'||layer!=='rug'&&il==='rug')continue;
+      var q=footprint(it.type,it.rot||0);
+      if(x<it.x+q.w&&x+f.w>it.x&&y<it.y+q.d&&y+f.d>it.y)return false;
+    }
+    return true;
+  }
+  function hitItem(p){
+    var sorted=items.slice().sort(function(a,b){
+      var al=TYPES[a.type].layer,bl=TYPES[b.type].layer;
+      var aw=al==='wall'?2000:al==='rug'?-1000:a.x+a.y, bw=bl==='wall'?2000:bl==='rug'?-1000:b.x+b.y;return bw-aw;
+    });
+    for(var i=0;i<sorted.length;i++){
+      var b=sorted[i]._bounds;if(b&&p.x>=b.x0&&p.x<=b.x1&&p.y>=b.y0&&p.y<=b.y1)return sorted[i];
+    }
+    return null;
+  }
+  function wallFromPoint(p){
+    var best=null;
+    for(var sideIndex=0;sideIndex<2;sideIndex++){
+      var side=sideIndex===0?'right':'left';
+      for(var tile=0;tile<ROOM;tile++) for(var row=1;row<=3;row++){
+        var base=side==='right'?iso(tile+.5,0,0):iso(0,tile+.5,0);
+        var a=[base[0]-metrics.tw*.27,base[1]-metrics.th*.35-row*metrics.wallH/4];
+        var b=[base[0]+metrics.tw*.27,base[1]+metrics.th*.35-row*metrics.wallH/4];
+        var d=Math.hypot(p.x-(a[0]+b[0])/2,p.y-(a[1]+b[1])/2);
+        if(d<metrics.tw*.52&&(!best||d<best.d))best={wall:side,tile:tile,z:row,d:d};
+      }
+    }
+    return best;
+  }
+  function wallOccupied(wall,tile,z,ignoreId){
+    return items.some(function(i){return i.id!==ignoreId&&TYPES[i.type].layer==='wall'&&i.wall===wall&&i.tile===tile&&i.z===z});
+  }
+  function showToast(msg,withUndo){
+    clearTimeout(toastTimer);toastText.textContent=msg;undoBtn.hidden=!withUndo;undoBtn.textContent=t('undo');toastEl.hidden=false;
+    toastTimer=setTimeout(function(){toastEl.hidden=true},withUndo?5200:2300);
+  }
+
+  canvas.addEventListener('pointerdown',function(ev){
+    canvas.setPointerCapture(ev.pointerId);var p=screenPoint(ev);
+    if(appMode==='play'){pointerDown={p:p,time:Date.now(),hit:null};return;}
+    var hit=selectedType?null:hitItem(p);
+    pointerDown={p:p,time:Date.now(),hit:hit};
+    if(hit){
+      selectedId=hit.id;selectedType=null;
+      drag={id:hit.id,start:p,orig:{x:hit.x,y:hit.y,wall:hit.wall,tile:hit.tile,z:hit.z},active:false};
+      updateUI();renderCatalog();draw();
+    }
+  });
+  canvas.addEventListener('pointermove',function(ev){
+    var p=screenPoint(ev);
+    if(appMode==='play')return;
+    if(drag){
+      var dist=Math.hypot(p.x-drag.start.x,p.y-drag.start.y);if(dist>8*metrics.scale)drag.active=true;
+      if(drag.active){
+        var it=items.find(function(i){return i.id===drag.id});if(!it)return;
+        if(TYPES[it.type].layer==='wall'){
+          var wh=wallFromPoint(p);
+          if(wh){
+            if(it.type==='ocean_chandelier')wh.z=3;
+            var wallGood=!wallOccupied(wh.wall,wh.tile,wh.z,it.id);
+            drag.preview={wall:wh.wall,tile:wh.tile,z:wh.z,good:wallGood};
+            if(wallGood){it.wall=wh.wall;it.tile=wh.tile;it.z=wh.z;}
+          }
+        } else {
+          var tile=tileFromScreen(p.x,p.y),floorGood=canPlace(it.type,tile.x,tile.y,it.rot,it.id);
+          drag.preview={x:tile.x,y:tile.y,good:floorGood};
+          if(floorGood){it.x=tile.x;it.y=tile.y;}
+        }
+        draw();
+      }
+      return;
+    }
+    if(selectedType){
+      if(TYPES[selectedType].layer==='wall'){var w=wallFromPoint(p);if(w&&selectedType==='ocean_chandelier')w.z=3;hover=w||null;}
+      else {var tile=tileFromScreen(p.x,p.y);hover={x:tile.x,y:tile.y};}
+      draw();
+    }
+  });
+  canvas.addEventListener('pointerup',function(ev){
+    var p=screenPoint(ev);
+    if(appMode==='play'){
+      var playHit=hitItem(p);
+      var tankParam=playHit?tankParamFor(playHit.type):null;
+      if(tankParam){
+        showToast(t('openingTank'));
+        window.open('https://aquanimgame.com?tank='+tankParam,'_blank');
+        pointerDown=null;return;
+      }
+      var tile=tileFromScreen(p.x,p.y);if(tile.x>=0&&tile.y>=0&&tile.x<ROOM&&tile.y<ROOM)walkTo(tile.x,tile.y);pointerDown=null;return;
+    }
+    if(drag){var wasActive=drag.active;drag=null;pointerDown=null;draw();if(wasActive)scheduleSave();return;}
+    var hit=selectedType?null:hitItem(p);
+    if(hit){selectedId=hit.id;selectedType=null;updateUI();renderCatalog();draw();pointerDown=null;return;}
+    if(selectedType){
+      var o=TYPES[selectedType];
+      if(o.layer==='wall'){
+        var wh=wallFromPoint(p);
+        if(!wh){showToast(t('wrongSurface'));return;}
+        if(selectedType==='ocean_chandelier')wh.z=3;
+        if(wallOccupied(wh.wall,wh.tile,wh.z,null)){showToast(t('blocked'));return;}
+        items.push({id:nextId++,type:selectedType,wall:wh.wall,tile:wh.tile,z:wh.z,rot:0,angle:defaultAngle(selectedType)});
+      } else {
+        var tile=tileFromScreen(p.x,p.y);
+        if(tile.x<0||tile.y<0||tile.x>=ROOM||tile.y>=ROOM){showToast(t('outside'));return;}
+        if(!canPlace(selectedType,tile.x,tile.y,0,null)){showToast(t('blocked'));return;}
+        items.push({id:nextId++,type:selectedType,x:tile.x,y:tile.y,rot:0,angle:defaultAngle(selectedType)});
+      }
+      selectedId=items[items.length-1].id; selectedType=null;hover=null;updateUI();renderCatalog();draw();scheduleSave();
+    } else {selectedId=null;updateUI();draw();}
+    pointerDown=null;
+  });
+  canvas.addEventListener('pointercancel',function(){drag=null;pointerDown=null;draw();});
+  canvas.addEventListener('pointerleave',function(){if(!drag&&hover){hover=null;draw();}});
+
+  // Server persistence: the whole layout (items + avatar) auto-saves to
+  // POST /api/house/save, debounced 2s after each change.
+  var saveTimer = null;
+  function housePayload() {
+    syncAvatarSeat();
+    var avatarState = { x: avatar.x, y: avatar.y, facing: avatar.facing, north: avatar.north, sitting: avatar.sitting, seatId: avatar.seatId };
+    return { roomDecorator: 1, items: items, avatar: avatarState, nextId: nextId };
+  }
+  function saveHouse() {
+    var el = document.getElementById('saveState');
+    apiPost('/api/house/save', { layout: housePayload() }).then(function (r) {
+      if (el) el.textContent = r.ok ? t('saved') : '';
+    });
+  }
+  function scheduleSave() {
+    var el = document.getElementById('saveState');
+    if (el) el.textContent = t('saving');
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveHouse, 2000);
+  }
+  // Validate + normalize a layout object (shared shape with the old
+  // download/upload format) and install it as the current room.
+  function applyLayout(d) {
+    var idMap = {};
+    var clean = d.items.filter(function (i) { return i && TYPES[i.type]; }).map(function (i) {
+      var newId = nextId++; idMap[String(i.id)] = newId;
+      var z = { id: newId, type: i.type, rot: ((Number(i.rot) || 0) % 4 + 4) % 4, flip: !!i.flip, angle: ((Number(i.angle) || 0) % 360 + 360) % 360 };
+      if (TYPES[i.type].layer === 'wall') {
+        z.wall = i.wall === 'right' ? 'right' : 'left';
+        z.tile = Math.max(0, Math.min(9, Number(i.tile) || 0));
+        z.z = Math.max(1, Math.min(3, Number(i.z) || 1));
+      } else {
+        var fp = footprint(i.type, z.rot);
+        z.x = Math.max(0, Math.min(ROOM - fp.w, Number(i.x) || 0));
+        z.y = Math.max(0, Math.min(ROOM - fp.d, Number(i.y) || 0));
+      }
+      return z;
+    });
+    items = [];
+    clean.forEach(function (z) {
+      if (TYPES[z.type].layer === 'wall') {
+        if (!wallOccupied(z.wall, z.tile, z.z, null)) items.push(z);
+      } else if (canPlace(z.type, z.x, z.y, z.rot, null)) items.push(z);
+    });
+    if (d.avatar && typeof d.avatar === 'object') {
+      var ax = Number(d.avatar.x), ay = Number(d.avatar.y);
+      avatar.x = Number.isFinite(ax) ? Math.max(.08, Math.min(ROOM - .08, ax)) : 8.5;
+      avatar.y = Number.isFinite(ay) ? Math.max(.08, Math.min(ROOM - .08, ay)) : 8.5;
+      avatar.facing = Number(d.avatar.facing) < 0 ? -1 : 1;
+      avatar.north = !!d.avatar.north; avatar.sitting = !!d.avatar.sitting;
+      avatar.seatId = idMap[String(d.avatar.seatId)] || null;
+      avatar.path = []; avatar.target = null; avatar.moving = false;
+      syncAvatarSeat();
+      if (!avatar.sitting && avatarTileBlocked(Math.floor(avatar.x), Math.floor(avatar.y))) {
+        var free = nearestFreeTile(avatar.x, avatar.y);
+        avatar.x = free.x + .5; avatar.y = free.y + .5;
+      }
+    }
+    if (Number.isFinite(Number(d.nextId))) nextId = Math.max(nextId, Math.floor(Number(d.nextId)));
+    selectedId = null; selectedType = null;
+  }
+  // Boot: load coins + saved layout from the server. 401 -> login overlay.
+  function loadHouse(done) {
+    apiGet('/api/house').then(function (r) {
+      if (!r.ok) {
+        if (r.status === 401) document.getElementById('loginOverlay').hidden = false;
+        done();
+        return;
+      }
+      gold = Math.max(0, Math.floor(Number(r.coins) || 0));
+      var d = r.layout;
+      if (d && d.roomDecorator === 1 && Array.isArray(d.items)) applyLayout(d);
+      done();
+    });
+  }
+  function deleteSelected(){
+    if(selectedId==null)return;items=items.filter(function(i){return i.id!==selectedId});selectedId=null;updateUI();draw();scheduleSave();
+  }
+  function mirrorSelected(){
+    var it=items.find(function(i){return i.id===selectedId});if(!it)return;
+    it.flip=!it.flip;
+    // Aquariums get a fixed angle when mirrored, matching their isometric
+    // lean on the other side: large 10°, medium 7°, cube 4°.
+    var MIRROR_ANGLE={large:10,medium:7,cube:4};
+    var am=it.type.match(/^aq_aquarium_(large|medium|cube)_/);
+    if(am){it.angle=MIRROR_ANGLE[am[1]];updateUI();}
+    draw();scheduleSave();
+  }
+  ['mirrorBtn','mirrorTop'].forEach(function(id){document.getElementById(id).addEventListener('click',mirrorSelected)});
+  ['deleteBtn','deleteTop'].forEach(function(id){document.getElementById(id).addEventListener('click',deleteSelected)});
+  document.getElementById('langBtn').addEventListener('click',function(){lang=lang==='pt'?'en':'pt';translateUI();draw();});
+  document.querySelectorAll('.catalog-tab').forEach(function(tab){tab.addEventListener('click',function(){catalogCategory=tab.dataset.category;renderCatalog();});});
+  document.getElementById('clearBtn').addEventListener('click',function(){
+    if(!items.length)return;lastCleared=JSON.parse(JSON.stringify(items));items=[];selectedId=null;selectedType=null;updateUI();renderCatalog();draw();showToast(t('cleared'),true);scheduleSave();
+  });
+  undoBtn.addEventListener('click',function(){if(lastCleared){items=lastCleared;lastCleared=null;nextId=Math.max.apply(null,items.map(function(i){return i.id}).concat([0]))+1;draw();showToast(t('restored'));scheduleSave();}});
+
+  modeBtn.addEventListener('click',function(){setMode(appMode==='play'?'edit':'play');});
+  document.getElementById('backBtn').addEventListener('click',function(){saveHouse();location.href='/';});
+  sitBtn.addEventListener('click',function(ev){ev.stopPropagation();sitOrStand();});
+  window.addEventListener('keydown',function(ev){
+    var k=ev.key.length===1?ev.key.toLowerCase():ev.key;if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','w','a','s','d'].indexOf(k)<0)return;
+    if(appMode==='play'){ev.preventDefault();keys[k]=true;if(avatar.sitting)stopSitting();avatar.path=[];avatar.target=null;}
+  });
+  window.addEventListener('keyup',function(ev){var k=ev.key.length===1?ev.key.toLowerCase():ev.key;keys[k]=false;});
+  function updateJoystick(ev){
+    var r=joystick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=ev.clientX-cx,dy=ev.clientY-cy,max=r.width*.31,len=Math.hypot(dx,dy);if(len>max){dx=dx/len*max;dy=dy/len*max;}
+    joystickKnob.style.transform='translate('+dx+'px,'+dy+'px)';joystickDir={x:dx/max,y:dy/max};if(avatar.sitting)stopSitting();
+  }
+  joystick.addEventListener('pointerdown',function(ev){ev.preventDefault();joystickPointer=ev.pointerId;joystick.setPointerCapture(ev.pointerId);updateJoystick(ev);});
+  joystick.addEventListener('pointermove',function(ev){if(ev.pointerId===joystickPointer)updateJoystick(ev);});
+  function releaseJoystick(ev){if(ev.pointerId!==joystickPointer)return;joystickPointer=null;joystickDir=null;joystickKnob.style.transform='';}
+  joystick.addEventListener('pointerup',releaseJoystick);joystick.addEventListener('pointercancel',releaseJoystick);
+  joystick.addEventListener('keydown',function(ev){var map={ArrowLeft:'a',ArrowRight:'d',ArrowUp:'w',ArrowDown:'s'};if(map[ev.key]){ev.preventDefault();keys[map[ev.key]]=true;}});
+  joystick.addEventListener('keyup',function(ev){var map={ArrowLeft:'a',ArrowRight:'d',ArrowUp:'w',ArrowDown:'s'};if(map[ev.key])keys[map[ev.key]]=false;});
+
+  var mq=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)');if(mq&&mq.addEventListener)mq.addEventListener('change',draw);
+  window.addEventListener('resize',resize);
+  loadHouse(function(){updateGold();renderCatalog();translateUI();setMode('play');resize();requestAnimationFrame(animateAvatar);});
+})();
+</script>
+</body>
+</html>

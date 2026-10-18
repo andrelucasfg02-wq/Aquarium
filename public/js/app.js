@@ -277,6 +277,8 @@ const App = (() => {
     document.querySelectorAll(".nav-tab").forEach((b) => b.onclick = () => {
       AudioFX.unlock();
       const scr = b.dataset.screen;
+      // the house lives at /house/ — same-tab navigation keeps the game feel
+      if (scr === "house") { location.href = "/house/"; return; }
       // tapping the aquariums tab while its screen is open goes back to the tank
       if (scr === "aquariums" && currentScreen === "aquariums") { goHome(); return; }
       document.querySelectorAll(".nav-tab").forEach((x) => x.classList.remove("active"));

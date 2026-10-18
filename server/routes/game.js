@@ -1777,5 +1777,60 @@ module.exports = function gameRoutes(db) {
     res.json({ ok: true, gems: w ? w.gems : 0 });
   }));
 
+  // ---------- house (Casa): isometric room ----------
+  // Furniture types sold in the house shop for 400 coins. Aquariums are
+  // NOT sold here — they link out to AquaNim with its own prices.
+  const HOUSE_FURNITURE = new Set([
+    'ocean_shell_bed', 'ocean_shell_armchair', 'ocean_vanity', 'ocean_wardrobe',
+    'ocean_ottoman', 'ocean_treasure_chest', 'ocean_shell_sofa', 'ocean_coral_table',
+    'ocean_jellyfish_lamp', 'ocean_room_divider', 'ocean_bookshelf', 'ocean_nightstand',
+    'ocean_standing_mirror', 'ocean_jellyfish_lamp2', 'ocean_snowglobe_table',
+    'wood_bed', 'wood_wardrobe', 'wood_sofa', 'wood_bookshelf', 'wood_armchair',
+    'wood_chair', 'wood_ottoman', 'wood_coffee_table', 'wood_bench', 'wood_vanity',
+    'wood_dresser', 'wood_divider', 'wood_nightstand', 'table_lamp', 'potted_plant',
+    'basket', 'storage_box', 'floor_lamp', 'wood_mirror', 'hanging_plant',
+    'wood_wall_shelf', 'oval_rug', 'square_rug', 'flower_rug',
+  ]);
+  const HOUSE_FURNITURE_PRICE = 400;
+
+  // Load the saved house layout + current coin balance.
+  r.get('/house', ah(async (req, res) => {
+    const uid = req.user.id;
+    const row = await db.get('SELECT layout FROM house_layout WHERE user_id=?', uid);
+    const w = await H.getWallet(uid);
+    let layout = null;
+    if (row && row.layout) {
+      try { layout = JSON.parse(row.layout); } catch (e) { layout = null; }
+    }
+    res.json({ ok: true, layout, coins: (w && w.coins) || 0 });
+  }));
+
+  // Auto-save the house layout (client debounces calls).
+  r.post('/house/save', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const { layout } = req.body || {};
+    if (!layout || typeof layout !== 'object' || !Array.isArray(layout.items))
+      return res.status(400).json({ ok: false, error: 'bad layout' });
+    const text = JSON.stringify(layout).slice(0, 200000); // 200KB cap
+    await db.run(`INSERT INTO house_layout (user_id, layout, updated_at) VALUES (?,?,?)
+      ON CONFLICT(user_id) DO UPDATE SET layout=excluded.layout, updated_at=excluded.updated_at`,
+      uid, text, t);
+    res.json({ ok: true });
+  }));
+
+  // Buy a furniture piece for the house: 400 coins, server-authoritative.
+  r.post('/house/buy', ah(async (req, res) => {
+    const uid = req.user.id;
+    const { item_type } = req.body || {};
+    if (!HOUSE_FURNITURE.has(item_type))
+      return res.status(400).json({ ok: false, error: 'unknown item' });
+    const w = await H.getWallet(uid);
+    if ((w.coins || 0) < HOUSE_FURNITURE_PRICE)
+      return res.status(402).json({ ok: false, error: 'not enough coins' });
+    await db.run('UPDATE wallets SET coins=coins-? WHERE user_id=?', HOUSE_FURNITURE_PRICE, uid);
+    const w2 = await H.getWallet(uid);
+    res.json({ ok: true, coins: w2.coins });
+  }));
+
   return r;
 };

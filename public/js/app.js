@@ -236,11 +236,20 @@ const App = (() => {
       }
       $("btn-guest").disabled = false;
     };
+    // Avatar look picker (registration)
+    let regLook = "";
+    document.querySelectorAll("#look-picker .look-opt").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#look-picker .look-opt").forEach((b) => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        regLook = btn.dataset.look;
+      });
+    });
     $("form-register").onsubmit = async (e) => {
       e.preventDefault();
       const err = $("reg-error"); err.hidden = true;
       const r = await Api.register(
-        $("reg-name").value.trim(), $("reg-email").value.trim(), $("reg-password").value);
+        $("reg-name").value.trim(), $("reg-email").value.trim(), $("reg-password").value, regLook);
       if (r.ok) { AudioFX.unlock(); UI.toast(t("app.welcome")); enterGame(); }
       else { err.textContent = r.error || r.message || t("auth.err.register"); err.hidden = false; AudioFX.error(); }
     };

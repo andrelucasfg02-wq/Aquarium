@@ -594,10 +594,16 @@
     }
   };
   AQUA_ORDER.concat(WOOD_ORDER).forEach(function(type){var im=new Image();im.onload=draw;im.src=TYPES[type].image;OCEAN_IMAGES[type]=im;});
-  for(var avi=0;avi<8;avi++){var wi=new Image();wi.onload=draw;wi.src='assets/avatar/walk_'+avi+'.png';avatarImages.walk.push(wi);}
-  for(var aii=0;aii<5;aii++){var ii=new Image();ii.onload=draw;ii.src='assets/avatar/idle_'+aii+'.png';avatarImages.idle.push(ii);}
-  for(var asi=0;asi<2;asi++){var si=new Image();si.onload=draw;si.src='assets/avatar/sit_'+asi+'.png';avatarImages.sit.push(si);}
-  avatarImages.back=new Image();avatarImages.back.onload=draw;avatarImages.back.src='assets/avatar/back.png';
+  function loadAvatarSprites(base, walkN, idleN, sitN, hasBack) {
+    avatarImages.walk = []; avatarImages.idle = []; avatarImages.sit = [];
+    for(var avi=0;avi<walkN;avi++){var wi=new Image();wi.onload=draw;wi.src=base+'walk_'+avi+'.png';avatarImages.walk.push(wi);}
+    for(var aii=0;aii<idleN;aii++){var ii=new Image();ii.onload=draw;ii.src=base+'idle_'+aii+'.png';avatarImages.idle.push(ii);}
+    for(var asi=0;asi<sitN;asi++){var si=new Image();si.onload=draw;si.src=base+'sit'+(sitN>1?'_'+asi:'')+'.png';avatarImages.sit.push(si);}
+    if (hasBack) { avatarImages.back=new Image();avatarImages.back.onload=draw;avatarImages.back.src=base+'back.png'; }
+    else avatarImages.back = null;
+    avatarImages.walkN = walkN; avatarImages.idleN = idleN;
+  }
+  loadAvatarSprites('assets/avatar/', 8, 5, 2, true);
 
   function t(key) { return TXT[lang][key]; }
 
@@ -1025,11 +1031,11 @@
     if(avatar.sitting){
       var seat=items.find(function(i){return i.id===avatar.seatId});
       var wideSeat=seat&&(seat.type==='ocean_shell_sofa'||seat.type==='ocean_daybed'||seat.type==='wood_sofa');
-      im=avatarImages.sit[wideSeat?1:0];drawH=68*s*AVATAR_SPRITE_SCALE;anchor[1]-=2*s;
+      im=avatarImages.sit[wideSeat&&avatarImages.sit.length>1?1:0];drawH=68*s*AVATAR_SPRITE_SCALE;anchor[1]-=2*s;
     }
-    else if(avatar.moving&&avatar.north){im=avatarImages.back;drawH=92*s*AVATAR_SPRITE_SCALE;}
-    else if(avatar.moving){frame=Math.floor(avatar.frame)%8;im=avatarImages.walk[frame];drawH=90*s*AVATAR_SPRITE_SCALE;}
-    else {frame=Math.floor(avatar.frame)%5;im=avatarImages.idle[frame];drawH=94*s*AVATAR_SPRITE_SCALE;}
+    else if(avatar.moving&&avatar.north&&avatarImages.back){im=avatarImages.back;drawH=92*s*AVATAR_SPRITE_SCALE;}
+    else if(avatar.moving){frame=Math.floor(avatar.frame)%(avatarImages.walkN||8);im=avatarImages.walk[frame];drawH=90*s*AVATAR_SPRITE_SCALE;}
+    else {frame=Math.floor(avatar.frame)%(avatarImages.idleN||5);im=avatarImages.idle[frame];drawH=94*s*AVATAR_SPRITE_SCALE;}
     if(!im||!im.complete||!im.naturalWidth)return;
     var drawW=drawH*(im.naturalWidth/im.naturalHeight);c.save();c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';
     if(!avatar.north&&avatar.facing<0){c.translate(anchor[0],0);c.scale(-1,1);c.drawImage(im,-drawW/2,anchor[1]-drawH,drawW,drawH);}else c.drawImage(im,anchor[0]-drawW/2,anchor[1]-drawH,drawW,drawH);
@@ -1487,6 +1493,10 @@
       gold = Math.max(0, Math.floor(Number(r.coins) || 0));
       if(r.tanks)ownedTanks=r.tanks;
       if(r.tank_fish)tankFish=r.tank_fish;
+      // Load the player's chosen look for the house avatar (falls back to cat)
+      if(r.look && /^(lila|tayler|luna|jeff)$/.test(r.look)){
+        loadAvatarSprites('/assets/looks/'+r.look+'/', 8, 4, 1, false);
+      }
       var d = r.layout;
       if (d && d.roomDecorator === 1 && Array.isArray(d.items)) applyLayout(d);
       done();

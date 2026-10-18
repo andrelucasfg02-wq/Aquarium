@@ -1535,6 +1535,7 @@ const UI = (() => {
   }
   function avatarHtml(p, cls) {
     if (p.avatar_url) return `<img class="${cls || "prof-avatar"}" src="${esc(p.avatar_url)}" alt="">`;
+    if (p.look) return `<img class="${cls || "prof-avatar"}" src="assets/looks/${esc(p.look)}/portrait.png" alt="">`;
     return `<div class="${cls || "prof-avatar"}">${esc((p.name || "?").trim().charAt(0).toUpperCase())}</div>`;
   }
   async function renderProfile() {
@@ -1573,6 +1574,13 @@ const UI = (() => {
       ${p.mine ? `<div class="prof-edit">
           <input id="prof-bio" maxlength="160" value="${esc(p.bio || "")}" placeholder="${t("profile.bio_ph")}" autocomplete="off">
           <button class="pill-btn" id="prof-biosave">${t("profile.save")}</button>
+        </div>
+        <div class="sec-title">✨ ${t("profile.look")}</div>
+        <div class="look-options prof-looks">
+          ${["lila", "tayler", "luna", "jeff"].map((l) => `
+            <button type="button" class="look-opt${p.look === l ? " selected" : ""}" data-look="${l}">
+              <img src="assets/looks/${l}/portrait.png" alt="${l}"><span>${l.charAt(0).toUpperCase() + l.slice(1)}</span>
+            </button>`).join("")}
         </div>` : ``}
       <div class="prof-grid">` +
       stats.map((s) => `<div class="card prof-stat"><div class="pv-ic">${s.ic}</div><div class="pv">${s.v}</div><div class="sub">${s.l}</div></div>`).join("") +
@@ -1618,6 +1626,13 @@ const UI = (() => {
         if (rr.ok) { toast(t("profile.bio_saved")); renderProfile(); }
         else toast(rr.error || t("profile.error"));
       };
+      document.querySelectorAll(".prof-looks .look-opt").forEach((btn) => {
+        btn.onclick = async () => {
+          const rr = await Api.setLook(btn.dataset.look);
+          if (rr.ok) { toast(t("profile.look_saved")); renderProfile(); }
+          else toast(rr.error || t("profile.error"));
+        };
+      });
       $("prof-photo").onclick = () => $("prof-file").click();
       $("prof-file").onchange = async (e) => {
         const f = e.target.files && e.target.files[0];

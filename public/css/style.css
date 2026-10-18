@@ -76,6 +76,14 @@ input{font-family:inherit}
 }
 .auth-tab.active{background:#fff;color:#1d6b4f;box-shadow:0 3px 10px rgba(0,0,0,.25)}
 .auth-form{display:flex;flex-direction:column;gap:12px}
+.look-picker{margin:4px 0}
+.look-title{text-align:center;font-weight:700;color:#0b3b4a;margin:0 0 8px;font-size:15px}
+.look-options{display:flex;gap:10px;justify-content:center}
+.look-opt{display:flex;flex-direction:column;align-items:center;gap:4px;background:rgba(255,255,255,.75);border:3px solid transparent;border-radius:16px;padding:8px 6px;cursor:pointer;transition:transform .15s,border-color .15s;min-width:72px}
+.look-opt img{width:56px;height:56px;object-fit:contain}
+.look-opt span{font-size:12px;font-weight:700;color:#0b3b4a}
+.look-opt.selected{border-color:#2ec4b6;transform:scale(1.06);background:#fff}
+.look-opt:active{transform:scale(.96)}
 .auth-field{
   display:flex;align-items:center;gap:10px;
   background:rgba(255,255,255,.88);border-radius:999px;padding:3px 8px 3px 16px;

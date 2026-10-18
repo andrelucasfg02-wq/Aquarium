@@ -11,6 +11,8 @@ const {
 const { QUEST_DEFS, periodKey, initialSickAt } = require('../catalog');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const LOOKS = ['lila', 'tayler', 'luna', 'jeff'];
+const validLook = (v) => LOOKS.includes(String(v)) ? String(v) : '';
 
 async function seedStarterKit(db, userId, now) {
   await db.run('INSERT INTO wallets (user_id,coins,gems,food,xp,level) VALUES (?,?,?,?,?,?)',
@@ -47,7 +49,7 @@ module.exports = function authRoutes(db) {
   const r = Router();
 
   r.post('/register', ah(async (req, res) => {
-    const { name, email, password } = req.body || {};
+    const { name, email, password, look } = req.body || {};
     const now = Math.floor(Date.now() / 1000);
 
     if (!name || !String(name).trim()) return res.status(400).json({ ok: false, error: 'name is required' });
@@ -58,18 +60,19 @@ module.exports = function authRoutes(db) {
     const exists = await db.get('SELECT id FROM users WHERE email=?', emailNorm);
     if (exists) return res.status(409).json({ ok: false, error: 'email already registered' });
 
+    const lookVal = validLook(look);
     const pwHash = await hashPassword(String(password));
     const userId = await db.tx(async (t) => {
       const info = await t.run(
-        'INSERT INTO users (name,email,password_hash,created_at) VALUES (?,?,?,?)',
-        String(name).trim(), emailNorm, pwHash, now);
+        'INSERT INTO users (name,email,password_hash,created_at,look) VALUES (?,?,?,?,?)',
+        String(name).trim(), emailNorm, pwHash, now, lookVal);
       await seedStarterKit(t, info.lastInsertRowid, now);
       return info.lastInsertRowid;
     });
 
     const token = await createSession(db, userId, now);
     setSessionCookie(res, token);
-    const user = await db.get('SELECT id,name,email FROM users WHERE id=?', userId);
+    const user = await db.get('SELECT id,name,email,look FROM users WHERE id=?', userId);
     res.status(201).json({ ok: true, user });
   }));
 
@@ -77,14 +80,14 @@ module.exports = function authRoutes(db) {
     const { email, password } = req.body || {};
     const now = Math.floor(Date.now() / 1000);
     if (!email || !password) return res.status(401).json({ ok: false, error: 'invalid credentials' });
-    const row = await db.get('SELECT id,name,email,password_hash,is_guest FROM users WHERE email=?',
+    const row = await db.get('SELECT id,name,email,password_hash,is_guest,look FROM users WHERE email=?',
       String(email).trim().toLowerCase());
     if (!row || !(await checkPassword(String(password), row.password_hash))) {
       return res.status(401).json({ ok: false, error: 'invalid credentials' });
     }
     const token = await createSession(db, row.id, now);
     setSessionCookie(res, token);
-    res.json({ ok: true, user: { id: row.id, name: row.name, email: row.email, is_guest: !!row.is_guest } });
+    res.json({ ok: true, user: { id: row.id, name: row.name, email: row.email, is_guest: !!row.is_guest, look: row.look || '' } });
   }));
 
   // Guest mode: play without an account. Creates a guest user (or reuses
@@ -109,16 +112,17 @@ module.exports = function authRoutes(db) {
     const gid = crypto.randomBytes(8).toString('hex');
     const email = `guest_${gid}@guest.local`;
     const pwHash = await hashPassword(crypto.randomBytes(16).toString('hex'));
+    const lookVal = validLook((req.body || {}).look);
     const userId = await db.tx(async (t) => {
       const info = await t.run(
-        'INSERT INTO users (name,email,password_hash,created_at,is_guest) VALUES (?,?,?,?,1)',
-        'Guest', email, pwHash, now);
+        'INSERT INTO users (name,email,password_hash,created_at,is_guest,look) VALUES (?,?,?,?,1,?)',
+        'Guest', email, pwHash, now, lookVal);
       await seedStarterKit(t, info.lastInsertRowid, now);
       return info.lastInsertRowid;
     });
     const token = await createSession(db, userId, now);
     setSessionCookie(res, token);
-    res.status(201).json({ ok: true, user: { id: userId, name: 'Guest', email, is_guest: true }, guest_token: token });
+    res.status(201).json({ ok: true, user: { id: userId, name: 'Guest', email, is_guest: true, look: lookVal }, guest_token: token });
   }));
 
   // Convert a guest account into a real one (sets name/email/password)
@@ -147,13 +151,21 @@ module.exports = function authRoutes(db) {
 
   r.get('/me', authRequired(db), ah(async (req, res) => {
     const row = await db.get(
-      `SELECT u.id,u.name,u.email,u.is_guest,w.level,w.xp,w.coins,w.gems,w.food
+      `SELECT u.id,u.name,u.email,u.is_guest,u.look,w.level,w.xp,w.coins,w.gems,w.food
        FROM users u JOIN wallets w ON w.user_id=u.id WHERE u.id=?`,
       req.user.id
     );
     if (!row) return res.status(401).json({ ok: false, error: 'not logged in' });
     row.is_guest = !!row.is_guest;
     res.json({ ok: true, user: row });
+  }));
+
+  // Change avatar look (any time, free)
+  r.post('/me/look', authRequired(db), ah(async (req, res) => {
+    const lookVal = validLook((req.body || {}).look);
+    if (!lookVal) return res.status(400).json({ ok: false, error: 'invalid look' });
+    await db.run('UPDATE users SET look=? WHERE id=?', lookVal, req.user.id);
+    res.json({ ok: true, look: lookVal });
   }));
 
   // ---------- forgot password ----------

@@ -1509,14 +1509,14 @@ module.exports = function gameRoutes(db) {
   r.get('/profile', ah(async (req, res) => {
     const uid = req.user.id;
     const p = await db.get(
-      `SELECT u.id, u.name, u.created_at, u.avatar, u.bio, w.level, w.xp, w.coins, w.gems
+      `SELECT u.id, u.name, u.created_at, u.avatar, u.bio, u.look, w.level, w.xp, w.coins, w.gems
        FROM users u LEFT JOIN wallets w ON w.user_id=u.id WHERE u.id=?`, uid);
     if (!p) return res.status(404).json({ ok: false, error: 'user not found' });
     const s = await profileStats(uid);
     res.json({ ok: true, profile: {
       id: p.id, name: p.name, level: p.level || 1, xp: p.xp || 0,
       created_at: p.created_at, coins: p.coins || 0, gems: p.gems || 0,
-      avatar_url: avatarUrl(p.avatar), bio: p.bio || '',
+      avatar_url: avatarUrl(p.avatar), bio: p.bio || '', look: p.look || '',
       hearts: await heartCount(uid),
       ...s, mine: true,
     }});
@@ -1529,7 +1529,7 @@ module.exports = function gameRoutes(db) {
       return res.status(400).json({ ok: false, error: 'invalid user' });
     }
     const p = await db.get(
-      `SELECT u.id, u.name, u.created_at, u.avatar, u.bio, w.level
+      `SELECT u.id, u.name, u.created_at, u.avatar, u.bio, u.look, w.level
        FROM users u LEFT JOIN wallets w ON w.user_id=u.id
        WHERE u.id=? AND COALESCE(u.is_guest,0)=0`, id);
     if (!p) return res.status(404).json({ ok: false, error: 'user not found' });
@@ -1538,7 +1538,7 @@ module.exports = function gameRoutes(db) {
       'SELECT status FROM friends WHERE user_id=? AND friend_id=?', req.user.id, id);
     res.json({ ok: true, profile: {
       id: p.id, name: p.name, level: p.level || 1, created_at: p.created_at,
-      avatar_url: avatarUrl(p.avatar), bio: p.bio || '',
+      avatar_url: avatarUrl(p.avatar), bio: p.bio || '', look: p.look || '',
       hearts: await heartCount(id),
       fish: s.fish, friends: s.friends, collection: s.collection, mine: false,
       relation: rel ? rel.status : null,
@@ -1820,6 +1820,7 @@ module.exports = function gameRoutes(db) {
     const row = await db.get('SELECT layout FROM house_layout WHERE user_id=?', uid);
     const w = await H.getWallet(uid);
     const tk = await H.getTanks(uid);
+    const u = await db.get('SELECT look FROM users WHERE id=?', uid);
     let layout = null;
     if (row && row.layout) {
       try { layout = JSON.parse(row.layout); } catch (e) { layout = null; }
@@ -1829,7 +1830,7 @@ module.exports = function gameRoutes(db) {
       "SELECT tank, tank_num, COUNT(*) c FROM fish WHERE user_id=? AND location='tank' GROUP BY tank, tank_num", uid);
     const tank_fish = {};
     for (const fr of fishRows) tank_fish[fr.tank + ':' + (fr.tank_num || 1)] = fr.c;
-    res.json({ ok: true, layout, coins: (w && w.coins) || 0, tanks: houseTanksJson(tk), tank_fish });
+    res.json({ ok: true, layout, coins: (w && w.coins) || 0, tanks: houseTanksJson(tk), tank_fish, look: (u && u.look) || '' });
   }));
 
   // Auto-save the house layout (client debounces calls). Validates aquarium

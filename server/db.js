@@ -179,6 +179,9 @@ async function openDb() {
     if (!ucols.rows.some((c) => c.name === 'avatar')) {
       await client.execute('ALTER TABLE users ADD COLUMN avatar TEXT');
     }
+    if (!ucols.rows.some((c) => c.name === 'look')) {
+      await client.execute("ALTER TABLE users ADD COLUMN look TEXT NOT NULL DEFAULT ''");
+    }
     if (!ucols.rows.some((c) => c.name === 'bio')) {
       await client.execute('ALTER TABLE users ADD COLUMN bio TEXT');
     }

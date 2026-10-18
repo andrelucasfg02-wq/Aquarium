@@ -426,8 +426,9 @@
       hint: 'Escolha um item e toque no piso. Arraste um móvel para mudar de lugar.',
       wallHint: 'Este item vai na parede. Toque em um quadrado da parede.',
       mirror: 'Espelhar', delete: 'Excluir', clear: 'Limpar quarto', back: 'Voltar', saved: 'Salvo ✓', saving: 'Salvando…', loginNeeded: 'Entre no AquaNim para usar sua Casa 🏠', loginGo: 'Ir para o jogo',
-      basicTab: 'Básicos', oceanTab: 'Oceano', aquaTab: 'Aquários', woodTab: 'Madeira', catalog: 'CATÁLOGO · PISO E PAREDE', oceanCatalog: 'LOJA · OCEANO · 🪙 400 CADA', aquaCatalog: 'AQUÁRIOS · COMPRAR NO AQUANIM', woodCatalog: 'LOJA · MADEIRA · 🪙 400 CADA', blocked: 'Esse espaço está ocupado.',
+      basicTab: 'Básicos', oceanTab: 'Oceano', aquaTab: 'Aquários', woodTab: 'Madeira', catalog: 'CATÁLOGO · PISO E PAREDE', oceanCatalog: 'LOJA · OCEANO · 🪙 400 CADA', aquaCatalog: 'MEUS AQUÁRIOS', woodCatalog: 'LOJA · MADEIRA · 🪙 400 CADA', blocked: 'Esse espaço está ocupado.',
       notEnoughGold: 'Gold insuficiente 🪙', openingTank: 'Abrindo seu aquário... 🐠', buyOnAquaNim: 'Comprar no AquaNim',
+      ownedLabel: 'Tem', placedLabel: 'No quarto', availLabel: 'Livre', buyTank: 'Comprar', tankHasFish: 'Este aquário tem peixes! Esvazie antes de remover. 🐠', noTankAvailable: 'Você não tem este aquário livre.',
       wrongSurface: 'Escolha um quadrado da parede.', outside: 'Escolha um quadrado dentro do quarto.',
       cleared: 'Quarto limpo.', undo: 'Desfazer', restored: 'Quarto restaurado.',
       downloaded: 'Projeto baixado.', loaded: 'Projeto carregado.', invalid: 'Não foi possível abrir este arquivo.',
@@ -439,8 +440,9 @@
       hint: 'Choose an item and tap the floor. Drag furniture to move it.',
       wallHint: 'This item goes on a wall. Tap a wall square.',
       mirror: 'Mirror', delete: 'Delete', clear: 'Clear room', back: 'Back', saved: 'Saved ✓', saving: 'Saving…', loginNeeded: 'Log in to AquaNim to use your House 🏠', loginGo: 'Go to the game',
-      basicTab: 'Basics', oceanTab: 'Ocean', aquaTab: 'Aquariums', woodTab: 'Wood', catalog: 'CATALOG · FLOOR & WALL', oceanCatalog: 'SHOP · OCEAN · 🪙 400 EACH', aquaCatalog: 'AQUARIUMS · BUY ON AQUANIM', woodCatalog: 'SHOP · WOOD · 🪙 400 EACH', blocked: 'That space is occupied.',
+      basicTab: 'Basics', oceanTab: 'Ocean', aquaTab: 'Aquariums', woodTab: 'Wood', catalog: 'CATALOG · FLOOR & WALL', oceanCatalog: 'SHOP · OCEAN · 🪙 400 EACH', aquaCatalog: 'MY AQUARIUMS', woodCatalog: 'SHOP · WOOD · 🪙 400 EACH', blocked: 'That space is occupied.',
       notEnoughGold: 'Not enough gold 🪙', openingTank: 'Opening your aquarium... 🐠', buyOnAquaNim: 'Buy on AquaNim',
+      ownedLabel: 'Owned', placedLabel: 'Placed', availLabel: 'Free', buyTank: 'Buy', tankHasFish: 'This tank has fish! Empty it before removing. 🐠', noTankAvailable: "You don't have a free tank of this tier.",
       wrongSurface: 'Choose a square on either wall.', outside: 'Choose a square inside the room.',
       cleared: 'Room cleared.', undo: 'Undo', restored: 'Room restored.',
       downloaded: 'Project downloaded.', loaded: 'Project loaded.', invalid: 'This file could not be opened.',
@@ -502,6 +504,48 @@
     TYPES[id]={w:dims.w,d:dims.d,blocks:blocks,h:blocks===4?110:blocks===2?78:58,color:'#5aa7d8',layer:'floor',image:'assets/items/'+key+'.png'};
     AQUA_ORDER.push(id);
   });
+  // Tank tiers for the Aquariums tab: 5 tiers mapped to shared art.
+  // Cube art -> nursery, medium art -> small & medium, large art -> large & XL.
+  // Stand color defaults to light wood (simplest with the placement code).
+  var AQUA_TIERS = [
+    { tier:'nursery', art:'aq_aquarium_cube_light',   price:2500,  buyable:true  },
+    { tier:'small',   art:'aq_aquarium_medium_light', price:0,     buyable:false },
+    { tier:'medium',  art:'aq_aquarium_medium_light', price:5000,  buyable:true  },
+    { tier:'large',   art:'aq_aquarium_large_light',  price:10000, buyable:true  },
+    { tier:'xl',      art:'aq_aquarium_large_light',  price:20000, buyable:true  }
+  ];
+  var TIER_NAMES = {
+    pt: { nursery:'Aquário berçário', small:'Aquário pequeno', medium:'Aquário médio', large:'Aquário grande', xl:'Aquário XL' },
+    en: { nursery:'Nursery tank', small:'Small tank', medium:'Medium tank', large:'Large tank', xl:'XL tank' }
+  };
+  function tierName(tier){ return (TIER_NAMES[lang]||TIER_NAMES.en)[tier]||tier; }
+  // Owned tank inventory (from GET /api/house) and fish per tank instance.
+  var ownedTanks = { nursery:0, small:0, medium:0, large:0, xl:0 };
+  var tankFish = {};
+  var selectedTier = null;
+  function placedCount(tier){
+    var n=0;
+    items.forEach(function(i){ if (houseTankOf(i).tier===tier) n++; });
+    return n;
+  }
+  function houseTankOf(it){
+    // Client mirror of the server's houseTankOf: {tier,num} or {tier:null}.
+    if(!it||typeof it.type!=='string')return{tier:null,num:1};
+    var tier=it.tank_tier, m;
+    if(!tier){
+      m=it.type.match(/^aq_aquarium_(cube|medium|large)_/);
+      if(!m)return{tier:null,num:1};
+      tier=m[1]==='cube'?'nursery':m[1]==='medium'?'small':'large';
+    }
+    var num=Math.min(3,Math.max(1,parseInt(it.tank_num)||1));
+    return{tier:tier,num:num};
+  }
+  function lowestFreeNum(tier){
+    var used={};
+    items.forEach(function(i){var hk=houseTankOf(i);if(hk.tier===tier)used[hk.num]=true;});
+    for(var n=1;n<=(ownedTanks[tier]||0);n++)if(!used[n])return n;
+    return 1;
+  }
   // Default spawn rotation (degrees) per aquarium type: large tanks lean
   // -9° (351°), medium and cube tanks lean -6° (354°). Users can still
   // change it freely with the Rotacionar slider after placing.
@@ -1018,12 +1062,18 @@
   }
 
   function drawHover() {
-    if(!hover||!selectedType)return;
-    var o=TYPES[selectedType];
+    if(!hover)return;
+    var hovType=selectedType;
+    if(selectedTier){
+      var tdef=AQUA_TIERS.filter(function(d){return d.tier===selectedTier;})[0];
+      hovType=tdef?tdef.art:null;
+    }
+    if(!hovType)return;
+    var o=TYPES[hovType];
     if(o.layer==='wall'&&hover.wall){
       drawWallFootprint(hover,!wallOccupied(hover.wall,hover.tile,hover.z,null));
     }else if(o.layer!=='wall'&&hover.x>=0){
-      drawFloorFootprint(selectedType,hover.x,hover.y,0,canPlace(selectedType,hover.x,hover.y,0,null));
+      drawFloorFootprint(hovType,hover.x,hover.y,0,canPlace(hovType,hover.x,hover.y,0,null));
     }
   }
   function drawDragFootprint() {
@@ -1066,12 +1116,13 @@
 
   function renderCatalog() {
     catalogEl.innerHTML='';
-    var order=catalogCategory==='aqua'?AQUA_ORDER:catalogCategory==='wood'?WOOD_ORDER:OCEAN_ORDER;
+    var order=catalogCategory==='aqua'?null:catalogCategory==='wood'?WOOD_ORDER:OCEAN_ORDER;
     [['oceanTab','ocean'],['aquaTab','aqua'],['woodTab','wood']].forEach(function(pair){
       var tabEl=document.getElementById(pair[0]),on=catalogCategory===pair[1];
       tabEl.classList.toggle('active',on);tabEl.setAttribute('aria-selected',on?'true':'false');
     });
     document.getElementById('catalogLabel').textContent=catalogCategory==='aqua'?t('aquaCatalog'):catalogCategory==='wood'?t('woodCatalog'):t('oceanCatalog');
+    if(catalogCategory==='aqua'){renderTankCatalog();return;}
     order.forEach(function(type){
       var btn=document.createElement('button');btn.className='catalog-item'+(selectedType===type?' active':'');btn.dataset.type=type;btn.title=nameOf(type);
       var label=document.createElement('span');label.textContent=nameOf(type);
@@ -1100,9 +1151,50 @@
       btn.addEventListener('click',function(){if(type.indexOf('aq_')===0)buyAquariumOnAquaNim();else buyFurniture(type);});
     });
   }
+  // Aquariums tab: 5 tank tiers from the player's owned inventory.
+  // Each card shows owned/placed/available and a buy button (AquaNim price).
+  // Tapping a card with availability enters placement mode for that tier.
+  function renderTankCatalog(){
+    AQUA_TIERS.forEach(function(def){
+      var tier=def.tier, owned=ownedTanks[tier]||0, placed=placedCount(tier);
+      var avail=Math.max(0,owned-placed);
+      var btn=document.createElement('button');
+      btn.className='catalog-item'+(selectedTier===tier?' active':'');
+      btn.dataset.tier=tier;btn.title=tierName(tier);
+      var artType=def.art;
+      if(TYPES[artType].image){
+        var image=document.createElement('img');image.src=TYPES[artType].image;image.alt='';image.draggable=false;btn.appendChild(image);
+      }
+      var label=document.createElement('span');label.textContent=tierName(tier);btn.appendChild(label);
+      var inv=document.createElement('span');inv.className='price';
+      inv.textContent=t('ownedLabel')+' '+owned+' · '+t('placedLabel')+' '+placed+' · '+t('availLabel')+' '+avail;
+      btn.appendChild(inv);
+      if(def.buyable){
+        var buy=document.createElement('span');buy.className='price';
+        buy.textContent='🪙 '+def.price+' '+t('buyTank');
+        buy.style.cursor='pointer';
+        buy.addEventListener('click',function(ev){ev.stopPropagation();buyTank(tier);});
+        btn.appendChild(buy);
+      }
+      catalogEl.appendChild(btn);
+      btn.addEventListener('click',function(){
+        if(avail<=0){showToast(t('noTankAvailable'));return;}
+        selectedTier=(selectedTier===tier?null:tier);selectedType=null;selectedId=null;hover=null;
+        updateUI();renderCatalog();draw();
+      });
+    });
+  }
+  function buyTank(tier){
+    apiPost('/api/house/buy-tank',{tier:tier}).then(function(r){
+      if(!r.ok){showToast(r.status===402?t('notEnoughGold'):(r.error||'error'));return;}
+      gold=r.coins;updateGold();
+      if(r.tanks)ownedTanks=r.tanks;
+      updateUI();renderCatalog();draw();
+    });
+  }
 
   function chooseType(type) {
-    selectedType=(selectedType===type?null:type);selectedId=null;
+    selectedType=(selectedType===type?null:type);selectedId=null;selectedTier=null;
     hover=null;updateUI();renderCatalog();draw();
   }
   function updateGold() {
@@ -1126,20 +1218,34 @@
     window.open('https://aquanimgame.com','_blank');
   }
   // Play mode: tapping a placed aquarium opens its tank in AquaNim.
-  function tankParamFor(type) {
-    if(type.indexOf('aq_aquarium_cube_')===0)return 'nursery';
-    if(type.indexOf('aq_aquarium_medium_')===0)return 'small';
-    if(type.indexOf('aq_aquarium_large_')===0)return 'large';
-    return null;
+  // Uses the item's tank_tier when present; older items fall back to the art.
+  function tankParamFor(item) {
+    var type=item.type, tier=item.tank_tier;
+    if(!tier){
+      if(type.indexOf('aq_aquarium_cube_')===0)tier='nursery';
+      else if(type.indexOf('aq_aquarium_medium_')===0)tier='small';
+      else if(type.indexOf('aq_aquarium_large_')===0)tier='large';
+      else return null;
+    }
+    return tier;
   }
   function updateUI() {
     if(appMode==='play'){statusEl.textContent=t('playStatus');hintEl.textContent=t('playHint');return;}
     var item=items.find(function(i){return i.id===selectedId});
+    // Fish protection: a placed aquarium whose tank has fish can't be deleted.
+    var hasFish=false;
+    if(item){
+      var hk=houseTankOf(item);
+      if(hk.tier)hasFish=((tankFish[hk.tier+':'+hk.num]||0)>0);
+    }
     document.getElementById('mirrorBtn').disabled=!item;
     document.getElementById('mirrorTop').disabled=!item;
-    document.getElementById('deleteBtn').disabled=!item;
-    document.getElementById('deleteTop').disabled=!item;
-    if(selectedType){
+    document.getElementById('deleteBtn').disabled=!item||hasFish;
+    document.getElementById('deleteTop').disabled=!item||hasFish;
+    if(selectedTier){
+      statusEl.textContent=t('placing')+tierName(selectedTier);
+      hintEl.textContent=t('hint');
+    } else if(selectedType){
       statusEl.textContent=(TYPES[selectedType].layer==='wall'?t('wallPlacing'):t('placing'))+nameOf(selectedType);
       hintEl.textContent=TYPES[selectedType].layer==='wall'?t('wallHint'):t('hint');
     } else if(item){ statusEl.textContent=t('selected')+nameOf(item.type);hintEl.textContent=t('hint'); }
@@ -1239,7 +1345,11 @@
       }
       return;
     }
-    if(selectedType){
+    if(selectedTier){
+      var tdef=AQUA_TIERS.filter(function(d){return d.tier===selectedTier;})[0];
+      var tile=tileFromScreen(p.x,p.y);hover={x:tile.x,y:tile.y};
+      draw();
+    } else if(selectedType){
       if(TYPES[selectedType].layer==='wall'){var w=wallFromPoint(p);if(w&&selectedType==='ocean_chandelier')w.z=3;hover=w||null;}
       else {var tile=tileFromScreen(p.x,p.y);hover={x:tile.x,y:tile.y};}
       draw();
@@ -1249,7 +1359,7 @@
     var p=screenPoint(ev);
     if(appMode==='play'){
       var playHit=hitItem(p);
-      var tankParam=playHit?tankParamFor(playHit.type):null;
+      var tankParam=playHit?tankParamFor(playHit):null;
       if(tankParam){
         showToast(t('openingTank'));
         window.open('https://aquanimgame.com?tank='+tankParam,'_blank');
@@ -1258,9 +1368,21 @@
       var tile=tileFromScreen(p.x,p.y);if(tile.x>=0&&tile.y>=0&&tile.x<ROOM&&tile.y<ROOM)walkTo(tile.x,tile.y);pointerDown=null;return;
     }
     if(drag){var wasActive=drag.active;drag=null;pointerDown=null;draw();if(wasActive)scheduleSave();return;}
-    var hit=selectedType?null:hitItem(p);
-    if(hit){selectedId=hit.id;selectedType=null;updateUI();renderCatalog();draw();pointerDown=null;return;}
-    if(selectedType){
+    var hit=(selectedType||selectedTier)?null:hitItem(p);
+    if(hit){selectedId=hit.id;selectedType=null;selectedTier=null;updateUI();renderCatalog();draw();pointerDown=null;return;}
+    if(selectedTier){
+      // Placing an owned tank tier: art comes from the tier mapping, and the
+      // item records which tank instance it is (tank_tier/tank_num).
+      var tdef=AQUA_TIERS.filter(function(d){return d.tier===selectedTier;})[0];
+      var artType=tdef?tdef.art:'aq_aquarium_cube_light';
+      var tile=tileFromScreen(p.x,p.y);
+      if(tile.x<0||tile.y<0||tile.x>=ROOM||tile.y>=ROOM){showToast(t('outside'));return;}
+      if(!canPlace(artType,tile.x,tile.y,0,null)){showToast(t('blocked'));return;}
+      var freeNum=lowestFreeNum(selectedTier);
+      if((ownedTanks[selectedTier]||0)<=0){showToast(t('noTankAvailable'));return;}
+      items.push({id:nextId++,type:artType,x:tile.x,y:tile.y,rot:0,angle:defaultAngle(artType),tank_tier:selectedTier,tank_num:freeNum});
+      selectedId=items[items.length-1].id; selectedType=null; selectedTier=null;hover=null;updateUI();renderCatalog();draw();scheduleSave();
+    } else if(selectedType){
       var o=TYPES[selectedType];
       if(o.layer==='wall'){
         var wh=wallFromPoint(p);
@@ -1351,13 +1473,21 @@
         return;
       }
       gold = Math.max(0, Math.floor(Number(r.coins) || 0));
+      if(r.tanks)ownedTanks=r.tanks;
+      if(r.tank_fish)tankFish=r.tank_fish;
       var d = r.layout;
       if (d && d.roomDecorator === 1 && Array.isArray(d.items)) applyLayout(d);
       done();
     });
   }
   function deleteSelected(){
-    if(selectedId==null)return;items=items.filter(function(i){return i.id!==selectedId});selectedId=null;updateUI();draw();scheduleSave();
+    if(selectedId==null)return;
+    var it=items.find(function(i){return i.id===selectedId});
+    if(it){
+      var hk=houseTankOf(it);
+      if(hk.tier&&((tankFish[hk.tier+':'+hk.num]||0)>0)){showToast(t('tankHasFish'));return;}
+    }
+    items=items.filter(function(i){return i.id!==selectedId});selectedId=null;updateUI();draw();scheduleSave();
   }
   function mirrorSelected(){
     var it=items.find(function(i){return i.id===selectedId});if(!it)return;
@@ -1374,7 +1504,11 @@
   document.getElementById('langBtn').addEventListener('click',function(){lang=lang==='pt'?'en':'pt';translateUI();draw();});
   document.querySelectorAll('.catalog-tab').forEach(function(tab){tab.addEventListener('click',function(){catalogCategory=tab.dataset.category;renderCatalog();});});
   document.getElementById('clearBtn').addEventListener('click',function(){
-    if(!items.length)return;lastCleared=JSON.parse(JSON.stringify(items));items=[];selectedId=null;selectedType=null;updateUI();renderCatalog();draw();showToast(t('cleared'),true);scheduleSave();
+    if(!items.length)return;
+    // Don't clear tanks that have fish — same protection as delete.
+    var blocked=items.some(function(i){var hk=houseTankOf(i);return hk.tier&&((tankFish[hk.tier+':'+hk.num]||0)>0);});
+    if(blocked){showToast(t('tankHasFish'));return;}
+    lastCleared=JSON.parse(JSON.stringify(items));items=[];selectedId=null;selectedType=null;selectedTier=null;updateUI();renderCatalog();draw();showToast(t('cleared'),true);scheduleSave();
   });
   undoBtn.addEventListener('click',function(){if(lastCleared){items=lastCleared;lastCleared=null;nextId=Math.max.apply(null,items.map(function(i){return i.id}).concat([0]))+1;draw();showToast(t('restored'));scheduleSave();}});
 

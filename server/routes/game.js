@@ -1793,24 +1793,84 @@ module.exports = function gameRoutes(db) {
   ]);
   const HOUSE_FURNITURE_PRICE = 400;
 
-  // Load the saved house layout + current coin balance.
+  // Extract {tier, num} from a house layout aquarium item. tank_tier/tank_num
+  // are set at placement time; older items derive the tier from the art type
+  // (cube->nursery, medium art->small, large art->large).
+  const houseTankOf = (it) => {
+    if (!it || typeof it.type !== 'string') return null;
+    let tier = it.tank_tier;
+    if (!tier) {
+      const m = it.type.match(/^aq_aquarium_(cube|medium|large)_/);
+      if (!m) return null;
+      tier = m[1] === 'cube' ? 'nursery' : m[1] === 'medium' ? 'small' : 'large';
+    }
+    if (!['nursery', 'small', 'medium', 'large', 'xl'].includes(tier)) return null;
+    const num = Math.min(3, Math.max(1, parseInt(it.tank_num) || 1));
+    return { tier, num };
+  };
+  const houseTanksJson = (tk) => ({
+    nursery: (tk && tk.nursery) || 0, small: (tk && tk.small) || 0,
+    medium: (tk && tk.medium) || 0, large: (tk && tk.large) || 0,
+    xl: (tk && tk.xl) || 0,
+  });
+
+  // Load the saved house layout + current coin balance + owned tanks.
   r.get('/house', ah(async (req, res) => {
     const uid = req.user.id;
     const row = await db.get('SELECT layout FROM house_layout WHERE user_id=?', uid);
     const w = await H.getWallet(uid);
+    const tk = await H.getTanks(uid);
     let layout = null;
     if (row && row.layout) {
       try { layout = JSON.parse(row.layout); } catch (e) { layout = null; }
     }
-    res.json({ ok: true, layout, coins: (w && w.coins) || 0 });
+    // Fish per tank instance, for the house's delete protection.
+    const fishRows = await db.all(
+      "SELECT tank, tank_num, COUNT(*) c FROM fish WHERE user_id=? AND location='tank' GROUP BY tank, tank_num", uid);
+    const tank_fish = {};
+    for (const fr of fishRows) tank_fish[fr.tank + ':' + (fr.tank_num || 1)] = fr.c;
+    res.json({ ok: true, layout, coins: (w && w.coins) || 0, tanks: houseTanksJson(tk), tank_fish });
   }));
 
-  // Auto-save the house layout (client debounces calls).
+  // Auto-save the house layout (client debounces calls). Validates aquarium
+  // placement against owned tanks, and blocks removing a tank that has fish.
   r.post('/house/save', ah(async (req, res) => {
     const uid = req.user.id; const t = now();
     const { layout } = req.body || {};
     if (!layout || typeof layout !== 'object' || !Array.isArray(layout.items))
       return res.status(400).json({ ok: false, error: 'bad layout' });
+    const tanks = await H.getTanks(uid);
+    // Placed aquarium count per tier must not exceed owned count. Instances
+    // are keyed by tier:num so the same tank can't be placed twice.
+    const seen = {};
+    const perTier = {};
+    for (const it of layout.items) {
+      const hk = houseTankOf(it);
+      if (!hk) continue;
+      const key = hk.tier + ':' + hk.num;
+      if (seen[key]) return res.status(400).json({ ok: false, error: 'duplicate tank instance' });
+      seen[key] = true;
+      perTier[hk.tier] = (perTier[hk.tier] || 0) + 1;
+      if (perTier[hk.tier] > ((tanks && tanks[hk.tier]) || 0))
+        return res.status(400).json({ ok: false, error: 'tank not owned' });
+    }
+    // Fish protection: a removed aquarium whose tank instance has fish
+    // cannot be deleted from the room until the tank is empty.
+    const oldRow = await db.get('SELECT layout FROM house_layout WHERE user_id=?', uid);
+    if (oldRow && oldRow.layout) {
+      let oldItems = [];
+      try { oldItems = JSON.parse(oldRow.layout).items || []; } catch (e) { /* ignore */ }
+      const newKeys = new Set(Object.keys(seen));
+      for (const it of oldItems) {
+        const hk = houseTankOf(it);
+        if (!hk) continue;
+        const key = hk.tier + ':' + hk.num;
+        if (!newKeys.has(key)) {
+          const c = await H.tankFishCount(uid, hk.tier, hk.num);
+          if (c > 0) return res.status(400).json({ ok: false, error: 'tank has fish' });
+        }
+      }
+    }
     const text = JSON.stringify(layout).slice(0, 200000); // 200KB cap
     await db.run(`INSERT INTO house_layout (user_id, layout, updated_at) VALUES (?,?,?)
       ON CONFLICT(user_id) DO UPDATE SET layout=excluded.layout, updated_at=excluded.updated_at`,
@@ -1830,6 +1890,31 @@ module.exports = function gameRoutes(db) {
     await db.run('UPDATE wallets SET coins=coins-? WHERE user_id=?', HOUSE_FURNITURE_PRICE, uid);
     const w2 = await H.getWallet(uid);
     res.json({ ok: true, coins: w2.coins });
+  }));
+
+  // Buy a tank from the house: same prices and progression rules as /tanks/buy.
+  // Small can't be bought (it's the free default tank).
+  r.post('/house/buy-tank', ah(async (req, res) => {
+    const uid = req.user.id;
+    const { tier } = req.body || {};
+    if (!['nursery', 'medium', 'large', 'xl'].includes(tier))
+      return res.status(400).json({ ok: false, error: 'invalid tier' });
+    const tanks = await H.getTanks(uid);
+    const count = (tanks && tanks[tier]) || 0;
+    if (count >= 3) return res.status(400).json({ ok: false, error: 'max 3 per tier' });
+    if (tier === 'large' && !tanks.medium) return res.status(400).json({ ok: false, error: 'buy medium first' });
+    if (tier === 'xl' && !tanks.large) return res.status(400).json({ ok: false, error: 'buy large first' });
+    const price = C.TANK_PRICES[tier];
+    const w = await H.getWallet(uid);
+    if ((w.coins || 0) < price)
+      return res.status(402).json({ ok: false, error: 'not enough coins' });
+    await db.tx(async (txDb) => {
+      await txDb.run('UPDATE wallets SET coins=coins-? WHERE user_id=?', price, uid);
+      await txDb.run(`UPDATE user_tanks SET ${tier}=${tier}+1 WHERE user_id=?`, uid);
+    });
+    const tanks2 = await H.getTanks(uid);
+    const w2 = await H.getWallet(uid);
+    res.json({ ok: true, count: count + 1, coins: w2.coins, tanks: houseTanksJson(tanks2) });
   }));
 
   return r;

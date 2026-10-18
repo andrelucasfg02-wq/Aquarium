@@ -333,6 +333,7 @@
       <div class="tools">
         <button class="tool-btn" id="backBtn" aria-label="Back">← <span data-t="back">Voltar</span></button>
         <span class="gold-hud" id="goldHud" aria-label="Gold">🪙 <span id="goldVal">2000</span></span>
+        <button class="tool-btn" id="saveBtn">💾 <span data-t="save">Salvar</span></button>
         <button class="tool-btn mode-switch" id="modeBtn">✎ <span id="modeBtnText">Editar</span></button>
         <button class="tool-btn icon" id="mirrorTop" disabled aria-label="Espelhar">↩️</button>
         <button class="tool-btn icon danger" id="deleteTop" disabled aria-label="Excluir">×</button>
@@ -425,7 +426,7 @@
       wallPlacing: 'Toque em uma das paredes para colocar: ', selected: 'Selecionado: ',
       hint: 'Escolha um item e toque no piso. Arraste um móvel para mudar de lugar.',
       wallHint: 'Este item vai na parede. Toque em um quadrado da parede.',
-      mirror: 'Espelhar', delete: 'Excluir', clear: 'Limpar quarto', back: 'Voltar', saved: 'Salvo ✓', saving: 'Salvando…', loginNeeded: 'Entre no AquaNim para usar sua Casa 🏠', loginGo: 'Ir para o jogo',
+      mirror: 'Espelhar', delete: 'Excluir', clear: 'Limpar quarto', back: 'Voltar', save: 'Salvar', saved: 'Salvo ✓', saving: 'Salvando…', loginNeeded: 'Entre no AquaNim para usar sua Casa 🏠', loginGo: 'Ir para o jogo',
       basicTab: 'Básicos', oceanTab: 'Oceano', aquaTab: 'Aquários', woodTab: 'Madeira', catalog: 'CATÁLOGO · PISO E PAREDE', oceanCatalog: 'LOJA · OCEANO · 🪙 400 CADA', aquaCatalog: 'MEUS AQUÁRIOS', woodCatalog: 'LOJA · MADEIRA · 🪙 400 CADA', blocked: 'Esse espaço está ocupado.',
       notEnoughGold: 'Gold insuficiente 🪙', openingTank: 'Abrindo seu aquário... 🐠', buyOnAquaNim: 'Comprar no AquaNim',
       ownedLabel: 'Tem', placedLabel: 'No quarto', availLabel: 'Livre', buyTank: 'Comprar', tankHasFish: 'Este aquário tem peixes! Esvazie antes de remover. 🐠', noTankAvailable: 'Você não tem este aquário livre.',
@@ -439,7 +440,7 @@
       wallPlacing: 'Tap either wall to place: ', selected: 'Selected: ',
       hint: 'Choose an item and tap the floor. Drag furniture to move it.',
       wallHint: 'This item goes on a wall. Tap a wall square.',
-      mirror: 'Mirror', delete: 'Delete', clear: 'Clear room', back: 'Back', saved: 'Saved ✓', saving: 'Saving…', loginNeeded: 'Log in to AquaNim to use your House 🏠', loginGo: 'Go to the game',
+      mirror: 'Mirror', delete: 'Delete', clear: 'Clear room', back: 'Back', save: 'Save', saved: 'Saved ✓', saving: 'Saving…', loginNeeded: 'Log in to AquaNim to use your House 🏠', loginGo: 'Go to the game',
       basicTab: 'Basics', oceanTab: 'Ocean', aquaTab: 'Aquariums', woodTab: 'Wood', catalog: 'CATALOG · FLOOR & WALL', oceanCatalog: 'SHOP · OCEAN · 🪙 400 EACH', aquaCatalog: 'MY AQUARIUMS', woodCatalog: 'SHOP · WOOD · 🪙 400 EACH', blocked: 'That space is occupied.',
       notEnoughGold: 'Not enough gold 🪙', openingTank: 'Opening your aquarium... 🐠', buyOnAquaNim: 'Buy on AquaNim',
       ownedLabel: 'Owned', placedLabel: 'Placed', availLabel: 'Free', buyTank: 'Buy', tankHasFish: 'This tank has fish! Empty it before removing. 🐠', noTankAvailable: "You don't have a free tank of this tier.",
@@ -1514,6 +1515,7 @@
 
   modeBtn.addEventListener('click',function(){setMode(appMode==='play'?'edit':'play');});
   document.getElementById('backBtn').addEventListener('click',function(){saveHouse();location.href='/';});
+  document.getElementById('saveBtn').addEventListener('click',function(){if(saveTimer){clearTimeout(saveTimer);saveTimer=null;}saveHouse();showToast(t('saving'));});
   sitBtn.addEventListener('click',function(ev){ev.stopPropagation();sitOrStand();});
   window.addEventListener('keydown',function(ev){
     var k=ev.key.length===1?ev.key.toLowerCase():ev.key;if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','w','a','s','d'].indexOf(k)<0)return;

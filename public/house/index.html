@@ -1438,6 +1438,10 @@
     var clean = d.items.filter(function (i) { return i && TYPES[i.type]; }).map(function (i) {
       var newId = nextId++; idMap[String(i.id)] = newId;
       var z = { id: newId, type: i.type, rot: ((Number(i.rot) || 0) % 4 + 4) % 4, flip: !!i.flip, angle: ((Number(i.angle) || 0) % 360 + 360) % 360 };
+      // Preserve the tank identity (tier + instance number) so saves don't
+      // collapse every aquarium of the same art into a duplicate instance.
+      if (typeof i.tank_tier === 'string') z.tank_tier = i.tank_tier;
+      if (i.tank_num != null) z.tank_num = Math.min(3, Math.max(1, parseInt(i.tank_num) || 1));
       if (TYPES[i.type].layer === 'wall') {
         z.wall = i.wall === 'right' ? 'right' : 'left';
         z.tile = Math.max(0, Math.min(9, Number(i.tile) || 0));

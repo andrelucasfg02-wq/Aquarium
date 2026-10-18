@@ -28,6 +28,11 @@ const TAILBEAT_SEQ = [1, 2];
 const SCHOOL_IDS = new Set(["tetra_neon", "danio_zebra", "danio_tetra"]);
 const NO_FRONT_IDS = new Set(["tetra_neon", "danio_zebra", "danio_tetra", "royal_shrimp"]);
 
+/* Oldflower Betta: swims normally, then every so often does a graceful
+   barrel roll (frames 8-11) before resuming. */
+const FLIP_IDS = new Set(["oldflower_betta"]);
+const FLIP_SEQ = [8, 9, 10];
+
 class TankView {
   constructor(canvas) {
     this.cv = canvas;
@@ -566,6 +571,15 @@ class TankView {
       case "swim":
       default:
         e.frame = pickSwim(7);
+        // Oldflower Betta: graceful barrel roll every 8-16s of swimming
+        if (e.data && FLIP_IDS.has(e.data.species_id)) {
+          if (e.flipT === undefined) e.flipT = 8 + Math.random() * 8;
+          e.flipT -= dt;
+          if (e.flipT <= 0) {
+            e.state = "flip"; e.flipT = 0; e.flipIdx = 0;
+            break;
+          }
+        }
         if (dist > .004 && wantDir !== e.dir) {
           e.state = "turn"; e.turnT = .32;
           e.frame = e.group === "betta" ? 2 : F_TURN;
@@ -575,6 +589,15 @@ class TankView {
         if (dist <= .006 && !e.schoolFollow) {
           e.state = "idle"; e.stateT = 2 + Math.random() * 5;
           e.frame = (e.group === "goldfish" || (e.data && NO_FRONT_IDS.has(e.data.species_id))) ? 1 : 0;
+        }
+        break;
+      case "flip":
+        // Barrel roll: play FLIP_SEQ once (~1.1s), drifting forward, then resume swim
+        e.flipT += dt;
+        e.frame = FLIP_SEQ[Math.min(FLIP_SEQ.length - 1, Math.floor(e.flipT / 0.28))];
+        this.moveToward(e, speed * 0.5, dt);
+        if (e.flipT >= FLIP_SEQ.length * 0.28) {
+          e.state = "swim"; e.flipT = 8 + Math.random() * 8;
         }
         break;
     }

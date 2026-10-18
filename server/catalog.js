@@ -12,7 +12,8 @@ const GROUPS = {
     'maple_rose_betta', 'maple_ember_betta', 'maple_dusk_betta', 'maple_storm_betta',
     'maple_lilac_betta', 'maple_petal_betta', 'maple_tide_betta', 'maple_coral_betta',
     'maple_veil_betta',
-    'golden_veil_betta', 'rose_halfmoon_betta', 'ember_crown_betta', 'bloom_maple_betta', 'azure_plakat_betta'],
+    'golden_veil_betta', 'rose_halfmoon_betta', 'ember_crown_betta', 'bloom_maple_betta', 'azure_plakat_betta',
+    'oldflower_betta'],
   shrimp: ['red_shrimp', 'blue_shrimp', 'yellow_shrimp', 'royal_shrimp'],
   snail: ['snail'],
   bottom_fish: ['bottom_fish', 'pleco', 'blackleaf', 'pleco_cory'],
@@ -72,6 +73,7 @@ const SPECIES_NAMES = {
   golden_veil_betta: 'Golden Veil Betta', rose_halfmoon_betta: 'Rose Halfmoon Betta',
   ember_crown_betta: 'Ember Crown Betta', bloom_maple_betta: 'Bloom Maple Betta',
   azure_plakat_betta: 'Azure Plakat Betta',
+  oldflower_betta: 'Oldflower Betta',
   twilight_goldfish: 'Twilight Goldfish', sunset_goldfish: 'Sunset Goldfish',
   tidepool_goldfish: 'Tidepool Goldfish', duskfin_goldfish: 'Duskfin Goldfish',
   blaze_goldfish: 'Blaze Goldfish', orchid_goldfish: 'Orchid Goldfish',
@@ -118,6 +120,7 @@ const SPECIES_PRICES = {
   golden_veil_betta: { coins: null, gems: null }, rose_halfmoon_betta: { coins: null, gems: null },
   ember_crown_betta: { coins: null, gems: null }, bloom_maple_betta: { coins: null, gems: null },
   azure_plakat_betta: { coins: null, gems: null },
+  oldflower_betta: { coins: null, gems: null },
   // goldfish hybrids: bred-only, never sold in the shop
   twilight_goldfish: { coins: null, gems: null }, sunset_goldfish: { coins: null, gems: null },
   tidepool_goldfish: { coins: null, gems: null }, duskfin_goldfish: { coins: null, gems: null },
@@ -140,6 +143,7 @@ const SPECIES_RARITY = {
   golden_veil_betta: 'legendary', rose_halfmoon_betta: 'legendary',
   ember_crown_betta: 'legendary', bloom_maple_betta: 'legendary',
   azure_plakat_betta: 'legendary',
+  oldflower_betta: 'epic',
   twilight_goldfish: 'epic', sunset_goldfish: 'epic', tidepool_goldfish: 'epic',
   duskfin_goldfish: 'epic', blaze_goldfish: 'epic', orchid_goldfish: 'epic',
   cinder_goldfish: 'epic', gilded_goldfish: 'epic', nebula_goldfish: 'epic',
@@ -188,6 +192,8 @@ function fishCatalog() {
           ? 'Cleans 4 dirt per hour. The tank he\'s in stays clean!'
           : species_id === 'royal_shrimp'
           ? 'Collects banked coins from 1 fish every hour.'
+          : species_id === 'oldflower_betta'
+          ? 'Does a graceful barrel roll every so often while swimming.'
           : `${SPECIES_NAMES[species_id] || species_id} — ${group.replace('_', ' ')}.`,
       });
     }

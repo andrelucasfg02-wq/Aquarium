@@ -11,7 +11,7 @@ const {
 const { QUEST_DEFS, periodKey, initialSickAt } = require('../catalog');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const LOOKS = ['lila', 'tayler', 'luna', 'jeff'];
+const LOOKS = ['luna', 'jeff'];
 const validLook = (v) => LOOKS.includes(String(v)) ? String(v) : '';
 
 async function seedStarterKit(db, userId, now) {

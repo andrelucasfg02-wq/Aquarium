@@ -1577,7 +1577,7 @@ const UI = (() => {
         </div>
         <div class="sec-title">✨ ${t("profile.look")}</div>
         <div class="look-options prof-looks">
-          ${["lila", "tayler", "luna", "jeff"].map((l) => `
+          ${["luna", "jeff"].map((l) => `
             <button type="button" class="look-opt${p.look === l ? " selected" : ""}" data-look="${l}">
               <img src="assets/looks/${l}/portrait.png" alt="${l}"><span>${l.charAt(0).toUpperCase() + l.slice(1)}</span>
             </button>`).join("")}

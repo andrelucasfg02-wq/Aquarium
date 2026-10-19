@@ -1494,7 +1494,7 @@
       if(r.tanks)ownedTanks=r.tanks;
       if(r.tank_fish)tankFish=r.tank_fish;
       // Load the player's chosen look for the house avatar (falls back to cat)
-      if(r.look && /^(luna|jeff)$/.test(r.look)){
+      if(r.look && /^(luna|jeff|cat)$/.test(r.look)){
         loadAvatarSprites('/assets/looks/'+r.look+'/', 8, 4, 1, false);
       }
       var d = r.layout;

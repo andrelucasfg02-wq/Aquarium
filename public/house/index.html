@@ -1035,7 +1035,7 @@
     }
     else if(avatar.moving&&avatar.north&&avatarImages.back){im=avatarImages.back;drawH=92*s*AVATAR_SPRITE_SCALE;}
     else if(avatar.moving){frame=Math.floor(avatar.frame)%(avatarImages.walkN||8);im=avatarImages.walk[frame];drawH=90*s*AVATAR_SPRITE_SCALE;}
-    else {frame=Math.floor(avatar.frame)%(avatarImages.idleN||5);im=avatarImages.idle[frame];drawH=94*s*AVATAR_SPRITE_SCALE;}
+    else {im=avatarImages.idle[0];drawH=94*s*AVATAR_SPRITE_SCALE;}
     if(!im||!im.complete||!im.naturalWidth)return;
     var drawW=drawH*(im.naturalWidth/im.naturalHeight);c.save();c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';
     if(!avatar.north&&avatar.facing<0){c.translate(anchor[0],0);c.scale(-1,1);c.drawImage(im,-drawW/2,anchor[1]-drawH,drawW,drawH);}else c.drawImage(im,anchor[0]-drawW/2,anchor[1]-drawH,drawW,drawH);
@@ -1063,7 +1063,7 @@
   }
   function animateAvatar(now){
     var dt=avatar.lastAt?Math.min(40,now-avatar.lastAt):16;avatar.lastAt=now;var moved=moveAvatar(dt);
-    var interval=avatar.moving?82:360;if(now-avatar.frameAt>interval){avatar.frame=(avatar.frame+1)%(avatar.moving?8:5);avatar.frameAt=now;moved=true;}
+    if(avatar.moving&&now-avatar.frameAt>82){avatar.frame=(avatar.frame+1)%8;avatar.frameAt=now;moved=true;}
     if(moved||now-lastAvatarDraw>450){lastAvatarDraw=now;updateSitButton();draw();}
     requestAnimationFrame(animateAvatar);
   }

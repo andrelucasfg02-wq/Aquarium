@@ -82,6 +82,7 @@ const Api = (() => {
     equipBgfx: (fx_id) => post("/api/bgfx/equip", { fx_id }),
     welcomeSeen: () => post("/api/welcome/seen", {}),
     buyTank: (tier) => post("/api/tanks/buy", { tier }),
+    sellTank: (tier, num) => post("/api/tanks/sell", { tier, num }),
     switchTank: (tier, num) => post("/api/tanks/switch", { tier, num }),
     buyExtraSlot: (tank) => post("/api/tanks/extra-slot", { tank }),
     breedingPartners: (fish_id) => get(`/api/breeding/partners?fish_id=${encodeURIComponent(fish_id)}`),

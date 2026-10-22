@@ -467,6 +467,7 @@ const UI = (() => {
   async function renderAquariums() {
     const body = $("screen-body");
     const counts = state.tanks.counts || {}, active = state.tanks.active, activeNum = state.tanks.activeNum || 1;
+    const totalTanks = Object.values(counts).reduce((a, b) => a + (b || 0), 0);
     const instances = state.tanks.instances || [];
     let html = `<button class="pill-btn blue" id="btn-view-tank" style="width:100%;padding:13px;margin-bottom:6px">🐠 ${t("aq.view_tank")}</button>
       <h3>${t("shop.tanks")}</h3>`;
@@ -481,8 +482,10 @@ const UI = (() => {
       // Show each owned instance with switch button
       for (let n = 1; n <= count; n++) {
         const isActive = active === tier && activeNum === n;
+        const refund = Math.floor((T.price || 0) / 2);
         html += `<div style="margin-top:6px">${isActive ? `<span class="tag">${t("shop.active")}</span>`
-          : `<button class="pill-btn blue" data-switch="${tier}" data-num="${n}">${tankName(tier)} ${n} — ${t("shop.use")}</button>`}</div>`;
+          : `<button class="pill-btn blue" data-switch="${tier}" data-num="${n}">${tankName(tier)} ${n} — ${t("shop.use")}</button>`}
+          ${totalTanks > 1 ? `<button class="pill-btn" data-sell="${tier}" data-num="${n}" style="margin-left:6px">💰 ${t("shop.sell")}${refund ? ` · ${CUR_GOLD} ${fmtCoins(refund)}` : ""}</button>` : ""}</div>`;
       }
       html += `</div>
         ${count < 3 ? `<button class="pill-btn" data-buytank="${tier}" ${need ? "disabled" : ""}>${CUR_GOLD} ${fmtCoins(T.price)}</button>`
@@ -500,6 +503,15 @@ const UI = (() => {
     });
     body.querySelectorAll("[data-switch]").forEach((b) => b.onclick = () => {
       App.switchTankFast(b.dataset.switch, parseInt(b.dataset.num) || 1); // optimistic: instant switch, server confirms in background
+    });
+    body.querySelectorAll("[data-sell]").forEach((b) => b.onclick = async () => {
+      const tier = b.dataset.sell, n = parseInt(b.dataset.num) || 1;
+      const refund = Math.floor(((DATA.TANKS[tier] || {}).price || 0) / 2);
+      if (!confirm(htmlToText(t("tank.sell_confirm", { tank: tankName(tier), n, price: fmtCoins(refund) })))) return;
+      const r = await Api.sellTank(tier, n);
+      if (r.ok) { AudioFX.coin(); toast(r.refund ? t("toast.tank_sold", { price: fmtCoins(r.refund) }) : t("toast.tank_sold_free")); }
+      else { AudioFX.error(); toast(r.error || t("toast.couldnt_buy_tank")); }
+      await App.refresh(); renderAquariums();
     });
   }
 

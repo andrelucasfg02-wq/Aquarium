@@ -879,6 +879,59 @@ module.exports = function gameRoutes(db) {
     res.json({ ok: true, count: count + 1 });
   }));
 
+  // Sell a tank instance back for half its price. Fish inside return to the
+  // inventory, decor returns un-placed, higher instances slide down a number
+  // (fish, decor and house layout renumbered together).
+  r.post('/tanks/sell', ah(async (req, res) => {
+    const uid = req.user.id;
+    const { tier } = req.body || {};
+    const num = Math.min(3, Math.max(1, parseInt((req.body || {}).num) || 1));
+    if (!['small', 'medium', 'large', 'xl', 'nursery'].includes(tier)) return res.status(400).json({ ok: false, error: 'invalid tier' });
+    const tanks = await H.getTanks(uid);
+    const count = (tanks && tanks[tier]) || 0;
+    if (count < num) return res.status(400).json({ ok: false, error: 'tank not owned' });
+    const total = ['small', 'medium', 'large', 'xl', 'nursery'].reduce((s, t2) => s + ((tanks && tanks[t2]) || 0), 0);
+    if (total <= 1) return res.status(400).json({ ok: false, error: 'cannot sell your last tank' });
+    const refund = Math.floor((C.TANK_PRICES[tier] || 0) / 2);
+    await db.tx(async (txDb) => {
+      await txDb.run("UPDATE fish SET location='inventory' WHERE user_id=? AND tank=? AND tank_num=? AND location='tank'", uid, tier, num);
+      await txDb.run('UPDATE fish SET tank_num=tank_num-1 WHERE user_id=? AND tank=? AND tank_num>?', uid, tier, num);
+      await txDb.run('DELETE FROM decor_placements WHERE user_id=? AND tank=? AND tank_num=?', uid, tier, num);
+      await txDb.run('UPDATE decor_placements SET tank_num=tank_num-1 WHERE user_id=? AND tank=? AND tank_num>?', uid, tier, num);
+      await txDb.run(`UPDATE user_tanks SET ${tier}=${tier}-1 WHERE user_id=?`, uid);
+      if (refund > 0) await txDb.run('UPDATE wallets SET coins=coins+? WHERE user_id=?', refund, uid);
+      // keep the active tank pointer on a tank that still exists
+      const nt = await txDb.get('SELECT * FROM user_tanks WHERE user_id=?', uid);
+      let active = nt.active, activeNum = nt.active_num || 1;
+      if (active === tier) {
+        if ((nt[tier] || 0) === 0) {
+          active = ['small', 'nursery', 'medium', 'large', 'xl'].find((t2) => (nt[t2] || 0) > 0) || 'small';
+          activeNum = 1;
+        } else if (activeNum === num) activeNum = Math.min(num, nt[tier]);
+        else if (activeNum > num) activeNum -= 1;
+      }
+      await txDb.run('UPDATE user_tanks SET active=?, active_num=? WHERE user_id=?', active, activeNum, uid);
+      // house layout: the sold aquarium leaves the room, higher ones renumber
+      const hl = await txDb.get('SELECT layout FROM house_layout WHERE user_id=?', uid);
+      if (hl && hl.layout) {
+        try {
+          const parsed = JSON.parse(hl.layout);
+          if (parsed && Array.isArray(parsed.items)) {
+            parsed.items = parsed.items.filter((it) => {
+              const tk = houseTankOf(it);
+              if (!tk || tk.tier !== tier) return true;
+              if (tk.num === num) return false;
+              if (tk.num > num) it.tank_num = tk.num - 1;
+              return true;
+            });
+            await txDb.run('UPDATE house_layout SET layout=? WHERE user_id=?', JSON.stringify(parsed), uid);
+          }
+        } catch (e) { /* malformed layout: leave it alone */ }
+      }
+    });
+    res.json({ ok: true, refund, count: count - 1 });
+  }));
+
   r.post('/tanks/switch', ah(async (req, res) => {
     const uid = req.user.id;
     const { tier, num } = req.body || {};

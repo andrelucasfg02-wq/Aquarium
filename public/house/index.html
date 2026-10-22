@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="color-scheme" content="light dark" />
   <link rel="icon" href="data:," />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -141,7 +141,7 @@
     .hint {
       position: absolute;
       left: 12px;
-      bottom: 12px;
+      top: 12px;
       max-width: min(390px, calc(100% - 24px));
       padding: 8px 11px;
       background: rgba(31, 33, 35, .86);
@@ -160,7 +160,7 @@
     }
     .joystick {
       position: absolute;
-      right: 18px;
+      left: 18px;
       bottom: 18px;
       width: 116px;
       height: 116px;
@@ -195,7 +195,7 @@
     }
     .sit-btn {
       position: absolute;
-      right: 18px;
+      left: 18px;
       bottom: 146px;
       min-height: 46px;
       border: 1px solid rgba(255,255,255,.52);
@@ -209,6 +209,63 @@
       cursor: pointer;
     }
     .play-controls[hidden], .sit-btn[hidden] { display: none; }
+    /* Chat bar overlays the bottom of the room, beside the joystick:
+       in Play mode it starts right of the stick; in Edit mode (no stick)
+       it spans the full width of the room. */
+    .chat-bar {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      z-index: 6;
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 0 7px 18px var(--shadow);
+    }
+    body.play-mode .chat-bar { left: 146px; }
+    .chat-bar .chat-ico { font-size: 19px; line-height: 1; padding: 0 2px 0 4px; }
+    .chat-bar input {
+      flex: 1;
+      min-width: 0;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 8px 12px;
+      background: var(--button);
+      color: var(--ink);
+      font-weight: 650;
+    }
+    .chat-bar input::placeholder { color: var(--muted); }
+    .chat-bar input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+    .chat-bar .tool-btn { flex: 0 0 auto; }
+    /* While the on-screen keyboard is open, JS translates the bar up by
+       the covered amount (see syncChatLift) so it rides above the keys. */
+    .chat-bar.kb-lift { z-index: 40; }
+    .visit-banner {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 5;
+      max-width: calc(100% - 24px);
+      padding: 8px 12px;
+      border: 1px solid rgba(255,255,255,.52);
+      border-radius: 10px;
+      background: rgba(31, 33, 35, .88);
+      color: #fff9f0;
+      font-weight: 850;
+      box-shadow: 0 5px 14px rgba(0,0,0,.22);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+    .visit-banner[hidden] { display: none; }
+    .topbar [hidden] { display: none !important; }
     body.play-mode .bottom-panel { display: none; }
     body.play-mode .app { grid-template-rows: auto minmax(430px, 1fr); }
     body.play-mode canvas#room { cursor: pointer; }
@@ -308,12 +365,15 @@
       .action-row { padding: 7px; flex-wrap: wrap; }
       .action-row .tool-btn { flex: 1; padding: 6px 5px; font-size: 12px; }
       .action-row .spacer { display: none; }
-      .hint { font-size: 12px; bottom: 8px; left: 8px; max-width: calc(100% - 150px); }
-      .joystick { width: 96px; height: 96px; right: 12px; bottom: 12px; }
+      .hint { font-size: 12px; top: 8px; left: 8px; max-width: calc(100% - 16px); }
+      body.play-mode .chat-bar { left: 118px; right: 8px; bottom: 8px; }
+      .chat-bar { right: 8px; bottom: 8px; }
+      .visit-banner { top: auto; bottom: 76px; right: 8px; max-width: calc(100% - 16px); }
+      .joystick { width: 96px; height: 96px; left: 12px; bottom: 12px; }
       .joystick::before { height: 62px; left: 47px; top: 17px; }
       .joystick::after { width: 62px; left: 17px; top: 47px; }
       .joystick-knob { width: 42px; height: 42px; left: 27px; top: 27px; }
-      .sit-btn { right: 12px; bottom: 118px; }
+      .sit-btn { left: 12px; bottom: 118px; }
       body.play-mode .app { grid-template-rows: auto minmax(420px, calc(100vh - 78px)); }
     }
     @media (max-width: 430px) {
@@ -349,6 +409,12 @@
         <div class="joystick" id="joystick" role="button" aria-label="Controle de movimento" tabindex="0"><span class="joystick-knob" id="joystickKnob"></span></div>
       </div>
       <div class="toast" id="toast" hidden><span id="toastText"></span><button id="undoBtn" hidden>Desfazer</button></div>
+      <div class="visit-banner" id="visitBanner" hidden></div>
+      <form class="chat-bar" id="chatForm">
+        <span class="chat-ico" aria-hidden="true">💬</span>
+        <input id="chatInput" type="text" maxlength="120" autocomplete="off" enterkeyhint="send" placeholder="Diga algo…" aria-label="Chat" />
+        <button class="tool-btn" type="submit" id="chatSendBtn">Enviar</button>
+      </form>
     </section>
 
     <section class="bottom-panel">
@@ -396,8 +462,26 @@
   var sitBtnText = document.getElementById('sitBtnText');
   var joystick = document.getElementById('joystick');
   var joystickKnob = document.getElementById('joystickKnob');
+  var chatForm = document.getElementById('chatForm');
+  var chatInput = document.getElementById('chatInput');
+  var chatSendBtn = document.getElementById('chatSendBtn');
+  var visitBanner = document.getElementById('visitBanner');
+  // Chat: text typed in the bottom bar appears in a speech bubble above
+  // the avatar's head. While typing it previews live; after sending it
+  // stays up for a few seconds (longer for longer messages).
+  var chat = { text:'', until:0 };
+  // Visit mode (?visit=<userId>): another player's room, read-only. The
+  // visitor's own avatar walks in it; nothing is ever saved or bought.
+  var visitParam = new URLSearchParams(window.location.search).get('visit');
+  var visitId = visitParam && /^\d+$/.test(visitParam) ? Number(visitParam) : null;
+  var visiting = visitId != null && visitId > 0;
+  var visitOwnerName = '';
 
   var lang = 'pt';
+  try {
+    var savedLang = window.localStorage && localStorage.getItem('aquanim_lang');
+    if (savedLang === 'en' || savedLang === 'es' || savedLang === 'pt') lang = savedLang;
+  } catch (e) { /* storage unavailable: keep the PT default */ }
   var gold = 0; // loaded from server (/api/house)
   var FURNITURE_PRICE = 400;
   var appMode = 'play';
@@ -433,6 +517,7 @@
       wrongSurface: 'Escolha um quadrado da parede.', outside: 'Escolha um quadrado dentro do quarto.',
       cleared: 'Quarto limpo.', undo: 'Desfazer', restored: 'Quarto restaurado.',
       downloaded: 'Projeto baixado.', loaded: 'Projeto carregado.', invalid: 'Não foi possível abrir este arquivo.',
+      chatPlaceholder: 'Diga algo…', chatSend: 'Enviar', visitHouse: 'Casa de ', visitReadOnly: 'Visita somente leitura 🏠', visitNotFound: 'Casa não encontrada.',
       names: { bed:'Cama', table:'Mesa', chair:'Cadeira', sofa:'Sofá', plant:'Planta', lamp:'Luminária', rug:'Tapete', shelf:'Estante', tv:'Rack TV', coffee:'Mesa centro', painting:'Quadro', walllamp:'Luz parede' }
     },
     en: {
@@ -447,7 +532,23 @@
       wrongSurface: 'Choose a square on either wall.', outside: 'Choose a square inside the room.',
       cleared: 'Room cleared.', undo: 'Undo', restored: 'Room restored.',
       downloaded: 'Project downloaded.', loaded: 'Project loaded.', invalid: 'This file could not be opened.',
+      chatPlaceholder: 'Say something…', chatSend: 'Send', visitHouse: "'s house", visitReadOnly: 'Read-only visit 🏠', visitNotFound: 'House not found.',
       names: { bed:'Bed', table:'Table', chair:'Chair', sofa:'Sofa', plant:'Plant', lamp:'Floor lamp', rug:'Rug', shelf:'Bookcase', tv:'TV stand', coffee:'Coffee table', painting:'Painting', walllamp:'Wall lamp' }
+    },
+    es: {
+      choose: 'Elige un mueble abajo', playStatus: 'Modo juego · explora la habitación', playHint: 'Toca el suelo para caminar o usa el control.', editMode: 'Editar', playMode: 'Jugar', sit: 'Sentarse', stand: 'Levantarse', joystick: 'Control de movimiento', placing: 'Toca el suelo para colocar: ',
+      wallPlacing: 'Toca una de las paredes para colocar: ', selected: 'Seleccionado: ',
+      hint: 'Elige un artículo y toca el suelo. Arrastra un mueble para moverlo.',
+      wallHint: 'Este artículo va en la pared. Toca un cuadrado de la pared.',
+      mirror: 'Espejar', delete: 'Eliminar', clear: 'Vaciar habitación', back: 'Volver', save: 'Guardar', saved: 'Guardado ✓', saving: 'Guardando…', saveFailed: 'Error al guardar', loginNeeded: 'Inicia sesión en AquaNim para usar tu Casa 🏠', loginGo: 'Ir al juego',
+      basicTab: 'Básicos', oceanTab: 'Océano', aquaTab: 'Acuarios', woodTab: 'Madera', catalog: 'CATÁLOGO · SUELO Y PARED', oceanCatalog: 'TIENDA · OCÉANO · 🪙 400 CADA UNO', aquaCatalog: 'MIS ACUARIOS', woodCatalog: 'TIENDA · MADERA · 🪙 400 CADA UNO', blocked: 'Ese espacio está ocupado.',
+      notEnoughGold: 'Oro insuficiente 🪙', openingTank: 'Abriendo tu acuario... 🐠', buyOnAquaNim: 'Comprar en AquaNim',
+      ownedLabel: 'Tienes', placedLabel: 'En la habitación', availLabel: 'Libre', buyTank: 'Comprar', tankHasFish: '¡Este acuario tiene peces! Vacíalo antes de retirarlo. 🐠', noTankAvailable: 'No tienes este acuario libre.',
+      wrongSurface: 'Elige un cuadrado en una pared.', outside: 'Elige un cuadrado dentro de la habitación.',
+      cleared: 'Habitación vaciada.', undo: 'Deshacer', restored: 'Habitación restaurada.',
+      downloaded: 'Proyecto descargado.', loaded: 'Proyecto cargado.', invalid: 'No se pudo abrir este archivo.',
+      chatPlaceholder: 'Di algo…', chatSend: 'Enviar', visitHouse: 'Casa de ', visitReadOnly: 'Visita de solo lectura 🏠', visitNotFound: 'Casa no encontrada.',
+      names: { bed:'Cama', table:'Mesa', chair:'Silla', sofa:'Sofá', plant:'Planta', lamp:'Lámpara', rug:'Alfombra', shelf:'Estantería', tv:'Mueble de TV', coffee:'Mesa de centro', painting:'Cuadro', walllamp:'Luz de pared' }
     }
   };
 
@@ -630,9 +731,9 @@
     });
   }
   function nameOf(type) {
-    if(type.indexOf('ocean_')===0)return OCEAN_NAMES[lang][type.slice(6)]||type.slice(6);
-    if(type.indexOf('aq_')===0)return AQUA_NAMES[lang][type.slice(3)]||type.slice(3);
-    if(WOOD_NAMES[lang][type])return WOOD_NAMES[lang][type];
+    if(type.indexOf('ocean_')===0)return (OCEAN_NAMES[lang]||OCEAN_NAMES.en)[type.slice(6)]||type.slice(6);
+    if(type.indexOf('aq_')===0)return (AQUA_NAMES[lang]||AQUA_NAMES.en)[type.slice(3)]||type.slice(3);
+    if((WOOD_NAMES[lang]||{})[type])return WOOD_NAMES[lang][type];
     return TXT[lang].names[type] || type;
   }
 
@@ -1042,6 +1143,7 @@
     c.restore();
   }
   function setMode(mode){
+    if(visiting)mode='play';
     appMode=mode;document.body.classList.toggle('play-mode',mode==='play');playControls.hidden=mode!=='play';
     document.getElementById('modeBtnText').textContent=mode==='play'?t('editMode'):t('playMode');modeBtn.firstChild.nodeValue=mode==='play'?'✎ ':'▶ ';
     if(mode==='play'){selectedType=null;selectedId=null;drag=null;hover=null;syncAvatarSeat();if(!avatar.sitting){var free=nearestFreeTile(avatar.x,avatar.y);if(avatarTileBlocked(Math.floor(avatar.x),Math.floor(avatar.y))){avatar.x=free.x+.5;avatar.y=free.y+.5;}}statusEl.textContent=t('playStatus');hintEl.textContent=t('playHint');}
@@ -1090,6 +1192,53 @@
     else drawFloorFootprint(it.type,drag.preview.x,drag.preview.y,it.rot||0,drag.preview.good);
   }
 
+  function chatAvatarHeight(s){
+    if(avatar.sitting)return 68*s*AVATAR_SPRITE_SCALE;
+    if(avatar.moving&&avatar.north&&avatarImages.back)return 92*s*AVATAR_SPRITE_SCALE;
+    if(avatar.moving)return 90*s*AVATAR_SPRITE_SCALE;
+    return 94*s*AVATAR_SPRITE_SCALE;
+  }
+  function drawChatBubble(c){
+    if(!chat.text)return;
+    if(chat.until&&Date.now()>chat.until){chat.text='';chat.until=0;return;}
+    var s=metrics.scale,anchor=iso(avatar.x,avatar.y,0);
+    var topY=anchor[1]-chatAvatarHeight(s);
+    c.save();
+    c.font='750 '+Math.round(13*s)+'px "Nunito Sans", ui-rounded, sans-serif';
+    var maxW=168*s,words=String(chat.text).split(/\s+/),lines=[],line='';
+    words.forEach(function(w){
+      var test=line?line+' '+w:w;
+      if(line&&c.measureText(test).width>maxW){lines.push(line);line=w;}
+      else line=test;
+    });
+    if(line)lines.push(line);
+    if(lines.length>4){lines=lines.slice(0,4);lines[3]=lines[3].replace(/…?$/,'')+'…';}
+    var lineH=17*s,padX=10*s,padY=7*s,textW=0;
+    lines.forEach(function(l){textW=Math.max(textW,c.measureText(l).width);});
+    var bw=textW+padX*2,bh=lines.length*lineH+padY*2;
+    var bx=Math.max(4*s,Math.min(canvas.width-bw-4*s,anchor[0]-bw/2));
+    var by=Math.max(4*s,topY-bh-11*s);
+    var tailX=Math.max(bx+13*s,Math.min(bx+bw-13*s,anchor[0]));
+    var r=9*s;
+    // Tail first so the bubble body covers its top edge.
+    c.beginPath();
+    c.moveTo(tailX-6*s,by+bh-2*s);c.lineTo(tailX+6*s,by+bh-2*s);c.lineTo(anchor[0],Math.min(topY-2*s,by+bh+9*s));c.closePath();
+    c.fillStyle='rgba(255,250,238,.97)';c.fill();
+    c.strokeStyle='rgba(70,54,40,.45)';c.lineWidth=Math.max(1,1.1*s);c.stroke();
+    c.beginPath();
+    c.moveTo(bx+r,by);
+    c.lineTo(bx+bw-r,by);c.arcTo(bx+bw,by,bx+bw,by+r,r);
+    c.lineTo(bx+bw,by+bh-r);c.arcTo(bx+bw,by+bh,bx+bw-r,by+bh,r);
+    c.lineTo(bx+r,by+bh);c.arcTo(bx,by+bh,bx,by+bh-r,r);
+    c.lineTo(bx,by+r);c.arcTo(bx,by,bx+r,by,r);
+    c.closePath();
+    c.fillStyle='rgba(255,250,238,.97)';c.fill();
+    c.strokeStyle='rgba(70,54,40,.45)';c.lineWidth=Math.max(1,1.1*s);c.stroke();
+    c.fillStyle='#2f2923';c.textAlign='center';c.textBaseline='middle';
+    lines.forEach(function(l,i){c.fillText(l,bx+bw/2,by+padY+lineH*(i+.5));});
+    c.restore();
+  }
+
   function drawSitMarker(item){
     if(!item||!item._bounds||avatar.sitting)return;
     var b=item._bounds,s=metrics.scale,x=(b.x0+b.x1)/2,y=b.y0-13*s,r=12*s;
@@ -1116,6 +1265,7 @@
       drawFurniture(ctx,i,false);
     });
     if(appMode==='play'&&!avatarDrawn)drawAvatar(ctx);
+    if(appMode==='play')drawChatBubble(ctx);
     if(appMode==='play'&&!avatar.sitting)drawSitMarker(nearbySeat());
     drawHover();
     drawDragFootprint();
@@ -1192,6 +1342,7 @@
     });
   }
   function buyTank(tier){
+    if(visiting)return;
     apiPost('/api/house/buy-tank',{tier:tier}).then(function(r){
       if(!r.ok){showToast(r.status===402?t('notEnoughGold'):(r.error||'error'));return;}
       gold=r.coins;updateGold();
@@ -1211,6 +1362,7 @@
   // client drops straight into placement mode. Aquariums keep their
   // AquaNim prices: buying one opens the game instead.
   function buyFurniture(type) {
+    if(visiting)return;
     apiPost('/api/house/buy', { item_type: type }).then(function (r) {
       if (!r.ok) {
         showToast(r.status === 402 ? t('notEnoughGold') : (r.error || 'error'));
@@ -1222,6 +1374,7 @@
     });
   }
   function buyAquariumOnAquaNim() {
+    if(visiting)return;
     window.open('https://aquanimgame.com','_blank');
   }
   // Play mode: tapping a placed aquarium opens its tank in AquaNim.
@@ -1258,9 +1411,17 @@
     } else if(item){ statusEl.textContent=t('selected')+nameOf(item.type);hintEl.textContent=t('hint'); }
     else { statusEl.textContent=t('choose');hintEl.textContent=t('hint'); }
   }
+  function visitBannerText(){
+    if(!visitOwnerName)return '';
+    return lang==='en' ? '🏠 '+visitOwnerName+"'s house" : '🏠 '+t('visitHouse')+visitOwnerName;
+  }
   function translateUI(){
-    document.documentElement.lang=lang==='pt'?'pt-BR':'en';
-    document.getElementById('langBtn').textContent=lang==='pt'?'EN':'PT';
+    document.documentElement.lang=lang==='pt'?'pt-BR':lang;
+    document.getElementById('langBtn').textContent=lang==='pt'?'EN':lang==='en'?'ES':'PT';
+    chatInput.placeholder=t('chatPlaceholder');
+    chatInput.setAttribute('aria-label','Chat');
+    chatSendBtn.textContent=t('chatSend');
+    visitBanner.textContent=visitBannerText();
     document.getElementById('modeBtnText').textContent=appMode==='play'?t('editMode'):t('playMode');
     sitBtnText.textContent=avatar.sitting?t('stand'):t('sit');
     joystick.setAttribute('aria-label',t('joystick'));
@@ -1367,6 +1528,11 @@
     if(appMode==='play'){
       var playHit=hitItem(p);
       var tankParam=playHit?tankParamFor(playHit):null;
+      if(tankParam&&visiting){
+        // A visited room is read-only: its aquariums never open or navigate.
+        showToast(t('visitReadOnly'));
+        pointerDown=null;return;
+      }
       if(tankParam){
         showToast(t('openingTank'));
         // Flush any pending save BEFORE navigating: the debounced auto-save
@@ -1424,6 +1590,9 @@
     return { roomDecorator: 1, items: items, avatar: avatarState, nextId: nextId };
   }
   function saveHouse() {
+    // Visit mode is strictly read-only: never write the owner's room (or
+    // the visitor's own saved room) from a visited URL.
+    if(visiting)return Promise.resolve(false);
     var el = document.getElementById('saveState');
     return apiPost('/api/house/save', { layout: housePayload() }).then(function (r) {
       if (el) el.textContent = r.ok ? t('saved') : '';
@@ -1432,6 +1601,7 @@
     });
   }
   function scheduleSave() {
+    if(visiting)return;
     var el = document.getElementById('saveState');
     if (el) el.textContent = t('saving');
     if (saveTimer) clearTimeout(saveTimer);
@@ -1482,8 +1652,43 @@
     if (Number.isFinite(Number(d.nextId))) nextId = Math.max(nextId, Math.floor(Number(d.nextId)));
     selectedId = null; selectedType = null;
   }
+  function setupVisitChrome() {
+    ['saveBtn','modeBtn','goldHud','mirrorTop','deleteTop'].forEach(function(id){
+      var el=document.getElementById(id); if(el)el.hidden=true;
+    });
+  }
+  function loadVisitHouse(done) {
+    setupVisitChrome();
+    apiGet('/api/house/visit/' + visitId).then(function (r) {
+      if (!r.ok) {
+        if (r.status === 401) document.getElementById('loginOverlay').hidden = false;
+        else if (r.status === 404) statusEl.textContent = t('visitNotFound');
+        done();
+        return;
+      }
+      visitOwnerName = r.username || '';
+      if (r.tanks) ownedTanks = r.tanks;
+      if (r.tank_fish) tankFish = r.tank_fish;
+      // The visitor's own look walks the room (NOT the owner's look).
+      if (r.visitor_look && /^(lyh|jeff|cat)$/.test(r.visitor_look)) {
+        loadAvatarSprites('/assets/looks/' + r.visitor_look + '/', 8, 4, 1, false);
+      }
+      var d = r.layout;
+      if (d && d.roomDecorator === 1 && Array.isArray(d.items)) applyLayout(d);
+      // Start as a guest in the room, not in the owner's saved pose/seat.
+      avatar.sitting = false; avatar.seatId = null;
+      avatar.path = []; avatar.target = null; avatar.moving = false;
+      avatar.facing = 1; avatar.north = false;
+      var spawn = nearestFreeTile(8.5, 8.5);
+      avatar.x = spawn.x + .5; avatar.y = spawn.y + .5;
+      visitBanner.textContent = visitBannerText();
+      visitBanner.hidden = false;
+      done();
+    });
+  }
   // Boot: load coins + saved layout from the server. 401 -> login overlay.
   function loadHouse(done) {
+    if (visiting) { loadVisitHouse(done); return; }
     apiGet('/api/house').then(function (r) {
       if (!r.ok) {
         if (r.status === 401) document.getElementById('loginOverlay').hidden = false;
@@ -1523,7 +1728,7 @@
   }
   ['mirrorBtn','mirrorTop'].forEach(function(id){document.getElementById(id).addEventListener('click',mirrorSelected)});
   ['deleteBtn','deleteTop'].forEach(function(id){document.getElementById(id).addEventListener('click',deleteSelected)});
-  document.getElementById('langBtn').addEventListener('click',function(){lang=lang==='pt'?'en':'pt';translateUI();draw();});
+  document.getElementById('langBtn').addEventListener('click',function(){lang=lang==='pt'?'en':lang==='en'?'es':'pt';try{localStorage.setItem('aquanim_lang',lang);}catch(e){}translateUI();draw();});
   document.querySelectorAll('.catalog-tab').forEach(function(tab){tab.addEventListener('click',function(){catalogCategory=tab.dataset.category;renderCatalog();});});
   document.getElementById('clearBtn').addEventListener('click',function(){
     if(!items.length)return;
@@ -1534,11 +1739,63 @@
   });
   undoBtn.addEventListener('click',function(){if(lastCleared){items=lastCleared;lastCleared=null;nextId=Math.max.apply(null,items.map(function(i){return i.id}).concat([0]))+1;draw();showToast(t('restored'));scheduleSave();}});
 
-  modeBtn.addEventListener('click',function(){setMode(appMode==='play'?'edit':'play');});
-  document.getElementById('backBtn').addEventListener('click',function(){if(saveTimer){clearTimeout(saveTimer);saveTimer=null;}saveHouse().then(function(){location.href='/';});});
-  document.getElementById('saveBtn').addEventListener('click',function(){if(saveTimer){clearTimeout(saveTimer);saveTimer=null;}saveHouse();showToast(t('saving'));});
+  chatInput.addEventListener('input',function(){
+    var v=chatInput.value;
+    if(v){chat.text=v;chat.until=0;}
+    else {chat.text='';chat.until=0;}
+    draw();
+  });
+  chatInput.addEventListener('blur',function(){
+    // Left the field without sending: keep the bubble briefly, then fade.
+    if(chat.text&&!chat.until)chat.until=Date.now()+2500;
+  });
+  // Keyboard lift: the chat bar lives at the bottom of the room, and on
+  // phones the on-screen keyboard would cover it (iOS doesn't shrink the
+  // layout for the keyboard). While the input is focused, translate the
+  // bar up by the amount of the layout viewport hidden below the visual
+  // viewport, so it rides up with the keyboard and settles back down
+  // when the keyboard closes. On browsers that do resize the layout for
+  // the keyboard (interactive-widget=resizes-content), the hidden amount
+  // is ~0 and the bar simply stays where the layout puts it.
+  function syncChatLift(){
+    var vv=window.visualViewport;
+    if(!vv||document.activeElement!==chatInput){chatForm.style.transform='';chatForm.classList.remove('kb-lift');return;}
+    var lift=Math.max(0,window.innerHeight-vv.height-vv.offsetTop);
+    if(lift>60){
+      chatForm.style.transform='translateY('+(-lift)+'px)';
+      chatForm.classList.add('kb-lift');
+    } else {
+      chatForm.style.transform='';chatForm.classList.remove('kb-lift');
+    }
+  }
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize',syncChatLift);
+    window.visualViewport.addEventListener('scroll',syncChatLift);
+  }
+  chatInput.addEventListener('focus',function(){
+    // The keyboard animates in over a few frames; re-sync as it settles.
+    setTimeout(syncChatLift,80);setTimeout(syncChatLift,350);
+  });
+  chatInput.addEventListener('blur',function(){
+    chatForm.style.transform='';chatForm.classList.remove('kb-lift');
+  });
+  chatForm.addEventListener('submit',function(ev){
+    ev.preventDefault();
+    var msg=chatInput.value.trim();
+    if(msg){
+      if(appMode!=='play')setMode('play');
+      chat.text=msg;
+      chat.until=Date.now()+Math.min(9000,2600+msg.length*110);
+    }
+    chatInput.value='';chatInput.blur();draw();
+  });
+
+  modeBtn.addEventListener('click',function(){if(visiting)return;setMode(appMode==='play'?'edit':'play');});
+  document.getElementById('backBtn').addEventListener('click',function(){if(visiting){location.href='/';return;}if(saveTimer){clearTimeout(saveTimer);saveTimer=null;}saveHouse().then(function(){location.href='/';});});
+  document.getElementById('saveBtn').addEventListener('click',function(){if(visiting)return;if(saveTimer){clearTimeout(saveTimer);saveTimer=null;}saveHouse();showToast(t('saving'));});
   sitBtn.addEventListener('click',function(ev){ev.stopPropagation();sitOrStand();});
   window.addEventListener('keydown',function(ev){
+    if(document.activeElement===chatInput)return;
     var k=ev.key.length===1?ev.key.toLowerCase():ev.key;if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','w','a','s','d'].indexOf(k)<0)return;
     if(appMode==='play'){ev.preventDefault();keys[k]=true;if(avatar.sitting)stopSitting();avatar.path=[];avatar.target=null;}
   });

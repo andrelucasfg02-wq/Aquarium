@@ -1833,6 +1833,34 @@ module.exports = function gameRoutes(db) {
     res.json({ ok: true, layout, coins: (w && w.coins) || 0, tanks: houseTanksJson(tk), tank_fish, look: (u && u.look) || '' });
   }));
 
+  // Read-only visit to another player's house. The response mirrors the
+  // fields the house page needs for the OWNER's room (layout, owned tanks
+  // and fish per tank instance), plus the owner's username for the banner.
+  // `visitor_look` is intentionally the REQUESTER's look: the visitor's own
+  // avatar is the one that walks around the visited room.
+  r.get('/house/visit/:id', ah(async (req, res) => {
+    const ownerId = Number.parseInt(req.params.id, 10);
+    if (!Number.isInteger(ownerId) || ownerId <= 0)
+      return res.status(404).json({ ok: false, error: 'user not found' });
+    const owner = await db.get('SELECT id, name FROM users WHERE id=?', ownerId);
+    if (!owner) return res.status(404).json({ ok: false, error: 'user not found' });
+    const row = await db.get('SELECT layout FROM house_layout WHERE user_id=?', ownerId);
+    const tk = await H.getTanks(ownerId);
+    const visitor = await db.get('SELECT look FROM users WHERE id=?', req.user.id);
+    let layout = null;
+    if (row && row.layout) {
+      try { layout = JSON.parse(row.layout); } catch (e) { layout = null; }
+    }
+    const fishRows = await db.all(
+      "SELECT tank, tank_num, COUNT(*) c FROM fish WHERE user_id=? AND location='tank' GROUP BY tank, tank_num", ownerId);
+    const tank_fish = {};
+    for (const fr of fishRows) tank_fish[fr.tank + ':' + (fr.tank_num || 1)] = fr.c;
+    res.json({
+      ok: true, owner_id: owner.id, username: owner.name || '', layout,
+      tanks: houseTanksJson(tk), tank_fish, visitor_look: (visitor && visitor.look) || '',
+    });
+  }));
+
   // Auto-save the house layout (client debounces calls). Validates aquarium
   // placement against owned tanks, and blocks removing a tank that has fish.
   r.post('/house/save', ah(async (req, res) => {

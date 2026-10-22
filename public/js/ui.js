@@ -1599,7 +1599,8 @@ const UI = (() => {
         <div id="prof-guestbook"><div class="empty">${t("common.loading")}</div></div>`;
     } else {
       html += `<div class="prof-actions">
-          <button class="pill-btn" id="prof-visit">🐠 ${t("profile.visit")}</button>`;
+          <button class="pill-btn" id="prof-visit">🐠 ${t("profile.visit")}</button>
+          <button class="pill-btn" id="prof-visit-house">🏠 ${t("profile.visit_house")}</button>`;
       if (p.relation === "accepted") html += `<button class="pill-btn" id="prof-rm">${t("friends.remove")}</button>`;
       html += `</div>`;
     }
@@ -1646,6 +1647,7 @@ const UI = (() => {
       };
     } else {
       $("prof-visit").onclick = () => { visitId = p.id; visitName = p.name; open("visit"); };
+      $("prof-visit-house").onclick = () => { location.href = `/house/?visit=${p.id}`; };
       const b = $("prof-rm");
       if (b) b.onclick = async () => {
         b.disabled = true;

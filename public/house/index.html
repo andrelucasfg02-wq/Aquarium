@@ -476,6 +476,16 @@
   var visitId = visitParam && /^\d+$/.test(visitParam) ? Number(visitParam) : null;
   var visiting = visitId != null && visitId > 0;
   var visitOwnerName = '';
+  // Multiplayer presence: other players in this same room (owner at home,
+  // visitors), keyed by user_id. The server is serverless, so presence is
+  // a ~1.5s DB heartbeat (POST /api/house/presence) whose response carries
+  // the peer list. roomHouseId = the room owner's user id (visit target,
+  // or my own id at home); learned at load time.
+  var peers = {};
+  var peerSprites = {};
+  var roomHouseId = visiting ? visitId : null;
+  var myUserId = null;
+  var presenceTimer = null;
 
   var lang = 'pt';
   try {
@@ -695,14 +705,27 @@
     }
   };
   AQUA_ORDER.concat(WOOD_ORDER).forEach(function(type){var im=new Image();im.onload=draw;im.src=TYPES[type].image;OCEAN_IMAGES[type]=im;});
+  // Sprite sets: one for my avatar (avatarImages) plus one cached set per
+  // peer look, so other players render with their own look's art.
+  function loadSpriteSet(set, base, walkN, idleN, sitN, hasBack) {
+    set.walk = []; set.idle = []; set.sit = [];
+    for(var avi=0;avi<walkN;avi++){var wi=new Image();wi.onload=draw;wi.src=base+'walk_'+avi+'.png';set.walk.push(wi);}
+    for(var aii=0;aii<idleN;aii++){var ii=new Image();ii.onload=draw;ii.src=base+'idle_'+aii+'.png';set.idle.push(ii);}
+    for(var asi=0;asi<sitN;asi++){var si=new Image();si.onload=draw;si.src=base+'sit'+(sitN>1?'_'+asi:'')+'.png';set.sit.push(si);}
+    if (hasBack) { set.back=new Image();set.back.onload=draw;set.back.src=base+'back.png'; }
+    else set.back = null;
+    set.walkN = walkN; set.idleN = idleN;
+  }
   function loadAvatarSprites(base, walkN, idleN, sitN, hasBack) {
-    avatarImages.walk = []; avatarImages.idle = []; avatarImages.sit = [];
-    for(var avi=0;avi<walkN;avi++){var wi=new Image();wi.onload=draw;wi.src=base+'walk_'+avi+'.png';avatarImages.walk.push(wi);}
-    for(var aii=0;aii<idleN;aii++){var ii=new Image();ii.onload=draw;ii.src=base+'idle_'+aii+'.png';avatarImages.idle.push(ii);}
-    for(var asi=0;asi<sitN;asi++){var si=new Image();si.onload=draw;si.src=base+'sit'+(sitN>1?'_'+asi:'')+'.png';avatarImages.sit.push(si);}
-    if (hasBack) { avatarImages.back=new Image();avatarImages.back.onload=draw;avatarImages.back.src=base+'back.png'; }
-    else avatarImages.back = null;
-    avatarImages.walkN = walkN; avatarImages.idleN = idleN;
+    loadSpriteSet(avatarImages, base, walkN, idleN, sitN, hasBack);
+  }
+  function spriteSetForLook(look) {
+    if (look && /^(lyh|jeff|cat)$/.test(look)) {
+      if (!peerSprites[look]) { peerSprites[look] = {}; loadSpriteSet(peerSprites[look], '/assets/looks/' + look + '/', 8, 4, 1, false); }
+      return peerSprites[look];
+    }
+    if (!peerSprites.__fallback) { peerSprites.__fallback = {}; loadSpriteSet(peerSprites.__fallback, 'assets/avatar/', 8, 5, 2, true); }
+    return peerSprites.__fallback;
   }
   loadAvatarSprites('assets/avatar/', 8, 5, 2, true);
 
@@ -1142,6 +1165,126 @@
     if(!avatar.north&&avatar.facing<0){c.translate(anchor[0],0);c.scale(-1,1);c.drawImage(im,-drawW/2,anchor[1]-drawH,drawW,drawH);}else c.drawImage(im,anchor[0]-drawW/2,anchor[1]-drawH,drawW,drawH);
     c.restore();
   }
+  // Peer avatars: same sprite machinery as drawAvatar, but stateless — the
+  // state (position/facing/north/sitting) comes from the peer's heartbeat,
+  // and rx/ry is the smoothed render position eased toward it each frame.
+  function peerDrawHeight(p,s){
+    if(p.state==='sit')return 68*s*AVATAR_SPRITE_SCALE;
+    if(p.moving&&p.north&&spriteSetForLook(p.look).back)return 92*s*AVATAR_SPRITE_SCALE;
+    if(p.moving)return 90*s*AVATAR_SPRITE_SCALE;
+    return 94*s*AVATAR_SPRITE_SCALE;
+  }
+  function drawPeerAvatar(c,p){
+    var set=spriteSetForLook(p.look),s=metrics.scale,anchor=iso(p.rx,p.ry,0),im,drawH=peerDrawHeight(p,s);
+    if(p.state==='sit'){im=set.sit[0];anchor[1]-=2*s;}
+    else if(p.moving&&p.north&&set.back){im=set.back;}
+    else if(p.moving){var frame=Math.floor(p.frame)%(set.walkN||8);im=set.walk[frame];}
+    else {im=set.idle[0];}
+    if(!im||!im.complete||!im.naturalWidth)return;
+    var drawW=drawH*(im.naturalWidth/im.naturalHeight);c.save();c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';
+    if(!p.north&&p.dir<0){c.translate(anchor[0],0);c.scale(-1,1);c.drawImage(im,-drawW/2,anchor[1]-drawH,drawW,drawH);}else c.drawImage(im,anchor[0]-drawW/2,anchor[1]-drawH,drawW,drawH);
+    c.restore();
+  }
+  // Name label + chat bubble above each peer's head, drawn over the room
+  // (like my own bubble) so furniture never covers what they're saying.
+  function drawPeerOverlays(c){
+    var s=metrics.scale,nowSec=Date.now()/1000;
+    Object.keys(peers).forEach(function(k){
+      var p=peers[k],anchor=iso(p.rx,p.ry,0);
+      var headTop=anchor[1]-peerDrawHeight(p,s)-(p.state==='sit'?2*s:0);
+      if(p.username){
+        c.save();
+        c.font='700 '+Math.round(11*s)+'px "Nunito Sans", ui-rounded, sans-serif';
+        var nw=c.measureText(p.username).width,padX=6*s,bw=nw+padX*2,bh=15*s;
+        var bx=Math.max(3*s,Math.min(canvas.width-bw-3*s,anchor[0]-bw/2)),by=Math.max(3*s,headTop-bh-3*s);
+        c.beginPath();
+        if(c.roundRect)c.roundRect(bx,by,bw,bh,7*s);else c.rect(bx,by,bw,bh);
+        c.fillStyle='rgba(38,32,26,.55)';c.fill();
+        c.fillStyle='#fff8ec';c.textAlign='center';c.textBaseline='middle';
+        c.fillText(p.username,bx+bw/2,by+bh/2+0.5);
+        c.restore();
+        headTop=by-2*s;
+      }
+      if(p.chat_text&&p.chat_until&&p.chat_until>nowSec){
+        drawBubbleText(c,p.chat_text,anchor[0],headTop);
+      }
+    });
+  }
+  // Ease peers toward their latest heartbeat position at walk speed and
+  // derive facing/north/walk-frames from the motion, mirroring moveAvatar.
+  function updatePeers(dt){
+    var anyMoved=false,speed=.005*dt;
+    Object.keys(peers).forEach(function(k){
+      var p=peers[k];
+      if(p.state==='sit'){p.moving=false;return;}
+      var dx=p.x-p.rx,dy=p.y-p.ry,dist=Math.hypot(dx,dy);
+      if(dist>3){p.rx=p.x;p.ry=p.y;p.moving=false;return;} // teleport: snap
+      if(dist<=.015){p.moving=false;return;}
+      var step=Math.min(dist,speed);
+      var ux=dx/dist,uy=dy/dist;
+      p.rx+=ux*step;p.ry+=uy*step;
+      p.moving=true;p.north=uy<-.35;
+      var screenDx=ux-uy;if(Math.abs(screenDx)>.1)p.dir=screenDx>0?1:-1;
+      var now=performance.now();
+      if(now-p.frameAt>82){p.frame=(p.frame+1)%8;p.frameAt=now;}
+      anyMoved=true;
+    });
+    return anyMoved;
+  }
+  // ---------- multiplayer presence (heartbeat + peer sync) ----------
+  function presenceState(){
+    var chatActive=!!(chat.text&&chat.until&&Date.now()<chat.until);
+    return {
+      house_id: roomHouseId,
+      x: Math.round(avatar.x*100)/100, y: Math.round(avatar.y*100)/100,
+      dir: avatar.facing, north: avatar.north ? 1 : 0,
+      state: avatar.sitting ? 'sit' : (avatar.moving ? 'walk' : 'idle'),
+      chat_text: chatActive ? chat.text : '',
+      chat_until: chatActive ? Math.floor(chat.until/1000) : 0
+    };
+  }
+  function syncPeers(list){
+    var seen={};
+    list.forEach(function(pl){
+      if(myUserId!=null&&pl.user_id===myUserId)return;
+      seen[pl.user_id]=1;
+      var p=peers[pl.user_id];
+      if(!p){
+        p=peers[pl.user_id]={user_id:pl.user_id,rx:pl.x,ry:pl.y,frame:0,frameAt:0,moving:false,dir:1,north:false};
+      }
+      p.username=pl.username||'';p.look=pl.look||'';
+      p.x=pl.x;p.y=pl.y;
+      p.state=pl.state||'idle';
+      if(p.state==='sit'){p.rx=pl.x;p.ry=pl.y;p.moving=false;p.dir=pl.dir<0?-1:1;p.north=!!pl.north;}
+      else if(!p.moving){p.dir=pl.dir<0?-1:1;p.north=!!pl.north;}
+      p.chat_text=pl.chat_text||'';p.chat_until=pl.chat_until||0;
+    });
+    Object.keys(peers).forEach(function(k){if(!seen[k])delete peers[k];});
+    draw();
+  }
+  function presenceBeat(){
+    if(roomHouseId==null)return;
+    apiPost('/api/house/presence',presenceState()).then(function(r){
+      if(r&&r.ok&&Array.isArray(r.players))syncPeers(r.players);
+    });
+  }
+  function startPresence(){
+    if(roomHouseId==null||presenceTimer)return;
+    presenceBeat();
+    presenceTimer=setInterval(presenceBeat,1500);
+  }
+  function presenceLeave(){
+    if(roomHouseId==null)return;
+    var url='/api/house/presence/leave';
+    try{
+      if(navigator.sendBeacon&&navigator.sendBeacon(url,new Blob(['{}'],{type:'application/json'})))return;
+    }catch(e){/* fall through to fetch */}
+    try{
+      fetch(url,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:'{}',keepalive:true});
+    }catch(e){/* best effort only */}
+  }
+  window.addEventListener('pagehide',presenceLeave);
+  window.addEventListener('beforeunload',presenceLeave);
   function setMode(mode){
     if(visiting)mode='play';
     appMode=mode;document.body.classList.toggle('play-mode',mode==='play');playControls.hidden=mode!=='play';
@@ -1166,6 +1309,7 @@
   function animateAvatar(now){
     var dt=avatar.lastAt?Math.min(40,now-avatar.lastAt):16;avatar.lastAt=now;var moved=moveAvatar(dt);
     if(avatar.moving&&now-avatar.frameAt>82){avatar.frame=(avatar.frame+1)%8;avatar.frameAt=now;moved=true;}
+    if(updatePeers(dt))moved=true;
     if(moved||now-lastAvatarDraw>450){lastAvatarDraw=now;updateSitButton();draw();}
     requestAnimationFrame(animateAvatar);
   }
@@ -1202,10 +1346,16 @@
     if(!chat.text)return;
     if(chat.until&&Date.now()>chat.until){chat.text='';chat.until=0;return;}
     var s=metrics.scale,anchor=iso(avatar.x,avatar.y,0);
-    var topY=anchor[1]-chatAvatarHeight(s);
+    drawBubbleText(c,chat.text,anchor[0],anchor[1]-chatAvatarHeight(s));
+  }
+  // Speech bubble with its tail pointing at (anchorX, topY): topY is the
+  // top of the speaker's head, the bubble floats just above it. Shared by
+  // my avatar and by peers (their bubbles sit above their name label).
+  function drawBubbleText(c,text,anchorX,topY){
+    var s=metrics.scale;
     c.save();
     c.font='750 '+Math.round(13*s)+'px "Nunito Sans", ui-rounded, sans-serif';
-    var maxW=168*s,words=String(chat.text).split(/\s+/),lines=[],line='';
+    var maxW=168*s,words=String(text).split(/\s+/),lines=[],line='';
     words.forEach(function(w){
       var test=line?line+' '+w:w;
       if(line&&c.measureText(test).width>maxW){lines.push(line);line=w;}
@@ -1216,13 +1366,13 @@
     var lineH=17*s,padX=10*s,padY=7*s,textW=0;
     lines.forEach(function(l){textW=Math.max(textW,c.measureText(l).width);});
     var bw=textW+padX*2,bh=lines.length*lineH+padY*2;
-    var bx=Math.max(4*s,Math.min(canvas.width-bw-4*s,anchor[0]-bw/2));
+    var bx=Math.max(4*s,Math.min(canvas.width-bw-4*s,anchorX-bw/2));
     var by=Math.max(4*s,topY-bh-11*s);
-    var tailX=Math.max(bx+13*s,Math.min(bx+bw-13*s,anchor[0]));
+    var tailX=Math.max(bx+13*s,Math.min(bx+bw-13*s,anchorX));
     var r=9*s;
     // Tail first so the bubble body covers its top edge.
     c.beginPath();
-    c.moveTo(tailX-6*s,by+bh-2*s);c.lineTo(tailX+6*s,by+bh-2*s);c.lineTo(anchor[0],Math.min(topY-2*s,by+bh+9*s));c.closePath();
+    c.moveTo(tailX-6*s,by+bh-2*s);c.lineTo(tailX+6*s,by+bh-2*s);c.lineTo(anchorX,Math.min(topY-2*s,by+bh+9*s));c.closePath();
     c.fillStyle='rgba(255,250,238,.97)';c.fill();
     c.strokeStyle='rgba(70,54,40,.45)';c.lineWidth=Math.max(1,1.1*s);c.stroke();
     c.beginPath();
@@ -1260,12 +1410,21 @@
       return (la+a.x+a.y)-(lb+b.x+b.y) || (a.x-b.x);
     });
     var avatarDepth=avatar.x+avatar.y,avatarDrawn=false;
+    // Peers depth-sort with the furniture exactly like my avatar does:
+    // each peer is drawn just before the first floor piece in front of it.
+    var peerList=appMode==='play'?Object.keys(peers).map(function(k){return peers[k];}).sort(function(a,b){return (a.rx+a.ry)-(b.rx+b.ry);}):[];
+    var peerIdx=0;
     floors.forEach(function(i){
       if(appMode==='play'&&!avatar.sitting&&!avatarDrawn&&TYPES[i.type].layer!=='rug'&&i.x+i.y>avatarDepth){drawAvatar(ctx);avatarDrawn=true;}
+      if(appMode==='play'&&TYPES[i.type].layer!=='rug'){
+        while(peerIdx<peerList.length&&(peerList[peerIdx].rx+peerList[peerIdx].ry)<i.x+i.y){drawPeerAvatar(ctx,peerList[peerIdx]);peerIdx++;}
+      }
       drawFurniture(ctx,i,false);
     });
     if(appMode==='play'&&!avatarDrawn)drawAvatar(ctx);
+    if(appMode==='play'){while(peerIdx<peerList.length){drawPeerAvatar(ctx,peerList[peerIdx]);peerIdx++;}}
     if(appMode==='play')drawChatBubble(ctx);
+    if(appMode==='play')drawPeerOverlays(ctx);
     if(appMode==='play'&&!avatar.sitting)drawSitMarker(nearbySeat());
     drawHover();
     drawDragFootprint();
@@ -1667,6 +1826,8 @@
         return;
       }
       visitOwnerName = r.username || '';
+      roomHouseId = r.owner_id || visitId;
+      myUserId = r.visitor_id || null;
       if (r.tanks) ownedTanks = r.tanks;
       if (r.tank_fish) tankFish = r.tank_fish;
       // The visitor's own look walks the room (NOT the owner's look).
@@ -1696,6 +1857,8 @@
         return;
       }
       gold = Math.max(0, Math.floor(Number(r.coins) || 0));
+      myUserId = r.user_id || null;
+      roomHouseId = r.user_id || null;
       if(r.tanks)ownedTanks=r.tanks;
       if(r.tank_fish)tankFish=r.tank_fish;
       // Load the player's chosen look for the house avatar (falls back to cat)
@@ -1786,6 +1949,9 @@
       if(appMode!=='play')setMode('play');
       chat.text=msg;
       chat.until=Date.now()+Math.min(9000,2600+msg.length*110);
+      // Push the sent bubble to peers right away instead of waiting for
+      // the next scheduled heartbeat.
+      presenceBeat();
     }
     chatInput.value='';chatInput.blur();draw();
   });
@@ -1813,7 +1979,7 @@
 
   var mq=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)');if(mq&&mq.addEventListener)mq.addEventListener('change',draw);
   window.addEventListener('resize',resize);
-  loadHouse(function(){updateGold();renderCatalog();translateUI();setMode('play');resize();requestAnimationFrame(animateAvatar);});
+  loadHouse(function(){updateGold();renderCatalog();translateUI();setMode('play');resize();requestAnimationFrame(animateAvatar);startPresence();});
 })();
 </script>
 </body>

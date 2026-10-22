@@ -99,6 +99,15 @@ const SCHEMA = `
     -- house (Casa): isometric room layout per user, saved as JSON
     CREATE TABLE IF NOT EXISTS house_layout(
       user_id INTEGER PRIMARY KEY, layout TEXT, updated_at INTEGER);
+    -- house multiplayer presence: one row per player currently inside a
+    -- house (house_id = the room OWNER's user id). Clients heartbeat ~1.5s;
+    -- readers filter by updated_at so stale rows vanish without a cron.
+    CREATE TABLE IF NOT EXISTS house_presence(
+      user_id INTEGER PRIMARY KEY, house_id INTEGER NOT NULL,
+      x REAL, y REAL, dir INTEGER NOT NULL DEFAULT 1,
+      north INTEGER NOT NULL DEFAULT 0, state TEXT,
+      chat_text TEXT, chat_until INTEGER, updated_at INTEGER);
+    CREATE INDEX IF NOT EXISTS idx_house_presence_house ON house_presence(house_id, updated_at);
     CREATE TABLE IF NOT EXISTS friends(
       user_id INTEGER, friend_id INTEGER, status TEXT, created_at INTEGER,
       PRIMARY KEY(user_id, friend_id));

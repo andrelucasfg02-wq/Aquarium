@@ -1883,7 +1883,7 @@ module.exports = function gameRoutes(db) {
       "SELECT tank, tank_num, COUNT(*) c FROM fish WHERE user_id=? AND location='tank' GROUP BY tank, tank_num", uid);
     const tank_fish = {};
     for (const fr of fishRows) tank_fish[fr.tank + ':' + (fr.tank_num || 1)] = fr.c;
-    res.json({ ok: true, layout, coins: (w && w.coins) || 0, tanks: houseTanksJson(tk), tank_fish, look: (u && u.look) || '' });
+    res.json({ ok: true, user_id: uid, layout, coins: (w && w.coins) || 0, tanks: houseTanksJson(tk), tank_fish, look: (u && u.look) || '' });
   }));
 
   // Read-only visit to another player's house. The response mirrors the
@@ -1911,7 +1911,81 @@ module.exports = function gameRoutes(db) {
     res.json({
       ok: true, owner_id: owner.id, username: owner.name || '', layout,
       tanks: houseTanksJson(tk), tank_fish, visitor_look: (visitor && visitor.look) || '',
+      visitor_id: req.user.id,
     });
+  }));
+
+  // ---------- house multiplayer presence ----------
+  // The API is serverless (no WebSocket server), so presence is DB polling:
+  // each client heartbeats its avatar state ~every 1.5s and the heartbeat
+  // response carries the OTHER players currently in the same house. A row
+  // counts as "here" for PRESENCE_STALE seconds after its last heartbeat;
+  // stale rows are filtered at read time (no cron) and leaving the page
+  // deletes the row immediately via /house/presence/leave.
+  const PRESENCE_STALE = 12; // seconds
+  const PRESENCE_MAX_CHAT = 140;
+  r.post('/house/presence', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const b = req.body || {};
+    const houseId = Number.parseInt(b.house_id, 10);
+    if (!Number.isInteger(houseId) || houseId <= 0)
+      return res.status(404).json({ ok: false, error: 'user not found' });
+    const owner = await db.get('SELECT id FROM users WHERE id=?', houseId);
+    if (!owner) return res.status(404).json({ ok: false, error: 'user not found' });
+    // Avatar state in the house page's tile space (0..10 room coordinates).
+    const clampPos = (v) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? Math.max(0, Math.min(10, n)) : 0;
+    };
+    const x = clampPos(b.x), y = clampPos(b.y);
+    const dir = Number(b.dir) < 0 ? -1 : 1;
+    const north = b.north ? 1 : 0;
+    const state = ['idle', 'walk', 'sit'].includes(b.state) ? b.state : 'idle';
+    // Sent chat text rides the heartbeat so peers see the same bubble.
+    // The expiry is client-provided but clamped to a short future window
+    // so a bad clock can't pin a bubble up forever.
+    let chatText = null, chatUntil = null;
+    if (typeof b.chat_text === 'string') {
+      const ct = b.chat_text.trim().slice(0, PRESENCE_MAX_CHAT);
+      const cu = Math.floor(Number(b.chat_until));
+      if (ct && Number.isFinite(cu) && cu > t) {
+        chatText = ct;
+        chatUntil = Math.min(cu, t + 15);
+      }
+    }
+    await db.run(`INSERT INTO house_presence
+        (user_id, house_id, x, y, dir, north, state, chat_text, chat_until, updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(user_id) DO UPDATE SET
+          house_id=excluded.house_id, x=excluded.x, y=excluded.y,
+          dir=excluded.dir, north=excluded.north, state=excluded.state,
+          chat_text=excluded.chat_text, chat_until=excluded.chat_until,
+          updated_at=excluded.updated_at`,
+      uid, houseId, x, y, dir, north, state, chatText, chatUntil, t);
+    const rows = await db.all(
+      `SELECT p.user_id, u.name AS username, u.look AS look, p.x, p.y, p.dir,
+              p.north, p.state, p.chat_text, p.chat_until
+         FROM house_presence p JOIN users u ON u.id = p.user_id
+        WHERE p.house_id=? AND p.user_id<>? AND p.updated_at>=?
+        ORDER BY p.user_id LIMIT 20`, houseId, uid, t - PRESENCE_STALE);
+    const players = rows.map((row) => {
+      const chatActive = !!(row.chat_text && row.chat_until && row.chat_until > t);
+      return {
+        user_id: row.user_id, username: row.username || '', look: row.look || '',
+        x: row.x, y: row.y, dir: row.dir < 0 ? -1 : 1, north: !!row.north,
+        state: row.state || 'idle',
+        chat_text: chatActive ? row.chat_text : null,
+        chat_until: chatActive ? row.chat_until : null,
+      };
+    });
+    res.json({ ok: true, players });
+  }));
+
+  // Immediate leave (page hide/close); stale-row filtering covers the rest.
+  // Body may be empty (sendBeacon) — that's fine.
+  r.post('/house/presence/leave', ah(async (req, res) => {
+    await db.run('DELETE FROM house_presence WHERE user_id=?', req.user.id);
+    res.json({ ok: true });
   }));
 
   // Auto-save the house layout (client debounces calls). Validates aquarium

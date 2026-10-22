@@ -1547,8 +1547,59 @@ const UI = (() => {
   }
   function avatarHtml(p, cls) {
     if (p.avatar_url) return `<img class="${cls || "prof-avatar"}" src="${esc(p.avatar_url)}" alt="">`;
-    if (p.look) return `<img class="${cls || "prof-avatar"}" src="assets/looks/${esc(p.look)}/portrait.png" alt="">`;
+    if (p.avatar && typeof AvatarSystem !== "undefined") return AvatarSystem.portraitHTML(p.avatar, cls || "prof-avatar");
     return `<div class="${cls || "prof-avatar"}">${esc((p.name || "?").trim().charAt(0).toUpperCase())}</div>`;
+  }
+  /* Chibi avatar editor modal (shared AvatarSystem editor; same modal as
+     the house). Changes preview live; Done saves via POST /api/me/avatar
+     and the profile re-renders with the new portrait. */
+  let avatarEditor = null;
+  function ensureAvatarModal() {
+    if (document.getElementById("avatar-modal")) return;
+    const wrap = document.createElement("div");
+    wrap.innerHTML = `
+    <div class="avatar-modal" id="avatar-modal" hidden role="dialog" aria-modal="true" aria-labelledby="av-title">
+      <div class="avatar-card">
+        <div class="avatar-head">
+          <strong id="av-title">${esc(t("avatar.title"))}</strong>
+          <button class="pill-btn" id="avatar-random" type="button">🎲 ${esc(t("avatar.random"))}</button>
+          <button class="pill-btn" id="avatar-close" type="button" aria-label="×">×</button>
+        </div>
+        <div class="avatar-stage" id="avatar-stage"></div>
+        <div class="av-tabs" role="tablist" aria-label="Avatar">
+          ${AvatarSystem.TABS.map((tb) => `<button class="av-tab" data-avtab="${tb.id}" role="tab" aria-selected="false" type="button"></button>`).join("")}
+        </div>
+        <div id="avatar-panels"></div>
+        <div class="avatar-actions"><button class="pill-btn" id="avatar-done" type="button">${esc(t("avatar.done"))}</button></div>
+      </div>
+    </div>`;
+    document.body.appendChild(wrap.firstElementChild);
+    const modal = document.getElementById("avatar-modal");
+    avatarEditor = AvatarSystem.createEditor({
+      stageEl: document.getElementById("avatar-stage"),
+      panelsEl: document.getElementById("avatar-panels"),
+      tabEls: Array.from(modal.querySelectorAll(".av-tab")),
+      lang: () => (window.I18N ? I18N.lang : "en"),
+      cfg: AvatarSystem.DEFAULT,
+      onChange: () => {}
+    });
+    document.getElementById("avatar-random").onclick = () => avatarEditor.randomize();
+    document.getElementById("avatar-close").onclick = () => { modal.hidden = true; };
+    modal.addEventListener("click", (ev) => { if (ev.target === modal) modal.hidden = true; });
+    document.getElementById("avatar-done").onclick = async () => {
+      const rr = await Api.setAvatar(avatarEditor.getConfig());
+      modal.hidden = true;
+      if (rr.ok) { toast(t("profile.avatar_saved")); await App.refresh(); renderProfile(); }
+      else toast(rr.error || t("profile.error"));
+    };
+  }
+  function openAvatarModal(cfg) {
+    ensureAvatarModal();
+    document.getElementById("av-title").textContent = t("avatar.title");
+    document.getElementById("avatar-random").textContent = "🎲 " + t("avatar.random");
+    document.getElementById("avatar-done").textContent = t("avatar.done");
+    avatarEditor.setConfig(cfg || AvatarSystem.DEFAULT);
+    document.getElementById("avatar-modal").hidden = false;
   }
   async function renderProfile() {
     const body = $("screen-body");
@@ -1587,12 +1638,10 @@ const UI = (() => {
           <input id="prof-bio" maxlength="160" value="${esc(p.bio || "")}" placeholder="${t("profile.bio_ph")}" autocomplete="off">
           <button class="pill-btn" id="prof-biosave">${t("profile.save")}</button>
         </div>
-        <div class="sec-title">✨ ${t("profile.look")}</div>
-        <div class="look-options prof-looks">
-          ${["lyh", "jeff", "cat"].map((l) => `
-            <button type="button" class="look-opt${p.look === l ? " selected" : ""}" data-look="${l}">
-              <img src="assets/looks/${l}/portrait.png" alt="${l}"><span>${l.charAt(0).toUpperCase() + l.slice(1)}</span>
-            </button>`).join("")}
+        <div class="sec-title">🧍 ${t("profile.avatar")}</div>
+        <div class="prof-avatar-edit">
+          ${p.avatar_url ? `` : avatarHtml(p, "prof-avatar prof-avatar-mini")}
+          <button class="pill-btn" id="prof-avatar-edit" type="button">🧍 ${t("profile.customize")}</button>
         </div>` : ``}
       <div class="prof-grid">` +
       stats.map((s) => `<div class="card prof-stat"><div class="pv-ic">${s.ic}</div><div class="pv">${s.v}</div><div class="sub">${s.l}</div></div>`).join("") +
@@ -1639,13 +1688,7 @@ const UI = (() => {
         if (rr.ok) { toast(t("profile.bio_saved")); renderProfile(); }
         else toast(rr.error || t("profile.error"));
       };
-      document.querySelectorAll(".prof-looks .look-opt").forEach((btn) => {
-        btn.onclick = async () => {
-          const rr = await Api.setLook(btn.dataset.look);
-          if (rr.ok) { toast(t("profile.look_saved")); renderProfile(); }
-          else toast(rr.error || t("profile.error"));
-        };
-      });
+      $("prof-avatar-edit").onclick = () => openAvatarModal(p.avatar);
       $("prof-photo").onclick = () => $("prof-file").click();
       $("prof-file").onchange = async (e) => {
         const f = e.target.files && e.target.files[0];

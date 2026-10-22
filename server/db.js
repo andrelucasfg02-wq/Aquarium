@@ -191,6 +191,11 @@ async function openDb() {
     if (!ucols.rows.some((c) => c.name === 'look')) {
       await client.execute("ALTER TABLE users ADD COLUMN look TEXT NOT NULL DEFAULT ''");
     }
+    // chibi avatar config (JSON). NOT users.avatar — that older column is
+    // the uploaded profile photo (data URL). NULL = the default look.
+    if (!ucols.rows.some((c) => c.name === 'avatar_cfg')) {
+      await client.execute('ALTER TABLE users ADD COLUMN avatar_cfg TEXT');
+    }
     if (!ucols.rows.some((c) => c.name === 'bio')) {
       await client.execute('ALTER TABLE users ADD COLUMN bio TEXT');
     }

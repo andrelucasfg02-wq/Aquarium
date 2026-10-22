@@ -3,6 +3,7 @@
 const { Router } = require('express');
 const { ah } = require('../async');
 const C = require('../catalog');
+const { parseAvatarCfg } = require('../avatar');
 
 const rand = (lo, hi) => lo + Math.random() * (hi - lo);
 
@@ -500,10 +501,15 @@ module.exports = function gameRoutes(db) {
       }
     }
     const user = await db.get(
-      `SELECT u.id,u.name,u.email,u.avatar,u.welcome100_seen,w.level,w.xp,w.coins,w.gems,w.food,w.food_special,w.medicine
+      `SELECT u.id,u.name,u.email,u.avatar,u.avatar_cfg,u.welcome100_seen,w.level,w.xp,w.coins,w.gems,w.food,w.food_special,w.medicine
        FROM users u JOIN wallets w ON w.user_id=u.id WHERE u.id=?`, uid);
-    if (user && user.avatar) {
-      user.avatar_url = user.avatar.startsWith('data:') ? user.avatar : '/uploads/avatars/' + user.avatar;
+    if (user) {
+      // `avatar_url` is the uploaded profile photo; `avatar` is the chibi
+      // avatar CONFIG object (users.avatar_cfg). The raw photo value and
+      // the config JSON stay server-side.
+      user.avatar_url = user.avatar ? (user.avatar.startsWith('data:') ? user.avatar : '/uploads/avatars/' + user.avatar) : '';
+      user.avatar = parseAvatarCfg(user.avatar_cfg);
+      delete user.avatar_cfg;
     }
     const tanks = await H.getTanks(uid);
     const fish = (await db.all('SELECT * FROM fish WHERE user_id=? ORDER BY id', uid))
@@ -1562,14 +1568,14 @@ module.exports = function gameRoutes(db) {
   r.get('/profile', ah(async (req, res) => {
     const uid = req.user.id;
     const p = await db.get(
-      `SELECT u.id, u.name, u.created_at, u.avatar, u.bio, u.look, w.level, w.xp, w.coins, w.gems
+      `SELECT u.id, u.name, u.created_at, u.avatar, u.avatar_cfg, u.bio, w.level, w.xp, w.coins, w.gems
        FROM users u LEFT JOIN wallets w ON w.user_id=u.id WHERE u.id=?`, uid);
     if (!p) return res.status(404).json({ ok: false, error: 'user not found' });
     const s = await profileStats(uid);
     res.json({ ok: true, profile: {
       id: p.id, name: p.name, level: p.level || 1, xp: p.xp || 0,
       created_at: p.created_at, coins: p.coins || 0, gems: p.gems || 0,
-      avatar_url: avatarUrl(p.avatar), bio: p.bio || '', look: p.look || '',
+      avatar_url: avatarUrl(p.avatar), avatar: parseAvatarCfg(p.avatar_cfg), bio: p.bio || '',
       hearts: await heartCount(uid),
       ...s, mine: true,
     }});
@@ -1582,7 +1588,7 @@ module.exports = function gameRoutes(db) {
       return res.status(400).json({ ok: false, error: 'invalid user' });
     }
     const p = await db.get(
-      `SELECT u.id, u.name, u.created_at, u.avatar, u.bio, u.look, w.level
+      `SELECT u.id, u.name, u.created_at, u.avatar, u.avatar_cfg, u.bio, w.level
        FROM users u LEFT JOIN wallets w ON w.user_id=u.id
        WHERE u.id=? AND COALESCE(u.is_guest,0)=0`, id);
     if (!p) return res.status(404).json({ ok: false, error: 'user not found' });
@@ -1591,7 +1597,7 @@ module.exports = function gameRoutes(db) {
       'SELECT status FROM friends WHERE user_id=? AND friend_id=?', req.user.id, id);
     res.json({ ok: true, profile: {
       id: p.id, name: p.name, level: p.level || 1, created_at: p.created_at,
-      avatar_url: avatarUrl(p.avatar), bio: p.bio || '', look: p.look || '',
+      avatar_url: avatarUrl(p.avatar), avatar: parseAvatarCfg(p.avatar_cfg), bio: p.bio || '',
       hearts: await heartCount(id),
       fish: s.fish, friends: s.friends, collection: s.collection, mine: false,
       relation: rel ? rel.status : null,
@@ -1705,12 +1711,12 @@ module.exports = function gameRoutes(db) {
   r.get('/guestbook', ah(async (req, res) => {
     const uid = req.user.id;
     const notes = await db.all(
-      `SELECT g.message, g.created_at, u.id AS visitor_id, u.name, u.avatar
+      `SELECT g.message, g.created_at, u.id AS visitor_id, u.name, u.avatar, u.avatar_cfg
        FROM guestbook g JOIN users u ON u.id=g.visitor_id
        WHERE g.owner_id=? ORDER BY g.created_at DESC LIMIT 30`, uid);
     res.json({ ok: true, hearts: await heartCount(uid),
       notes: notes.map((n) => ({ visitor_id: n.visitor_id, name: n.name,
-        avatar_url: avatarUrl(n.avatar), message: n.message, created_at: n.created_at })) });
+        avatar_url: avatarUrl(n.avatar), avatar: parseAvatarCfg(n.avatar_cfg), message: n.message, created_at: n.created_at })) });
   }));
 
   // list one of your fish for sale (diamonds)
@@ -1873,7 +1879,7 @@ module.exports = function gameRoutes(db) {
     const row = await db.get('SELECT layout FROM house_layout WHERE user_id=?', uid);
     const w = await H.getWallet(uid);
     const tk = await H.getTanks(uid);
-    const u = await db.get('SELECT look FROM users WHERE id=?', uid);
+    const u = await db.get('SELECT avatar_cfg FROM users WHERE id=?', uid);
     let layout = null;
     if (row && row.layout) {
       try { layout = JSON.parse(row.layout); } catch (e) { layout = null; }
@@ -1883,23 +1889,24 @@ module.exports = function gameRoutes(db) {
       "SELECT tank, tank_num, COUNT(*) c FROM fish WHERE user_id=? AND location='tank' GROUP BY tank, tank_num", uid);
     const tank_fish = {};
     for (const fr of fishRows) tank_fish[fr.tank + ':' + (fr.tank_num || 1)] = fr.c;
-    res.json({ ok: true, user_id: uid, layout, coins: (w && w.coins) || 0, tanks: houseTanksJson(tk), tank_fish, look: (u && u.look) || '' });
+    res.json({ ok: true, user_id: uid, layout, coins: (w && w.coins) || 0, tanks: houseTanksJson(tk), tank_fish, avatar: parseAvatarCfg(u && u.avatar_cfg) });
   }));
 
   // Read-only visit to another player's house. The response mirrors the
   // fields the house page needs for the OWNER's room (layout, owned tanks
   // and fish per tank instance), plus the owner's username for the banner.
-  // `visitor_look` is intentionally the REQUESTER's look: the visitor's own
-  // avatar is the one that walks around the visited room.
+  // `visitor_avatar` is intentionally the REQUESTER's avatar config: the
+  // visitor's own chibi is the one that walks around the visited room.
+  // `owner_avatar` carries the owner's config (e.g. for their presence peer).
   r.get('/house/visit/:id', ah(async (req, res) => {
     const ownerId = Number.parseInt(req.params.id, 10);
     if (!Number.isInteger(ownerId) || ownerId <= 0)
       return res.status(404).json({ ok: false, error: 'user not found' });
-    const owner = await db.get('SELECT id, name FROM users WHERE id=?', ownerId);
+    const owner = await db.get('SELECT id, name, avatar_cfg FROM users WHERE id=?', ownerId);
     if (!owner) return res.status(404).json({ ok: false, error: 'user not found' });
     const row = await db.get('SELECT layout FROM house_layout WHERE user_id=?', ownerId);
     const tk = await H.getTanks(ownerId);
-    const visitor = await db.get('SELECT look FROM users WHERE id=?', req.user.id);
+    const visitor = await db.get('SELECT avatar_cfg FROM users WHERE id=?', req.user.id);
     let layout = null;
     if (row && row.layout) {
       try { layout = JSON.parse(row.layout); } catch (e) { layout = null; }
@@ -1910,7 +1917,9 @@ module.exports = function gameRoutes(db) {
     for (const fr of fishRows) tank_fish[fr.tank + ':' + (fr.tank_num || 1)] = fr.c;
     res.json({
       ok: true, owner_id: owner.id, username: owner.name || '', layout,
-      tanks: houseTanksJson(tk), tank_fish, visitor_look: (visitor && visitor.look) || '',
+      tanks: houseTanksJson(tk), tank_fish,
+      owner_avatar: parseAvatarCfg(owner.avatar_cfg),
+      visitor_avatar: parseAvatarCfg(visitor && visitor.avatar_cfg),
       visitor_id: req.user.id,
     });
   }));
@@ -1963,7 +1972,7 @@ module.exports = function gameRoutes(db) {
           updated_at=excluded.updated_at`,
       uid, houseId, x, y, dir, north, state, chatText, chatUntil, t);
     const rows = await db.all(
-      `SELECT p.user_id, u.name AS username, u.look AS look, p.x, p.y, p.dir,
+      `SELECT p.user_id, u.name AS username, u.avatar_cfg AS avatar_cfg, p.x, p.y, p.dir,
               p.north, p.state, p.chat_text, p.chat_until
          FROM house_presence p JOIN users u ON u.id = p.user_id
         WHERE p.house_id=? AND p.user_id<>? AND p.updated_at>=?
@@ -1971,7 +1980,7 @@ module.exports = function gameRoutes(db) {
     const players = rows.map((row) => {
       const chatActive = !!(row.chat_text && row.chat_until && row.chat_until > t);
       return {
-        user_id: row.user_id, username: row.username || '', look: row.look || '',
+        user_id: row.user_id, username: row.username || '', avatar: parseAvatarCfg(row.avatar_cfg),
         x: row.x, y: row.y, dir: row.dir < 0 ? -1 : 1, north: !!row.north,
         state: row.state || 'idle',
         chat_text: chatActive ? row.chat_text : null,

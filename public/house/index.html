@@ -161,7 +161,7 @@
     .joystick {
       position: absolute;
       left: 18px;
-      bottom: 18px;
+      bottom: 84px;
       width: 116px;
       height: 116px;
       border: 1px solid rgba(255,255,255,.42);
@@ -196,7 +196,7 @@
     .sit-btn {
       position: absolute;
       left: 18px;
-      bottom: 146px;
+      bottom: 212px;
       min-height: 46px;
       border: 1px solid rgba(255,255,255,.52);
       border-radius: 12px;
@@ -216,7 +216,7 @@
       position: absolute;
       left: 12px;
       right: 12px;
-      bottom: 12px;
+      bottom: 84px;
       z-index: 6;
       display: flex;
       gap: 7px;
@@ -345,7 +345,72 @@
     }
     .catalog-item canvas, .catalog-item img { width: 68px; height: 49px; max-width: 100%; display: block; margin: 0 auto 1px; object-fit: contain; image-rendering: auto; }
     .catalog-item span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 750; }
+    .rotate-ctl { display: flex; align-items: center; gap: 7px; font-weight: 750; white-space: nowrap; }
+    .rotate-ctl input[type="range"] { width: 128px; accent-color: var(--accent); cursor: pointer; }
+    .rotate-ctl input[type="range"]:disabled { opacity: .42; cursor: default; }
+    #rotateVal { min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
     .save-state { font-size: 12px; color: var(--muted); font-weight: 750; min-width: 76px; text-align: right; white-space: nowrap; }
+    .surface-heading { grid-column: 1 / -1; margin: 5px 4px 0; font-size: 12px; font-weight: 850; color: var(--muted); }
+    .surface-heading:first-child { margin-top: 0; }
+    .surface-item .swatch { width: 68px; height: 49px; max-width: 100%; display: block; margin: 0 auto 4px; border: 1px solid var(--line); border-radius: 7px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.22); }
+    /* ---------- Avatar studio (chibi system) ---------- */
+    .avatar-modal {
+      position: fixed; inset: 0; z-index: 60;
+      background: rgba(20, 18, 16, .52);
+      display: flex; align-items: center; justify-content: center;
+      padding: 12px;
+    }
+    .avatar-modal[hidden] { display: none; }
+    .avatar-card {
+      background: var(--panel); color: var(--ink);
+      border: 1px solid var(--line); border-radius: 16px;
+      box-shadow: 0 18px 44px rgba(0,0,0,.35);
+      width: min(520px, 100%); max-height: 92vh; overflow-y: auto;
+      padding: 14px;
+    }
+    .avatar-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .avatar-head strong { font-size: 17px; flex: 1; }
+    .avatar-stage {
+      background: #ffe9f4; border: 1px solid var(--line); border-radius: 14px;
+      display: flex; justify-content: center; padding: 6px;
+    }
+    .avatar-stage svg { width: 178px; height: auto; display: block; }
+    @keyframes avBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.08); } }
+    .avatar-stage .eye { transform-box: fill-box; transform-origin: center; animation: avBlink 4.2s infinite; }
+    @media (prefers-reduced-motion: reduce) { .avatar-stage .eye { animation: none; } }
+    .av-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 4px; }
+    .av-tab {
+      min-height: 36px; border: 1px solid var(--line); background: transparent;
+      color: var(--muted); border-radius: 8px; padding: 6px 13px;
+      font-weight: 850; cursor: pointer;
+    }
+    .av-tab:hover { color: var(--ink); border-color: var(--accent); }
+    .av-tab.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+    .av-group { margin-bottom: 14px; }
+    .av-group h4 { margin: 10px 0 8px; font-size: 13px; font-weight: 850; }
+    .av-swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+    .av-sw {
+      width: 36px; height: 36px; border-radius: 50%; padding: 0; cursor: pointer;
+      border: 3px solid rgba(0,0,0,.10); box-shadow: inset 0 -4px 6px rgba(0,0,0,.12);
+    }
+    .av-sw[aria-pressed="true"] { border-color: var(--accent); transform: scale(1.14); }
+    .av-tiles { display: flex; flex-wrap: wrap; gap: 8px; }
+    .av-tile {
+      width: 60px; height: 60px; border-radius: 12px; padding: 4px; cursor: pointer;
+      border: 2px solid var(--line); background: var(--button);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .av-tile[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+    .av-tile svg { width: 100%; height: 100%; }
+    .av-tile .av-none-label { font-size: 11px; color: var(--muted); font-weight: 750; text-align: center; }
+    .av-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+    .av-opt {
+      min-height: 36px; border: 1px solid var(--line); background: var(--button);
+      color: var(--ink); border-radius: 8px; padding: 6px 13px;
+      font-weight: 750; cursor: pointer;
+    }
+    .av-opt[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+    .avatar-actions { display: flex; justify-content: flex-end; margin-top: 4px; }
     .login-overlay { position: fixed; inset: 0; background: rgba(20,18,16,.74); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
     .login-overlay[hidden] { display: none; }
     .login-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 26px 30px; max-width: 380px; text-align: center; box-shadow: 0 8px 30px var(--shadow); }
@@ -365,15 +430,17 @@
       .action-row { padding: 7px; flex-wrap: wrap; }
       .action-row .tool-btn { flex: 1; padding: 6px 5px; font-size: 12px; }
       .action-row .spacer { display: none; }
+      .rotate-ctl { flex: 1 1 150px; }
+      .rotate-ctl input[type="range"] { flex: 1; width: auto; min-width: 60px; }
       .hint { font-size: 12px; top: 8px; left: 8px; max-width: calc(100% - 16px); }
-      body.play-mode .chat-bar { left: 118px; right: 8px; bottom: 8px; }
-      .chat-bar { right: 8px; bottom: 8px; }
-      .visit-banner { top: auto; bottom: 76px; right: 8px; max-width: calc(100% - 16px); }
-      .joystick { width: 96px; height: 96px; left: 12px; bottom: 12px; }
+      body.play-mode .chat-bar { left: 118px; right: 8px; bottom: 76px; }
+      .chat-bar { right: 8px; bottom: 76px; }
+      .visit-banner { top: auto; bottom: 160px; right: 8px; max-width: calc(100% - 16px); }
+      .joystick { width: 96px; height: 96px; left: 12px; bottom: 76px; }
       .joystick::before { height: 62px; left: 47px; top: 17px; }
       .joystick::after { width: 62px; left: 17px; top: 47px; }
       .joystick-knob { width: 42px; height: 42px; left: 27px; top: 27px; }
-      .sit-btn { left: 12px; bottom: 118px; }
+      .sit-btn { left: 12px; bottom: 184px; }
       body.play-mode .app { grid-template-rows: auto minmax(420px, calc(100vh - 78px)); }
     }
     @media (max-width: 430px) {
@@ -395,6 +462,7 @@
         <span class="gold-hud" id="goldHud" aria-label="Gold">🪙 <span id="goldVal">2000</span></span>
         <button class="tool-btn" id="saveBtn">💾 <span data-t="save">Salvar</span></button>
         <button class="tool-btn mode-switch" id="modeBtn">✎ <span id="modeBtnText">Editar</span></button>
+        <button class="tool-btn" id="avatarBtn">🧍 <span data-t="avatar">Avatar</span></button>
         <button class="tool-btn icon" id="mirrorTop" disabled aria-label="Espelhar">↩️</button>
         <button class="tool-btn icon danger" id="deleteTop" disabled aria-label="Excluir">×</button>
         <button class="lang-btn" id="langBtn" aria-label="Change language">EN</button>
@@ -420,6 +488,11 @@
     <section class="bottom-panel">
       <div class="action-row">
         <button class="tool-btn" id="mirrorBtn" disabled>↩️ <span data-t="mirror">Espelhar</span></button>
+        <div class="rotate-ctl" id="rotateCtl">
+          <label for="rotateSlider">⟳ <span data-t="rotateFree">Rotacionar</span></label>
+          <input type="range" id="rotateSlider" min="-180" max="180" step="1" value="0" disabled aria-label="Rotacionar" />
+          <span id="rotateVal">0°</span>
+        </div>
         <button class="tool-btn danger" id="deleteBtn" disabled>× <span data-t="delete">Excluir</span></button>
         <div class="spacer"></div>
         <span class="save-state" id="saveState"></span>
@@ -430,12 +503,32 @@
           <button class="catalog-tab active" id="oceanTab" role="tab" aria-selected="true" data-category="ocean">Oceano</button>
           <button class="catalog-tab" id="aquaTab" role="tab" aria-selected="false" data-category="aqua">Aquários</button>
           <button class="catalog-tab" id="woodTab" role="tab" aria-selected="false" data-category="wood">Madeira</button>
+          <button class="catalog-tab" id="roomTab" role="tab" aria-selected="false" data-category="room">Parede & piso</button>
         </div>
         <p class="catalog-label" id="catalogLabel">CATÁLOGO · PISO E PAREDE</p>
         <div class="catalog" id="catalog" role="tabpanel"></div>
       </div>
     </section>
   </main>
+  <div class="avatar-modal" id="avatarModal" hidden role="dialog" aria-modal="true" aria-labelledby="avTitle">
+    <div class="avatar-card">
+      <div class="avatar-head">
+        <strong id="avTitle">Meu avatar</strong>
+        <button class="tool-btn" id="avatarRandom" type="button">🎲 Aleatório</button>
+        <button class="tool-btn icon" id="avatarClose" type="button" aria-label="Fechar">×</button>
+      </div>
+      <div class="avatar-stage" id="avatarStage"></div>
+      <div class="av-tabs" role="tablist" aria-label="Avatar">
+        <button class="av-tab active" data-avtab="body" role="tab" aria-selected="true" type="button">Corpo</button>
+        <button class="av-tab" data-avtab="hair" role="tab" aria-selected="false" type="button">Cabelo</button>
+        <button class="av-tab" data-avtab="face" role="tab" aria-selected="false" type="button">Rosto</button>
+        <button class="av-tab" data-avtab="outfit" role="tab" aria-selected="false" type="button">Roupa</button>
+        <button class="av-tab" data-avtab="extras" role="tab" aria-selected="false" type="button">Extras</button>
+      </div>
+      <div id="avatarPanels"></div>
+      <div class="avatar-actions"><button class="tool-btn" id="avatarDone" type="button">Pronto</button></div>
+    </div>
+  </div>
   <div class="login-overlay" id="loginOverlay" hidden>
     <div class="login-card">
       <p data-t="loginNeeded">Entre no AquaNim para usar sua Casa 🏠</p>
@@ -443,6 +536,7 @@
     </div>
   </div>
 
+<script src="/js/avatar.js"></script>
 <script>
 (function () {
   'use strict';
@@ -462,6 +556,8 @@
   var sitBtnText = document.getElementById('sitBtnText');
   var joystick = document.getElementById('joystick');
   var joystickKnob = document.getElementById('joystickKnob');
+  var rotateSlider = document.getElementById('rotateSlider');
+  var rotateVal = document.getElementById('rotateVal');
   var chatForm = document.getElementById('chatForm');
   var chatInput = document.getElementById('chatInput');
   var chatSendBtn = document.getElementById('chatSendBtn');
@@ -482,7 +578,6 @@
   // the peer list. roomHouseId = the room owner's user id (visit target,
   // or my own id at home); learned at load time.
   var peers = {};
-  var peerSprites = {};
   var roomHouseId = visiting ? visitId : null;
   var myUserId = null;
   var presenceTimer = null;
@@ -507,7 +602,52 @@
   var nextId = 1;
   var metrics = { w: 900, h: 620, tw: 58, th: 29, ox: 450, oy: 210, wallH: 112, scale: 1 };
   var avatar = { x:8.5, y:8.5, target:null, path:[], moving:false, facing:1, north:false, sitting:false, seatId:null, frame:0, frameAt:0, lastAt:0 };
-  var avatarImages = { walk:[], idle:[], sit:[], back:null };
+  // Follow camera: the world is translated so the avatar's body center
+  // stays at the middle of the screen in every mode (ported from the
+  // test version, where the camera is active in Play AND Edit).
+  var cam = { x: 0, y: 0 };
+  // Pinch zoom (two fingers spread/pinch on the room, or mouse wheel).
+  // The view scales around the screen center, and since the follow camera
+  // keeps the avatar at that center, it stays centered at every zoom.
+  var zoom = 1;
+  var canvasPointers = {};
+  var pinch = null;
+  var ignoreNextUp = false;
+  // Chibi avatar system (shared /js/avatar.js): my config plus rasterized
+  // front/back images; peers get a cached image pair per distinct config.
+  var myAvatar = AvatarSystem.sanitize(null);
+  var ownerAvatarCfg = null;
+  var myChibi = { front: null, back: null };
+  var peerChibi = {};
+  // Wall & floor colors (test version): free, applied instantly, saved
+  // inside the layout JSON as wallColor/floorColor.
+  var wallColor = '#879195';
+  var floorColor = '#c99a5f';
+  var WALL_OPTIONS = [
+    { color:'#879195', pt:'Cinza pedra', en:'Stone gray', es:'Gris piedra' },
+    { color:'#d8d2c6', pt:'Branco areia', en:'Sandy white', es:'Blanco arena' },
+    { color:'#d6b98d', pt:'Areia', en:'Sand', es:'Arena' },
+    { color:'#d9a1a1', pt:'Rosa suave', en:'Soft rose', es:'Rosa suave' },
+    { color:'#c97b63', pt:'Coral', en:'Coral', es:'Coral' },
+    { color:'#8fbf9f', pt:'Menta', en:'Mint', es:'Menta' },
+    { color:'#86aec7', pt:'Azul céu', en:'Sky blue', es:'Azul cielo' },
+    { color:'#4f7f95', pt:'Azul oceano', en:'Ocean blue', es:'Azul océano' },
+    { color:'#7d9b76', pt:'Verde sálvia', en:'Sage green', es:'Verde salvia' },
+    { color:'#dfc06a', pt:'Amarelo suave', en:'Soft yellow', es:'Amarillo suave' }
+  ];
+  var FLOOR_OPTIONS = [
+    { color:'#c99a5f', pt:'Carvalho', en:'Oak', es:'Roble' },
+    { color:'#8a5a36', pt:'Noz', en:'Walnut', es:'Nogal' },
+    { color:'#dec39a', pt:'Bétula', en:'Birch', es:'Abedul' },
+    { color:'#ddd6c9', pt:'Branco lavado', en:'Whitewash', es:'Blanco lavado' },
+    { color:'#9aa0a0', pt:'Cinza', en:'Gray', es:'Gris' },
+    { color:'#b96a4a', pt:'Terracota', en:'Terracotta', es:'Terracota' },
+    { color:'#cf9387', pt:'Rosa antigo', en:'Dusty rose', es:'Rosa antiguo' },
+    { color:'#7f9a68', pt:'Verde oliva', en:'Olive green', es:'Verde oliva' },
+    { color:'#6d93a8', pt:'Azul ardósia', en:'Slate blue', es:'Azul pizarra' },
+    { color:'#55504c', pt:'Grafite', en:'Graphite', es:'Grafito' }
+  ];
+  function isHexColor(v){ return typeof v==='string' && /^#[0-9a-fA-F]{6}$/.test(v); }
   var keys = {};
   var joystickDir = null;
   var joystickPointer = null;
@@ -516,12 +656,13 @@
 
   var TXT = {
     pt: {
-      choose: 'Escolha um móvel abaixo', playStatus: 'Modo jogar · explore o quarto', playHint: 'Toque no piso para caminhar ou use o controle.', editMode: 'Editar', playMode: 'Jogar', sit: 'Sentar', stand: 'Levantar', joystick: 'Controle de movimento', placing: 'Toque no piso para colocar: ',
+      choose: 'Escolha um móvel abaixo', playStatus: 'Modo jogar · explore o quarto', playHint: 'Toque no piso para caminhar, use o controle ou afaste dois dedos para dar zoom.', editMode: 'Editar', playMode: 'Jogar', sit: 'Sentar', stand: 'Levantar', joystick: 'Controle de movimento', placing: 'Toque no piso para colocar: ',
       wallPlacing: 'Toque em uma das paredes para colocar: ', selected: 'Selecionado: ',
       hint: 'Escolha um item e toque no piso. Arraste um móvel para mudar de lugar.',
       wallHint: 'Este item vai na parede. Toque em um quadrado da parede.',
-      mirror: 'Espelhar', delete: 'Excluir', clear: 'Limpar quarto', back: 'Voltar', save: 'Salvar', saved: 'Salvo ✓', saving: 'Salvando…', saveFailed: 'Falha ao salvar', loginNeeded: 'Entre no AquaNim para usar sua Casa 🏠', loginGo: 'Ir para o jogo',
-      basicTab: 'Básicos', oceanTab: 'Oceano', aquaTab: 'Aquários', woodTab: 'Madeira', catalog: 'CATÁLOGO · PISO E PAREDE', oceanCatalog: 'LOJA · OCEANO · 🪙 400 CADA', aquaCatalog: 'MEUS AQUÁRIOS', woodCatalog: 'LOJA · MADEIRA · 🪙 400 CADA', blocked: 'Esse espaço está ocupado.',
+      mirror: 'Espelhar', rotateFree: 'Rotacionar', delete: 'Excluir', clear: 'Limpar quarto', back: 'Voltar', save: 'Salvar', saved: 'Salvo ✓', saving: 'Salvando…', saveFailed: 'Falha ao salvar', loginNeeded: 'Entre no AquaNim para usar sua Casa 🏠', loginGo: 'Ir para o jogo',
+      basicTab: 'Básicos', oceanTab: 'Oceano', aquaTab: 'Aquários', woodTab: 'Madeira', roomTab: 'Parede & piso', catalog: 'CATÁLOGO · PISO E PAREDE', oceanCatalog: 'LOJA · OCEANO · 🪙 400 CADA', aquaCatalog: 'MEUS AQUÁRIOS', woodCatalog: 'LOJA · MADEIRA · 🪙 400 CADA', roomCatalog: 'AMBIENTE · CORES DA PAREDE E DO PISO', wallLabel: 'COR DA PAREDE', floorLabel: 'COR DO PISO', blocked: 'Esse espaço está ocupado.',
+      avatar: 'Avatar', avTitle: 'Meu avatar', avDone: 'Pronto', avRandom: 'Aleatório',
       notEnoughGold: 'Gold insuficiente 🪙', openingTank: 'Abrindo seu aquário... 🐠', buyOnAquaNim: 'Comprar no AquaNim',
       ownedLabel: 'Tem', placedLabel: 'No quarto', availLabel: 'Livre', buyTank: 'Comprar', tankHasFish: 'Este aquário tem peixes! Esvazie antes de remover. 🐠', noTankAvailable: 'Você não tem este aquário livre.',
       wrongSurface: 'Escolha um quadrado da parede.', outside: 'Escolha um quadrado dentro do quarto.',
@@ -531,12 +672,13 @@
       names: { bed:'Cama', table:'Mesa', chair:'Cadeira', sofa:'Sofá', plant:'Planta', lamp:'Luminária', rug:'Tapete', shelf:'Estante', tv:'Rack TV', coffee:'Mesa centro', painting:'Quadro', walllamp:'Luz parede' }
     },
     en: {
-      choose: 'Choose a piece below', playStatus: 'Play mode · explore the room', playHint: 'Tap the floor to walk or use the control.', editMode: 'Edit', playMode: 'Play', sit: 'Sit', stand: 'Stand', joystick: 'Movement control', placing: 'Tap the floor to place: ',
+      choose: 'Choose a piece below', playStatus: 'Play mode · explore the room', playHint: 'Tap the floor to walk, use the control, or spread two fingers to zoom.', editMode: 'Edit', playMode: 'Play', sit: 'Sit', stand: 'Stand', joystick: 'Movement control', placing: 'Tap the floor to place: ',
       wallPlacing: 'Tap either wall to place: ', selected: 'Selected: ',
       hint: 'Choose an item and tap the floor. Drag furniture to move it.',
       wallHint: 'This item goes on a wall. Tap a wall square.',
-      mirror: 'Mirror', delete: 'Delete', clear: 'Clear room', back: 'Back', save: 'Save', saved: 'Saved ✓', saving: 'Saving…', saveFailed: 'Save failed', loginNeeded: 'Log in to AquaNim to use your House 🏠', loginGo: 'Go to the game',
-      basicTab: 'Basics', oceanTab: 'Ocean', aquaTab: 'Aquariums', woodTab: 'Wood', catalog: 'CATALOG · FLOOR & WALL', oceanCatalog: 'SHOP · OCEAN · 🪙 400 EACH', aquaCatalog: 'MY AQUARIUMS', woodCatalog: 'SHOP · WOOD · 🪙 400 EACH', blocked: 'That space is occupied.',
+      mirror: 'Mirror', rotateFree: 'Rotate freely', delete: 'Delete', clear: 'Clear room', back: 'Back', save: 'Save', saved: 'Saved ✓', saving: 'Saving…', saveFailed: 'Save failed', loginNeeded: 'Log in to AquaNim to use your House 🏠', loginGo: 'Go to the game',
+      basicTab: 'Basics', oceanTab: 'Ocean', aquaTab: 'Aquariums', woodTab: 'Wood', roomTab: 'Wall & floor', catalog: 'CATALOG · FLOOR & WALL', oceanCatalog: 'SHOP · OCEAN · 🪙 400 EACH', aquaCatalog: 'MY AQUARIUMS', woodCatalog: 'SHOP · WOOD · 🪙 400 EACH', roomCatalog: 'ROOM · WALL AND FLOOR COLORS', wallLabel: 'WALL COLOR', floorLabel: 'FLOOR COLOR', blocked: 'That space is occupied.',
+      avatar: 'Avatar', avTitle: 'My avatar', avDone: 'Done', avRandom: 'Random',
       notEnoughGold: 'Not enough gold 🪙', openingTank: 'Opening your aquarium... 🐠', buyOnAquaNim: 'Buy on AquaNim',
       ownedLabel: 'Owned', placedLabel: 'Placed', availLabel: 'Free', buyTank: 'Buy', tankHasFish: 'This tank has fish! Empty it before removing. 🐠', noTankAvailable: "You don't have a free tank of this tier.",
       wrongSurface: 'Choose a square on either wall.', outside: 'Choose a square inside the room.',
@@ -546,12 +688,13 @@
       names: { bed:'Bed', table:'Table', chair:'Chair', sofa:'Sofa', plant:'Plant', lamp:'Floor lamp', rug:'Rug', shelf:'Bookcase', tv:'TV stand', coffee:'Coffee table', painting:'Painting', walllamp:'Wall lamp' }
     },
     es: {
-      choose: 'Elige un mueble abajo', playStatus: 'Modo juego · explora la habitación', playHint: 'Toca el suelo para caminar o usa el control.', editMode: 'Editar', playMode: 'Jugar', sit: 'Sentarse', stand: 'Levantarse', joystick: 'Control de movimiento', placing: 'Toca el suelo para colocar: ',
+      choose: 'Elige un mueble abajo', playStatus: 'Modo juego · explora la habitación', playHint: 'Toca el suelo para caminar, usa el control o separa dos dedos para hacer zoom.', editMode: 'Editar', playMode: 'Jugar', sit: 'Sentarse', stand: 'Levantarse', joystick: 'Control de movimiento', placing: 'Toca el suelo para colocar: ',
       wallPlacing: 'Toca una de las paredes para colocar: ', selected: 'Seleccionado: ',
       hint: 'Elige un artículo y toca el suelo. Arrastra un mueble para moverlo.',
       wallHint: 'Este artículo va en la pared. Toca un cuadrado de la pared.',
-      mirror: 'Espejar', delete: 'Eliminar', clear: 'Vaciar habitación', back: 'Volver', save: 'Guardar', saved: 'Guardado ✓', saving: 'Guardando…', saveFailed: 'Error al guardar', loginNeeded: 'Inicia sesión en AquaNim para usar tu Casa 🏠', loginGo: 'Ir al juego',
-      basicTab: 'Básicos', oceanTab: 'Océano', aquaTab: 'Acuarios', woodTab: 'Madera', catalog: 'CATÁLOGO · SUELO Y PARED', oceanCatalog: 'TIENDA · OCÉANO · 🪙 400 CADA UNO', aquaCatalog: 'MIS ACUARIOS', woodCatalog: 'TIENDA · MADERA · 🪙 400 CADA UNO', blocked: 'Ese espacio está ocupado.',
+      mirror: 'Espejar', rotateFree: 'Rotar', delete: 'Eliminar', clear: 'Vaciar habitación', back: 'Volver', save: 'Guardar', saved: 'Guardado ✓', saving: 'Guardando…', saveFailed: 'Error al guardar', loginNeeded: 'Inicia sesión en AquaNim para usar tu Casa 🏠', loginGo: 'Ir al juego',
+      basicTab: 'Básicos', oceanTab: 'Océano', aquaTab: 'Acuarios', woodTab: 'Madera', roomTab: 'Pared y suelo', catalog: 'CATÁLOGO · SUELO Y PARED', oceanCatalog: 'TIENDA · OCÉANO · 🪙 400 CADA UNO', aquaCatalog: 'MIS ACUARIOS', woodCatalog: 'TIENDA · MADERA · 🪙 400 CADA UNO', roomCatalog: 'AMBIENTE · COLORES DE PARED Y SUELO', wallLabel: 'COLOR DE LA PARED', floorLabel: 'COLOR DEL SUELO', blocked: 'Ese espacio está ocupado.',
+      avatar: 'Avatar', avTitle: 'Mi avatar', avDone: 'Listo', avRandom: 'Aleatorio',
       notEnoughGold: 'Oro insuficiente 🪙', openingTank: 'Abriendo tu acuario... 🐠', buyOnAquaNim: 'Comprar en AquaNim',
       ownedLabel: 'Tienes', placedLabel: 'En la habitación', availLabel: 'Libre', buyTank: 'Comprar', tankHasFish: '¡Este acuario tiene peces! Vacíalo antes de retirarlo. 🐠', noTankAvailable: 'No tienes este acuario libre.',
       wrongSurface: 'Elige un cuadrado en una pared.', outside: 'Elige un cuadrado dentro de la habitación.',
@@ -705,29 +848,20 @@
     }
   };
   AQUA_ORDER.concat(WOOD_ORDER).forEach(function(type){var im=new Image();im.onload=draw;im.src=TYPES[type].image;OCEAN_IMAGES[type]=im;});
-  // Sprite sets: one for my avatar (avatarImages) plus one cached set per
-  // peer look, so other players render with their own look's art.
-  function loadSpriteSet(set, base, walkN, idleN, sitN, hasBack) {
-    set.walk = []; set.idle = []; set.sit = [];
-    for(var avi=0;avi<walkN;avi++){var wi=new Image();wi.onload=draw;wi.src=base+'walk_'+avi+'.png';set.walk.push(wi);}
-    for(var aii=0;aii<idleN;aii++){var ii=new Image();ii.onload=draw;ii.src=base+'idle_'+aii+'.png';set.idle.push(ii);}
-    for(var asi=0;asi<sitN;asi++){var si=new Image();si.onload=draw;si.src=base+'sit'+(sitN>1?'_'+asi:'')+'.png';set.sit.push(si);}
-    if (hasBack) { set.back=new Image();set.back.onload=draw;set.back.src=base+'back.png'; }
-    else set.back = null;
-    set.walkN = walkN; set.idleN = idleN;
+  // Chibi raster cache: one {front, back} image pair per distinct avatar
+  // config (mine plus each peer's), keyed by the sanitized config's JSON,
+  // so other players render with their own customized chibi.
+  function chibiFor(cfg) {
+    var clean = AvatarSystem.sanitize(cfg);
+    var key = JSON.stringify(clean);
+    if (!peerChibi[key]) peerChibi[key] = AvatarSystem.makeImages(clean, draw);
+    return peerChibi[key];
   }
-  function loadAvatarSprites(base, walkN, idleN, sitN, hasBack) {
-    loadSpriteSet(avatarImages, base, walkN, idleN, sitN, hasBack);
+  // Drawn height of the chibi itself (the 400px SVG frame holds the
+  // character between y≈34 and y≈350, i.e. 79% of the frame height).
+  function chibiCharH(sitting) {
+    return (sitting ? 80 : 100) * metrics.scale * AVATAR_SPRITE_SCALE;
   }
-  function spriteSetForLook(look) {
-    if (look && /^(lyh|jeff|cat)$/.test(look)) {
-      if (!peerSprites[look]) { peerSprites[look] = {}; loadSpriteSet(peerSprites[look], '/assets/looks/' + look + '/', 8, 4, 1, false); }
-      return peerSprites[look];
-    }
-    if (!peerSprites.__fallback) { peerSprites.__fallback = {}; loadSpriteSet(peerSprites.__fallback, 'assets/avatar/', 8, 5, 2, true); }
-    return peerSprites.__fallback;
-  }
-  loadAvatarSprites('assets/avatar/', 8, 5, 2, true);
 
   function t(key) { return TXT[lang][key]; }
 
@@ -799,7 +933,15 @@
   }
   function screenPoint(ev) {
     var r=canvas.getBoundingClientRect();
-    return { x:(ev.clientX-r.left)*canvas.width/r.width, y:(ev.clientY-r.top)*canvas.height/r.height };
+    var sx=(ev.clientX-r.left)*canvas.width/r.width, sy=(ev.clientY-r.top)*canvas.height/r.height;
+    var cx=canvas.width/2, cy=canvas.height/2;
+    return { x:cx+(sx-cx)/zoom-cam.x, y:cy+(sy-cy)/zoom-cam.y };
+  }
+  function updateCamera() {
+    var anchor=iso(avatar.x,avatar.y,0);
+    var bodyH=chibiCharH(avatar.sitting);
+    cam.x=canvas.width/2-anchor[0];
+    cam.y=canvas.height/2-(anchor[1]-bodyH/2);
   }
 
   function resize() {
@@ -821,11 +963,11 @@
   function drawRoom() {
     var dark=window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     var bg=dark?'#202325':'#d6d0c7';
-    var wallL=dark?'#3a3d3f':'#505356', wallR=dark?'#45484a':'#606366';
-    var wallLine=dark?'#565a5d':'#777a7c';
-    var woodA=dark?'#956d47':'#d3a46e', woodB=dark?'#8b6240':'#c79863';
-    var grout=dark?'rgba(47,34,26,.55)':'rgba(96,61,32,.38)';
-    ctx.fillStyle=bg;ctx.fillRect(0,0,canvas.width,canvas.height);
+    var wallL=shade(wallColor,-18), wallR=shade(wallColor,10);
+    var wallLine=shade(wallColor,-46);
+    var woodA=shade(floorColor,10), woodB=shade(floorColor,-13);
+    var grout=shade(floorColor,-62);
+    ctx.fillStyle=bg;ctx.fillRect(canvas.width/2-canvas.width/2/zoom-cam.x-2,canvas.height/2-canvas.height/2/zoom-cam.y-2,canvas.width/zoom+4,canvas.height/zoom+4);
 
     var corner=iso(0,0,0), xr=iso(ROOM,0,0), yl=iso(0,ROOM,0);
     poly(ctx,[corner,xr,[xr[0],xr[1]-metrics.wallH],[corner[0],corner[1]-metrics.wallH]],wallR);
@@ -853,8 +995,8 @@
       }
     }
     var front=iso(ROOM,ROOM,0);
-    poly(ctx,[iso(0,ROOM,0),front,[front[0],front[1]+8*metrics.scale],[yl[0],yl[1]+8*metrics.scale]],dark?'#68482f':'#98704c');
-    poly(ctx,[iso(ROOM,0,0),front,[front[0],front[1]+8*metrics.scale],[xr[0],xr[1]+8*metrics.scale]],dark?'#765238':'#a77b52');
+    poly(ctx,[iso(0,ROOM,0),front,[front[0],front[1]+8*metrics.scale],[yl[0],yl[1]+8*metrics.scale]],shade(floorColor,-58));
+    poly(ctx,[iso(ROOM,0,0),front,[front[0],front[1]+8*metrics.scale],[xr[0],xr[1]+8*metrics.scale]],shade(floorColor,-46));
   }
 
   function prism(c, x,y,w,d,h,color, lift) {
@@ -1150,53 +1292,44 @@
     if(avatar.sitting){stopSitting();return;}var seat=nearbySeat();if(!seat)return;
     var f=footprint(seat.type,seat.rot||0);avatar.sitting=true;avatar.seatId=seat.id;avatar.path=[];avatar.target=null;avatar.moving=false;avatar.x=seat.x+f.w/2;avatar.y=seat.y+f.d/2;avatar.facing=seatFacing(seat.rot);updateSitButton();draw();
   }
-  function drawAvatar(c){
-    var s=metrics.scale,anchor=iso(avatar.x,avatar.y,0),im,drawH,frame;
-    if(avatar.sitting){
-      var seat=items.find(function(i){return i.id===avatar.seatId});
-      var wideSeat=seat&&(seat.type==='ocean_shell_sofa'||seat.type==='ocean_daybed'||seat.type==='wood_sofa');
-      im=avatarImages.sit[wideSeat&&avatarImages.sit.length>1?1:0];drawH=68*s*AVATAR_SPRITE_SCALE;anchor[1]-=2*s;
-    }
-    else if(avatar.moving&&avatar.north&&avatarImages.back){im=avatarImages.back;drawH=92*s*AVATAR_SPRITE_SCALE;}
-    else if(avatar.moving){frame=Math.floor(avatar.frame)%(avatarImages.walkN||8);im=avatarImages.walk[frame];drawH=90*s*AVATAR_SPRITE_SCALE;}
-    else {im=avatarImages.idle[0];drawH=94*s*AVATAR_SPRITE_SCALE;}
+  // Chibi character drawing (ported from the test version): the chibi
+  // bobs while walking and breathes gently when idle; sitting draws a
+  // little lower and smaller, perched on the seat. Used for my avatar
+  // and, statelessly, for peers (state comes from their heartbeat and
+  // rx/ry is the smoothed render position eased toward it each frame).
+  function drawChibiAt(c,cfg,x,y,moving,north,facing,sitting,frame){
+    var s=metrics.scale,anchor=iso(x,y,0);
+    var set=chibiFor(cfg);
+    var im=(moving&&north)?set.back:set.front;
     if(!im||!im.complete||!im.naturalWidth)return;
-    var drawW=drawH*(im.naturalWidth/im.naturalHeight);c.save();c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';
-    if(!avatar.north&&avatar.facing<0){c.translate(anchor[0],0);c.scale(-1,1);c.drawImage(im,-drawW/2,anchor[1]-drawH,drawW,drawH);}else c.drawImage(im,anchor[0]-drawW/2,anchor[1]-drawH,drawW,drawH);
+    var bob=moving?-Math.abs(Math.sin(frame*.9))*3.4*s:Math.sin(Date.now()/650)*1.1*s;
+    var imgH=chibiCharH(sitting)/.79, imgW=imgH;
+    var feetY=anchor[1]+bob+(sitting?-3*s:0);
+    var top=feetY-.875*imgH;
+    c.save();c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';
+    if(!north&&facing<0){c.translate(anchor[0],0);c.scale(-1,1);c.drawImage(im,-imgW/2,top,imgW,imgH);}
+    else c.drawImage(im,anchor[0]-imgW/2,top,imgW,imgH);
     c.restore();
   }
-  // Peer avatars: same sprite machinery as drawAvatar, but stateless — the
-  // state (position/facing/north/sitting) comes from the peer's heartbeat,
-  // and rx/ry is the smoothed render position eased toward it each frame.
-  function peerDrawHeight(p,s){
-    if(p.state==='sit')return 68*s*AVATAR_SPRITE_SCALE;
-    if(p.moving&&p.north&&spriteSetForLook(p.look).back)return 92*s*AVATAR_SPRITE_SCALE;
-    if(p.moving)return 90*s*AVATAR_SPRITE_SCALE;
-    return 94*s*AVATAR_SPRITE_SCALE;
+  function drawAvatar(c){
+    drawChibiAt(c,myAvatar,avatar.x,avatar.y,avatar.moving,avatar.north,avatar.facing,avatar.sitting,avatar.frame);
   }
   function drawPeerAvatar(c,p){
-    var set=spriteSetForLook(p.look),s=metrics.scale,anchor=iso(p.rx,p.ry,0),im,drawH=peerDrawHeight(p,s);
-    if(p.state==='sit'){im=set.sit[0];anchor[1]-=2*s;}
-    else if(p.moving&&p.north&&set.back){im=set.back;}
-    else if(p.moving){var frame=Math.floor(p.frame)%(set.walkN||8);im=set.walk[frame];}
-    else {im=set.idle[0];}
-    if(!im||!im.complete||!im.naturalWidth)return;
-    var drawW=drawH*(im.naturalWidth/im.naturalHeight);c.save();c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';
-    if(!p.north&&p.dir<0){c.translate(anchor[0],0);c.scale(-1,1);c.drawImage(im,-drawW/2,anchor[1]-drawH,drawW,drawH);}else c.drawImage(im,anchor[0]-drawW/2,anchor[1]-drawH,drawW,drawH);
-    c.restore();
+    drawChibiAt(c,p.avatarCfg,p.rx,p.ry,p.moving,p.north,p.dir,p.state==='sit',p.frame);
   }
   // Name label + chat bubble above each peer's head, drawn over the room
   // (like my own bubble) so furniture never covers what they're saying.
   function drawPeerOverlays(c){
     var s=metrics.scale,nowSec=Date.now()/1000;
+    var vx0=canvas.width/2-canvas.width/2/zoom-cam.x, vy0=canvas.height/2-canvas.height/2/zoom-cam.y;
     Object.keys(peers).forEach(function(k){
       var p=peers[k],anchor=iso(p.rx,p.ry,0);
-      var headTop=anchor[1]-peerDrawHeight(p,s)-(p.state==='sit'?2*s:0);
+      var headTop=anchor[1]-chibiCharH(p.state==='sit');
       if(p.username){
         c.save();
         c.font='700 '+Math.round(11*s)+'px "Nunito Sans", ui-rounded, sans-serif';
         var nw=c.measureText(p.username).width,padX=6*s,bw=nw+padX*2,bh=15*s;
-        var bx=Math.max(3*s,Math.min(canvas.width-bw-3*s,anchor[0]-bw/2)),by=Math.max(3*s,headTop-bh-3*s);
+        var bx=Math.max(vx0+3*s,Math.min(vx0+canvas.width/zoom-bw-3*s,anchor[0]-bw/2)),by=Math.max(vy0+3*s,headTop-bh-3*s);
         c.beginPath();
         if(c.roundRect)c.roundRect(bx,by,bw,bh,7*s);else c.rect(bx,by,bw,bh);
         c.fillStyle='rgba(38,32,26,.55)';c.fill();
@@ -1252,7 +1385,7 @@
       if(!p){
         p=peers[pl.user_id]={user_id:pl.user_id,rx:pl.x,ry:pl.y,frame:0,frameAt:0,moving:false,dir:1,north:false};
       }
-      p.username=pl.username||'';p.look=pl.look||'';
+      p.username=pl.username||'';p.avatarCfg=AvatarSystem.sanitize(pl.avatar);
       p.x=pl.x;p.y=pl.y;
       p.state=pl.state||'idle';
       if(p.state==='sit'){p.rx=pl.x;p.ry=pl.y;p.moving=false;p.dir=pl.dir<0?-1:1;p.north=!!pl.north;}
@@ -1337,10 +1470,7 @@
   }
 
   function chatAvatarHeight(s){
-    if(avatar.sitting)return 68*s*AVATAR_SPRITE_SCALE;
-    if(avatar.moving&&avatar.north&&avatarImages.back)return 92*s*AVATAR_SPRITE_SCALE;
-    if(avatar.moving)return 90*s*AVATAR_SPRITE_SCALE;
-    return 94*s*AVATAR_SPRITE_SCALE;
+    return chibiCharH(avatar.sitting);
   }
   function drawChatBubble(c){
     if(!chat.text)return;
@@ -1366,8 +1496,9 @@
     var lineH=17*s,padX=10*s,padY=7*s,textW=0;
     lines.forEach(function(l){textW=Math.max(textW,c.measureText(l).width);});
     var bw=textW+padX*2,bh=lines.length*lineH+padY*2;
-    var bx=Math.max(4*s,Math.min(canvas.width-bw-4*s,anchorX-bw/2));
-    var by=Math.max(4*s,topY-bh-11*s);
+    var vx0=canvas.width/2-canvas.width/2/zoom-cam.x, vy0=canvas.height/2-canvas.height/2/zoom-cam.y;
+    var bx=Math.max(vx0+4*s,Math.min(vx0+canvas.width/zoom-bw-4*s,anchorX-bw/2));
+    var by=Math.max(vy0+4*s,topY-bh-11*s);
     var tailX=Math.max(bx+13*s,Math.min(bx+bw-13*s,anchorX));
     var r=9*s;
     // Tail first so the bubble body covers its top edge.
@@ -1401,6 +1532,11 @@
 
   function draw() {
     if(!ctx)return;
+    updateCamera();
+    ctx.save();
+    ctx.translate(canvas.width/2,canvas.height/2);
+    ctx.scale(zoom,zoom);
+    ctx.translate(cam.x-canvas.width/2,cam.y-canvas.height/2);
     drawRoom();
     var walls=items.filter(function(i){return TYPES[i.type].layer==='wall'});
     walls.sort(function(a,b){return (a.wall+a.tile).localeCompare(b.wall+b.tile)}).forEach(function(i){drawWallItem(ctx,i)});
@@ -1412,33 +1548,37 @@
     var avatarDepth=avatar.x+avatar.y,avatarDrawn=false;
     // Peers depth-sort with the furniture exactly like my avatar does:
     // each peer is drawn just before the first floor piece in front of it.
+    // (Peers render in Play mode; my own avatar is drawn in every mode —
+    // the follow camera is active in Edit too, like the test version.)
     var peerList=appMode==='play'?Object.keys(peers).map(function(k){return peers[k];}).sort(function(a,b){return (a.rx+a.ry)-(b.rx+b.ry);}):[];
     var peerIdx=0;
     floors.forEach(function(i){
-      if(appMode==='play'&&!avatar.sitting&&!avatarDrawn&&TYPES[i.type].layer!=='rug'&&i.x+i.y>avatarDepth){drawAvatar(ctx);avatarDrawn=true;}
+      if(!avatar.sitting&&!avatarDrawn&&TYPES[i.type].layer!=='rug'&&i.x+i.y>avatarDepth){drawAvatar(ctx);avatarDrawn=true;}
       if(appMode==='play'&&TYPES[i.type].layer!=='rug'){
         while(peerIdx<peerList.length&&(peerList[peerIdx].rx+peerList[peerIdx].ry)<i.x+i.y){drawPeerAvatar(ctx,peerList[peerIdx]);peerIdx++;}
       }
       drawFurniture(ctx,i,false);
     });
-    if(appMode==='play'&&!avatarDrawn)drawAvatar(ctx);
+    if(!avatarDrawn)drawAvatar(ctx);
     if(appMode==='play'){while(peerIdx<peerList.length){drawPeerAvatar(ctx,peerList[peerIdx]);peerIdx++;}}
     if(appMode==='play')drawChatBubble(ctx);
     if(appMode==='play')drawPeerOverlays(ctx);
     if(appMode==='play'&&!avatar.sitting)drawSitMarker(nearbySeat());
     drawHover();
     drawDragFootprint();
+    ctx.restore();
   }
 
   function renderCatalog() {
     catalogEl.innerHTML='';
-    var order=catalogCategory==='aqua'?null:catalogCategory==='wood'?WOOD_ORDER:OCEAN_ORDER;
-    [['oceanTab','ocean'],['aquaTab','aqua'],['woodTab','wood']].forEach(function(pair){
+    var order=catalogCategory==='aqua'||catalogCategory==='room'?null:catalogCategory==='wood'?WOOD_ORDER:OCEAN_ORDER;
+    [['oceanTab','ocean'],['aquaTab','aqua'],['woodTab','wood'],['roomTab','room']].forEach(function(pair){
       var tabEl=document.getElementById(pair[0]),on=catalogCategory===pair[1];
       tabEl.classList.toggle('active',on);tabEl.setAttribute('aria-selected',on?'true':'false');
     });
-    document.getElementById('catalogLabel').textContent=catalogCategory==='aqua'?t('aquaCatalog'):catalogCategory==='wood'?t('woodCatalog'):t('oceanCatalog');
+    document.getElementById('catalogLabel').textContent=catalogCategory==='aqua'?t('aquaCatalog'):catalogCategory==='wood'?t('woodCatalog'):catalogCategory==='room'?t('roomCatalog'):t('oceanCatalog');
     if(catalogCategory==='aqua'){renderTankCatalog();return;}
+    if(catalogCategory==='room'){renderRoomCatalog();return;}
     order.forEach(function(type){
       var btn=document.createElement('button');btn.className='catalog-item'+(selectedType===type?' active':'');btn.dataset.type=type;btn.title=nameOf(type);
       var label=document.createElement('span');label.textContent=nameOf(type);
@@ -1467,6 +1607,37 @@
       btn.addEventListener('click',function(){if(type.indexOf('aq_')===0)buyAquariumOnAquaNim();else buyFurniture(type);});
     });
   }
+  // Wall & floor tab: pick a color for the walls and a color for the
+  // floor. Free, applies instantly, and is saved with the room layout.
+  function renderRoomCatalog(){
+    function heading(text){
+      var h=document.createElement('div');h.className='surface-heading';h.textContent=text;catalogEl.appendChild(h);
+    }
+    function swatchCard(opt,current,isFloor,apply){
+      var btn=document.createElement('button');
+      btn.className='catalog-item surface-item'+(current===opt.color?' active':'');
+      btn.title=opt[lang]||opt.en;
+      var sw=document.createElement('span');sw.className='swatch';
+      if(isFloor){
+        sw.style.background='repeating-conic-gradient('+AvatarSystem.shade(opt.color,10)+' 0% 25%, '+AvatarSystem.shade(opt.color,-13)+' 0% 50%) 50% / 26px 26px';
+      } else {
+        sw.style.background='linear-gradient(135deg, '+AvatarSystem.shade(opt.color,14)+' 0 52%, '+AvatarSystem.shade(opt.color,-16)+' 52% 100%)';
+      }
+      btn.appendChild(sw);
+      var label=document.createElement('span');label.textContent=opt[lang]||opt.en;btn.appendChild(label);
+      btn.addEventListener('click',function(){apply(opt.color);});
+      catalogEl.appendChild(btn);
+    }
+    heading(t('wallLabel'));
+    WALL_OPTIONS.forEach(function(opt){
+      swatchCard(opt,wallColor,false,function(color){wallColor=color;renderCatalog();draw();scheduleSave();});
+    });
+    heading(t('floorLabel'));
+    FLOOR_OPTIONS.forEach(function(opt){
+      swatchCard(opt,floorColor,true,function(color){floorColor=color;renderCatalog();draw();scheduleSave();});
+    });
+  }
+
   // Aquariums tab: 5 tank tiers from the player's owned inventory.
   // Each card shows owned/placed/available and a buy button (AquaNim price).
   // Tapping a card with availability enters placement mode for that tier.
@@ -1561,6 +1732,9 @@
     document.getElementById('mirrorTop').disabled=!item;
     document.getElementById('deleteBtn').disabled=!item||hasFish;
     document.getElementById('deleteTop').disabled=!item||hasFish;
+    rotateSlider.disabled=!item;
+    if(item){var angN=((item.angle||0)%360+360)%360;rotateSlider.value=angN>180?angN-360:angN;rotateVal.textContent=Math.round(angN)+'°';}
+    else {rotateSlider.value=0;rotateVal.textContent='0°';}
     if(selectedTier){
       statusEl.textContent=t('placing')+tierName(selectedTier);
       hintEl.textContent=t('hint');
@@ -1587,6 +1761,12 @@
     document.getElementById('oceanTab').textContent=t('oceanTab');
     document.getElementById('aquaTab').textContent=t('aquaTab');
     document.getElementById('woodTab').textContent=t('woodTab');
+    document.getElementById('roomTab').textContent=t('roomTab');
+    rotateSlider.setAttribute('aria-label',t('rotateFree'));
+    document.getElementById('avTitle').textContent=t('avTitle');
+    document.getElementById('avatarRandom').textContent='🎲 '+t('avRandom');
+    document.getElementById('avatarDone').textContent=t('avDone');
+    if(!document.getElementById('avatarModal').hidden&&avatarEditor)avatarEditor.render();
     document.querySelectorAll('[data-t]').forEach(function(el){el.textContent=t(el.dataset.t)});
     document.getElementById('mirrorTop').setAttribute('aria-label',t('mirror'));
     document.getElementById('deleteTop').setAttribute('aria-label',t('delete'));
@@ -1638,7 +1818,24 @@
   }
 
   canvas.addEventListener('pointerdown',function(ev){
-    canvas.setPointerCapture(ev.pointerId);var p=screenPoint(ev);
+    canvas.setPointerCapture(ev.pointerId);
+    canvasPointers[ev.pointerId]={x:ev.clientX,y:ev.clientY};
+    if(Object.keys(canvasPointers).length===2){
+      // Second finger down: start a pinch zoom and cancel any pending
+      // tap/drag so the gesture doesn't also place or move something.
+      var ids=Object.keys(canvasPointers),pa=canvasPointers[ids[0]],pb=canvasPointers[ids[1]];
+      pinch={d0:Math.max(10,Math.hypot(pa.x-pb.x,pa.y-pb.y)),z0:zoom};
+      if(drag){
+        var dit=items.find(function(i){return i.id===drag.id});
+        if(dit&&drag.orig){
+          if(TYPES[dit.type].layer==='wall'){dit.wall=drag.orig.wall;dit.tile=drag.orig.tile;dit.z=drag.orig.z;}
+          else {dit.x=drag.orig.x;dit.y=drag.orig.y;}
+        }
+      }
+      drag=null;pointerDown=null;hover=null;draw();
+      return;
+    }
+    var p=screenPoint(ev);
     if(appMode==='play'){pointerDown={p:p,time:Date.now(),hit:null};return;}
     var hit=selectedType?null:hitItem(p);
     pointerDown={p:p,time:Date.now(),hit:hit};
@@ -1649,6 +1846,16 @@
     }
   });
   canvas.addEventListener('pointermove',function(ev){
+    if(canvasPointers[ev.pointerId])canvasPointers[ev.pointerId]={x:ev.clientX,y:ev.clientY};
+    if(pinch){
+      var ids=Object.keys(canvasPointers);
+      if(ids.length>=2){
+        var pa=canvasPointers[ids[0]],pb=canvasPointers[ids[1]];
+        zoom=Math.max(.55,Math.min(2.6,pinch.z0*Math.hypot(pa.x-pb.x,pa.y-pb.y)/pinch.d0));
+        draw();
+      }
+      return;
+    }
     var p=screenPoint(ev);
     if(appMode==='play')return;
     if(drag){
@@ -1683,6 +1890,11 @@
     }
   });
   canvas.addEventListener('pointerup',function(ev){
+    var wasPinch=!!pinch;
+    delete canvasPointers[ev.pointerId];
+    if(Object.keys(canvasPointers).length<2)pinch=null;
+    if(wasPinch){ignoreNextUp=Object.keys(canvasPointers).length>0;pointerDown=null;drag=null;draw();return;}
+    if(ignoreNextUp){ignoreNextUp=Object.keys(canvasPointers).length>0;pointerDown=null;drag=null;return;}
     var p=screenPoint(ev);
     if(appMode==='play'){
       var playHit=hitItem(p);
@@ -1737,7 +1949,13 @@
     } else {selectedId=null;updateUI();draw();}
     pointerDown=null;
   });
-  canvas.addEventListener('pointercancel',function(){drag=null;pointerDown=null;draw();});
+  canvas.addEventListener('pointercancel',function(ev){delete canvasPointers[ev.pointerId];if(Object.keys(canvasPointers).length<2)pinch=null;drag=null;pointerDown=null;draw();});
+  // Mouse wheel zoom on desktop (same center-anchored zoom as pinch).
+  canvas.addEventListener('wheel',function(ev){
+    ev.preventDefault();
+    zoom=Math.max(.55,Math.min(2.6,zoom*(ev.deltaY<0?1.12:1/1.12)));
+    draw();
+  },{passive:false});
   canvas.addEventListener('pointerleave',function(){if(!drag&&hover){hover=null;draw();}});
 
   // Server persistence: the whole layout (items + avatar) auto-saves to
@@ -1746,7 +1964,7 @@
   function housePayload() {
     syncAvatarSeat();
     var avatarState = { x: avatar.x, y: avatar.y, facing: avatar.facing, north: avatar.north, sitting: avatar.sitting, seatId: avatar.seatId };
-    return { roomDecorator: 1, items: items, avatar: avatarState, nextId: nextId };
+    return { roomDecorator: 1, wallColor: wallColor, floorColor: floorColor, items: items, avatar: avatarState, nextId: nextId };
   }
   function saveHouse() {
     // Visit mode is strictly read-only: never write the owner's room (or
@@ -1769,6 +1987,8 @@
   // Validate + normalize a layout object (shared shape with the old
   // download/upload format) and install it as the current room.
   function applyLayout(d) {
+    if (isHexColor(d.wallColor)) wallColor = d.wallColor;
+    if (isHexColor(d.floorColor)) floorColor = d.floorColor;
     var idMap = {};
     var clean = d.items.filter(function (i) { return i && TYPES[i.type]; }).map(function (i) {
       var newId = nextId++; idMap[String(i.id)] = newId;
@@ -1830,10 +2050,9 @@
       myUserId = r.visitor_id || null;
       if (r.tanks) ownedTanks = r.tanks;
       if (r.tank_fish) tankFish = r.tank_fish;
-      // The visitor's own look walks the room (NOT the owner's look).
-      if (r.visitor_look && /^(lyh|jeff|cat)$/.test(r.visitor_look)) {
-        loadAvatarSprites('/assets/looks/' + r.visitor_look + '/', 8, 4, 1, false);
-      }
+      // The visitor's own avatar walks the room (NOT the owner's).
+      if (r.visitor_avatar) myAvatar = AvatarSystem.sanitize(r.visitor_avatar);
+      if (r.owner_avatar) ownerAvatarCfg = AvatarSystem.sanitize(r.owner_avatar);
       var d = r.layout;
       if (d && d.roomDecorator === 1 && Array.isArray(d.items)) applyLayout(d);
       // Start as a guest in the room, not in the owner's saved pose/seat.
@@ -1861,10 +2080,8 @@
       roomHouseId = r.user_id || null;
       if(r.tanks)ownedTanks=r.tanks;
       if(r.tank_fish)tankFish=r.tank_fish;
-      // Load the player's chosen look for the house avatar (falls back to cat)
-      if(r.look && /^(lyh|jeff|cat)$/.test(r.look)){
-        loadAvatarSprites('/assets/looks/'+r.look+'/', 8, 4, 1, false);
-      }
+      // My chibi avatar config (server-persisted per account).
+      if(r.avatar)myAvatar=AvatarSystem.sanitize(r.avatar);
       var d = r.layout;
       if (d && d.roomDecorator === 1 && Array.isArray(d.items)) applyLayout(d);
       done();
@@ -1889,6 +2106,15 @@
     if(am){it.angle=MIRROR_ANGLE[am[1]];updateUI();}
     draw();scheduleSave();
   }
+  // Free rotation: the slider sets any angle (degrees) on the selected
+  // item, stored as item.angle and drawn by the renderers.
+  rotateSlider.addEventListener('input',function(){
+    var it=items.find(function(i){return i.id===selectedId});if(!it)return;
+    var v=Number(rotateSlider.value)||0;
+    it.angle=((v%360)+360)%360;
+    rotateVal.textContent=Math.round(it.angle)+'°';
+    draw();scheduleSave();
+  });
   ['mirrorBtn','mirrorTop'].forEach(function(id){document.getElementById(id).addEventListener('click',mirrorSelected)});
   ['deleteBtn','deleteTop'].forEach(function(id){document.getElementById(id).addEventListener('click',deleteSelected)});
   document.getElementById('langBtn').addEventListener('click',function(){lang=lang==='pt'?'en':lang==='en'?'es':'pt';try{localStorage.setItem('aquanim_lang',lang);}catch(e){}translateUI();draw();});
@@ -1976,6 +2202,41 @@
   joystick.addEventListener('pointerup',releaseJoystick);joystick.addEventListener('pointercancel',releaseJoystick);
   joystick.addEventListener('keydown',function(ev){var map={ArrowLeft:'a',ArrowRight:'d',ArrowUp:'w',ArrowDown:'s'};if(map[ev.key]){ev.preventDefault();keys[map[ev.key]]=true;}});
   joystick.addEventListener('keyup',function(ev){var map={ArrowLeft:'a',ArrowRight:'d',ArrowUp:'w',ArrowDown:'s'};if(map[ev.key])keys[map[ev.key]]=false;});
+
+  /* ===== Avatar studio UI (the chibi system, in a modal) =====
+     Edits apply to the room character immediately and persist to the
+     account via POST /api/me/avatar (debounced). */
+  var avatarModal=document.getElementById('avatarModal');
+  var avatarEditor=AvatarSystem.createEditor({
+    stageEl:document.getElementById('avatarStage'),
+    panelsEl:document.getElementById('avatarPanels'),
+    tabEls:Array.prototype.slice.call(avatarModal.querySelectorAll('.av-tab')),
+    lang:function(){return lang;},
+    cfg:myAvatar,
+    onChange:function(cfg){
+      myAvatar=AvatarSystem.sanitize(cfg);
+      draw();
+      scheduleAvatarSave();
+    }
+  });
+  var avatarSaveTimer=null;
+  function scheduleAvatarSave(){
+    if(avatarSaveTimer)clearTimeout(avatarSaveTimer);
+    avatarSaveTimer=setTimeout(function(){
+      apiPost('/api/me/avatar',{avatar:myAvatar}).then(function(r){
+        if(!r.ok)showToast(t('saveFailed'));
+      });
+    },600);
+  }
+  document.getElementById('avatarBtn').addEventListener('click',function(){
+    avatarEditor.setConfig(myAvatar);
+    avatarModal.hidden=false;
+  });
+  document.getElementById('avatarClose').addEventListener('click',function(){avatarModal.hidden=true;});
+  document.getElementById('avatarDone').addEventListener('click',function(){avatarModal.hidden=true;});
+  avatarModal.addEventListener('click',function(ev){if(ev.target===avatarModal)avatarModal.hidden=true;});
+  document.addEventListener('keydown',function(ev){if(ev.key==='Escape'&&!avatarModal.hidden)avatarModal.hidden=true;});
+  document.getElementById('avatarRandom').addEventListener('click',function(){avatarEditor.randomize();});
 
   var mq=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)');if(mq&&mq.addEventListener)mq.addEventListener('change',draw);
   window.addEventListener('resize',resize);

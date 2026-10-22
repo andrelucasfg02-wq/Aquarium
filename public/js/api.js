@@ -45,7 +45,7 @@ const Api = (() => {
 
   return {
     onAuthFail(fn) { onAuthFail = fn; },
-    register: (name, email, password, look) => post("/api/register", { name, email, password, look }),
+    register: (name, email, password) => post("/api/register", { name, email, password }),
     login: (email, password) => post("/api/login", { email, password }),
     guest: (guest_token) => post("/api/guest", { guest_token }),
     claim: (name, email, password) => post("/api/claim", { name, email, password }),
@@ -110,7 +110,7 @@ const Api = (() => {
     profileOf: (id) => get(`/api/profile/${id}`),
     profileRename: (name) => post("/api/profile/name", { name }),
     profileBio: (bio) => post("/api/profile/bio", { bio }),
-    setLook: (look) => post("/api/me/look", { look }),
+    setAvatar: (avatar) => post("/api/me/avatar", { avatar }),
     profileAvatar: (image) => post("/api/profile/avatar", { image }),
     visitTank: (id) => get(`/api/profile/${id}/tank`),
     heartTank: (owner_id) => post("/api/guestbook/heart", { owner_id }),

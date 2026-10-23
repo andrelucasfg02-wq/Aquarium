@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=overlays-content" />
   <meta name="color-scheme" content="light dark" />
   <link rel="icon" href="data:," />
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -44,19 +44,26 @@
       }
     }
     * { box-sizing: border-box; }
-    html, body { min-height: 100%; }
+    /* The game is a single fixed screen: the page itself never scrolls, so
+       the on-screen keyboard can't shove the room around or leave it stuck
+       off-center (iOS scrolls the page to the focused input otherwise). */
+    html, body { height: 100%; }
     body {
       margin: 0;
       font-family: "Nunito Sans", ui-rounded, sans-serif;
       background: var(--page);
       color: var(--ink);
-      overflow-x: hidden;
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
     }
     button, input { font: inherit; }
     button { -webkit-tap-highlight-color: transparent; }
     .app {
       width: min(1180px, 100%);
-      min-height: 100vh;
+      height: 100%;
       margin: 0 auto;
       padding: 12px 14px calc(20px + env(safe-area-inset-bottom));
       display: grid;
@@ -945,6 +952,7 @@
   }
 
   function resize() {
+    if (chatKbOpen) return; // keyboard open: keep the room exactly as it is
     var shell=canvas.parentElement, rect=shell.getBoundingClientRect();
     var dpr=Math.min(window.devicePixelRatio||1,2);
     var cssW=Math.max(320,rect.width), cssH=Math.max(310,rect.height);
@@ -2138,6 +2146,20 @@
     // Left the field without sending: keep the bubble briefly, then fade.
     if(chat.text&&!chat.until)chat.until=Date.now()+2500;
   });
+  // While the chat keyboard is open the game must not move: the layout is
+  // frozen (resize() is a no-op), any browser attempt to scroll the page
+  // back to the input is undone, and only the chat bar lifts (above).
+  var chatKbOpen=false;
+  chatInput.addEventListener('focus',function(){
+    chatKbOpen=true; window.scrollTo(0,0);
+  });
+  chatInput.addEventListener('blur',function(){
+    chatKbOpen=false;
+    setTimeout(function(){ window.scrollTo(0,0); resize(); },60);
+  });
+  window.addEventListener('scroll',function(){
+    if(chatKbOpen) window.scrollTo(0,0);
+  },{passive:true});
   // Keyboard lift: the chat bar lives at the bottom of the room, and on
   // phones the on-screen keyboard would cover it (iOS doesn't shrink the
   // layout for the keyboard). While the input is focused, translate the

@@ -1638,8 +1638,8 @@ const UI = (() => {
           <input id="prof-bio" maxlength="160" value="${esc(p.bio || "")}" placeholder="${t("profile.bio_ph")}" autocomplete="off">
           <button class="pill-btn" id="prof-biosave">${t("profile.save")}</button>
         </div>
-        <div class="sec-title">🧍 ${t("profile.avatar")}</div>
-        <div class="prof-avatar-edit">
+        <div class="sec-title" hidden>🧍 ${t("profile.avatar")}</div>
+        <div class="prof-avatar-edit" hidden>
           ${p.avatar_url ? `` : avatarHtml(p, "prof-avatar prof-avatar-mini")}
           <button class="pill-btn" id="prof-avatar-edit" type="button">🧍 ${t("profile.customize")}</button>
         </div>` : ``}
@@ -1661,7 +1661,7 @@ const UI = (() => {
     } else {
       html += `<div class="prof-actions">
           <button class="pill-btn" id="prof-visit">🐠 ${t("profile.visit")}</button>
-          <button class="pill-btn" id="prof-visit-house">🏠 ${t("profile.visit_house")}</button>`;
+          <button class="pill-btn" id="prof-visit-house" hidden>🏠 ${t("profile.visit_house")}</button>`;
       if (p.relation === "accepted") html += `<button class="pill-btn" id="prof-rm">${t("friends.remove")}</button>`;
       html += `</div>`;
     }

@@ -489,6 +489,19 @@ select.sel{padding:10px;border-radius:12px;border:2px solid var(--green-border);
 .qs-rewards{font-size:13px;font-weight:700;margin-top:4px}
 .qs-collect{background:#5ee88a;border:0;color:#0c3d1e;border-radius:12px;padding:11px 18px;font-weight:800;font-size:14px;cursor:pointer;flex-shrink:0;box-shadow:0 2px 0 #2f9e44}
 .qs-go{background:rgba(0,0,0,.08);border:0;color:var(--ink);border-radius:12px;padding:11px 18px;font-weight:800;font-size:14px;cursor:pointer;flex-shrink:0}
+/* 7-day login reward track */
+.lg-track{margin-bottom:12px}
+.lg-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.lg-nodes{display:flex;gap:6px}
+.lg-node{flex:1;min-width:0;text-align:center;padding:6px 2px;border-radius:12px;background:rgba(255,255,255,.55);border:2px solid transparent}
+.lg-node.lg-current{border-color:var(--green-d);background:rgba(255,255,255,.95)}
+.lg-node.lg-done{opacity:.6}
+.lg-icon{height:44px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800}
+.lg-thumb{max-width:100%;max-height:44px;object-fit:contain}
+.lg-day{font-size:11px;color:var(--ink-soft);margin-top:2px}
+.lg-bar{height:10px;background:rgba(0,0,0,.08);border-radius:999px;overflow:hidden;margin-top:10px}
+.lg-bar i{display:block;height:100%;background:linear-gradient(90deg,#5ccb52,#2f9e44);border-radius:999px}
+.lg-gems{white-space:nowrap}
 
 /* ---------- fish market ---------- */
 .mk-price{font-size:17px;font-weight:800;color:#2f7a45;margin-bottom:6px;white-space:nowrap}

@@ -1079,6 +1079,32 @@ const UI = (() => {
 
   /* ================= QUESTS ================= */
   /* ================= QUESTS + GAMES ================= */
+  // 7-day login reward track (on top of the quests screen)
+  function loginTrackHtml() {
+    const lg = state.login;
+    if (!lg || !lg.rewards) return "";
+    const nodes = lg.rewards.map((rw) => {
+      const claimed = lg.claimed_days.includes(rw.day);
+      const current = rw.day === lg.day && !lg.claimed_today;
+      let icon;
+      if (rw.gems) icon = `<span class="lg-gems">💎 ${rw.gems}</span>`;
+      else if (rw.deco_file) icon = `<img class="lg-thumb" src="${esc(rw.deco_file)}" alt="">`;
+      else icon = `<img class="lg-thumb" src="assets/new_critters/oldflower_betta_01.png" alt="">`;
+      return `<div class="lg-node ${claimed ? "lg-done" : ""} ${current ? "lg-current" : ""}">
+        <div class="lg-icon">${claimed ? "✅" : icon}</div>
+        <div class="lg-day">${t("login.day", { n: rw.day })}</div>
+      </div>`;
+    }).join("");
+    const fill = Math.round((lg.claimed_days.length / 7) * 100);
+    return `<div class="qs-panel lg-track">
+      <div class="lg-head"><b>🎁 ${t("login.title")}</b>
+        ${lg.claimed_today ? `<span class="tag">${t("login.back_tomorrow")}</span>`
+          : `<button class="qs-collect" id="lg-claim">${t("login.claim")}</button>`}
+      </div>
+      <div class="lg-nodes">${nodes}</div>
+      <div class="lg-bar"><i style="width:${fill}%"></i></div>
+    </div>`;
+  }
   let questsTab = "daily";
   function renderQuestsScreen() {
     const body = $("screen-body");
@@ -1090,8 +1116,15 @@ const UI = (() => {
         <button class="qs-tab${questsTab === "daily" ? " active" : ""}" data-qtab="daily">☀️ ${t("quest.daily")}${badge(claimable("daily"))}</button>
         <button class="qs-tab${questsTab === "weekly" ? " active" : ""}" data-qtab="weekly">📅 ${t("quest.weekly")}${badge(claimable("weekly"))}</button>
         <button class="qs-tab${questsTab === "games" ? " active" : ""}" data-qtab="games">🎮 ${t("mg.title")}</button>
-      </div><div id="quests-body"></div>`;
+      </div>${loginTrackHtml()}<div id="quests-body"></div>`;
     body.querySelectorAll("[data-qtab]").forEach((b) => b.onclick = () => { questsTab = b.dataset.qtab; renderQuestsScreen(); });
+    const lgBtn = $("lg-claim");
+    if (lgBtn) lgBtn.onclick = async () => {
+      lgBtn.disabled = true;
+      const r = await Api.loginClaim();
+      if (r.ok) { AudioFX.coin(); toast(t("toast.login_claimed")); await App.refresh(); renderQuestsScreen(); }
+      else { AudioFX.error(); toast(r.error || t("toast.couldnt_claim")); lgBtn.disabled = false; }
+    };
     const sub = $("quests-body");
     if (questsTab === "games") renderMinigame(sub); else renderQuests(sub, questsTab);
   }

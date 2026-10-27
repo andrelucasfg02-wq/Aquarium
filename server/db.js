@@ -31,6 +31,9 @@ const SCHEMA = `
       user_id INTEGER, fx_id TEXT, PRIMARY KEY(user_id, fx_id));
     CREATE TABLE IF NOT EXISTS bgfx_equipped(
       user_id INTEGER, tank TEXT, fx_id TEXT, PRIMARY KEY(user_id, tank));
+    -- 7-day login rewards: streak_day = next day to claim (1-7)
+    CREATE TABLE IF NOT EXISTS login_streak(
+      user_id INTEGER PRIMARY KEY, streak_day INTEGER, last_claim_date TEXT);
     -- visit guestbook: hearts on a player's tanks + short visitor notes
     CREATE TABLE IF NOT EXISTS tank_hearts(
       visitor_id INTEGER, owner_id INTEGER, created_at INTEGER,

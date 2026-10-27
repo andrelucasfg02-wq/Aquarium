@@ -308,11 +308,41 @@ function helpers(db) {
     return { owned, equipped: Object.fromEntries(eq.map((r) => [r.tank, r.fx_id])) };
   };
 
+  // ---------- 7-day login rewards ----------
+  // Day 1: 15 gems; days 2-5: one autumn furniture each; day 6: 100 gems;
+  // day 7: Oldflower Betta. Miss a day and the cycle restarts at day 1.
+  const LOGIN_REWARDS = [
+    { day: 1, gems: 15 },
+    { day: 2, deco: 'deco_autumn_maple_arch' },
+    { day: 3, deco: 'deco_autumn_maple_lantern' },
+    { day: 4, deco: 'deco_autumn_hollow_log' },
+    { day: 5, deco: 'deco_autumn_lantern_bridge' },
+    { day: 6, gems: 100 },
+    { day: 7, fish: 'oldflower_betta' },
+  ];
+  const loginDayStr = (t) => new Date(t * 1000).toISOString().slice(0, 10);
+  const loginState = async (uid, t) => {
+    const row = await db.get('SELECT streak_day, last_claim_date FROM login_streak WHERE user_id=?', uid);
+    const today = loginDayStr(t), yesterday = loginDayStr(t - 86400);
+    let day = row ? (row.streak_day || 1) : 1;
+    let claimedToday = false;
+    if (row && row.last_claim_date === today) claimedToday = true;
+    else if (!row || row.last_claim_date !== yesterday) day = 1; // fresh start or missed day(s)
+    day = Math.min(7, Math.max(1, day));
+    const rewards = LOGIN_REWARDS.map((rw) => {
+      const d = rw.deco ? C.decorItem(rw.deco) : null;
+      return { day: rw.day, gems: rw.gems || 0,
+        deco: rw.deco || null, deco_name: d ? d.name : null, deco_file: d ? d.file : null,
+        fish: rw.fish || null, fish_name: rw.fish ? 'Oldflower Betta' : null };
+    });
+    return { day, claimed_today: claimedToday, claimed_days: Array.from({ length: day - 1 }, (_, i) => i + 1), rewards, today };
+  };
+
   return {
     getWallet, addCoins, addGems, addXp, getTanks, activeTank, activeTankNum,
     tankFishCount, totalFishCount, ensureQuests, questRow, questProgressAdd,
     questProgressMax, questList, fishJson, addFish, hatchEgg, maintain,
-    BGFX, bgfxState,
+    BGFX, bgfxState, LOGIN_REWARDS, loginState,
   };
 }
 
@@ -562,6 +592,7 @@ module.exports = function gameRoutes(db) {
         dirt: { spots, green, last_cleaned_at: ds ? ds.last_cleaned_at : t },
         decor_owned, placements,
         quests: await H.questList(uid, t),
+        login: await H.loginState(uid, t),
         collection,
         settings: { music: !!settings.music, sfx: !!settings.sfx, quality: settings.quality },
       },
@@ -1167,6 +1198,28 @@ module.exports = function gameRoutes(db) {
       if (def.reward_gems) await Ht.addGems(uid, def.reward_gems);
     });
     res.json({ ok: true, coins: def.reward_coins, gems: def.reward_gems });
+  }));
+
+  // ---------- 7-day login rewards ----------
+  r.post('/login/claim', ah(async (req, res) => {
+    const uid = req.user.id; const t = now();
+    const st = await H.loginState(uid, t);
+    if (st.claimed_today) return res.status(400).json({ ok: false, error: 'already claimed' });
+    const reward = H.LOGIN_REWARDS[st.day - 1];
+    const granted = await db.tx(async (txDb) => {
+      const Ht = helpers(txDb);
+      if (reward.gems) await Ht.addGems(uid, reward.gems);
+      if (reward.deco) await txDb.run(`INSERT INTO decor_owned (user_id,deco_id,qty) VALUES (?,?,1)
+        ON CONFLICT(user_id,deco_id) DO UPDATE SET qty=qty+1`, uid, reward.deco);
+      let fish = null;
+      if (reward.fish) fish = await Ht.addFish(uid, reward.fish, { location: 'inventory', origin: 'login' }, t);
+      const next = st.day >= 7 ? 1 : st.day + 1;
+      await txDb.run(`INSERT INTO login_streak (user_id, streak_day, last_claim_date) VALUES (?,?,?)
+        ON CONFLICT(user_id) DO UPDATE SET streak_day=excluded.streak_day, last_claim_date=excluded.last_claim_date`,
+        uid, next, st.today);
+      return { fish: fish ? H.fishJson(fish, t) : null };
+    });
+    res.json({ ok: true, day: st.day, reward, fish: granted.fish, login: await H.loginState(uid, t) });
   }));
 
   // ---------- food / settings / minigame ----------

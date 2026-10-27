@@ -113,6 +113,7 @@ const Api = (() => {
     setAvatar: (avatar) => post("/api/me/avatar", { avatar }),
     profileAvatar: (image) => post("/api/profile/avatar", { image }),
     visitTank: (id) => get(`/api/profile/${id}/tank`),
+    loginClaim: () => post("/api/login/claim"),
     heartTank: (owner_id) => post("/api/guestbook/heart", { owner_id }),
     guestNote: (owner_id, message) => post("/api/guestbook/note", { owner_id, message }),
     guestbook: () => get("/api/guestbook"),

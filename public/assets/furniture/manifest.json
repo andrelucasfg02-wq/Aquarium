@@ -1,6 +1,6 @@
 {
   "pack": "furniture_sheet_1",
-  "count": 133,
+  "count": 137,
   "items": [
     {
       "id": "deco_sand_beige",
@@ -824,6 +824,30 @@
       "file": "deco_new_flat_stone_stack.png",
       "name": "Flat Stone Stack",
       "shop": true
+    },
+    {
+      "id": "deco_autumn_maple_arch",
+      "file": "autumn_maple_arch.png",
+      "name": "Maple Arch",
+      "shop": false
+    },
+    {
+      "id": "deco_autumn_maple_lantern",
+      "file": "autumn_maple_lantern.png",
+      "name": "Maple Lantern",
+      "shop": false
+    },
+    {
+      "id": "deco_autumn_hollow_log",
+      "file": "autumn_hollow_log.png",
+      "name": "Hollow Log",
+      "shop": false
+    },
+    {
+      "id": "deco_autumn_lantern_bridge",
+      "file": "autumn_lantern_bridge.png",
+      "name": "Lantern Bridge",
+      "shop": false
     }
   ]
 }

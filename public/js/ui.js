@@ -1795,45 +1795,71 @@ const UI = (() => {
     const r = await Api.marketListings();
     if (!r.ok) { body.innerHTML = `<div class="empty">${t("market.couldnt_load")}</div>`; return; }
     const me = state.user && state.user.id;
-    let html = `<div class="sub" style="margin-bottom:8px">${t("market.intro")}</div>
-    <button class="pill-btn gold" id="mk-add" style="margin-bottom:8px">${t("market.add_fish")}</button>`;
-    if (!r.listings.length) {
-      html += `<div class="empty">${t("market.empty")}</div>`;
-    }
-    for (const l of r.listings) {
+    let tab = "explore", filter = "all";
+    // listing kind drives the tile color + badge
+    const kindOf = (l) => {
       const f = l.fish, lin = f.lineage || {};
-      const tags = [];
-      if (lin.hybrid) tags.push("✨ " + t("tag.hybrid"));
-      if (lin.generation) tags.push(t("tag.gen", { n: lin.generation }));
-      if (f.origin === "event") tags.push("🏆 " + t("tag.event"));
-      if (f.origin === "bred" && !lin.hybrid) tags.push("🧬 " + t("tag.bred"));
-      const own = l.seller_id === me;
-      html += `<div class="row-card">${fishImg(f.species_id, 0, f.gender)}<div class="grow">
-        <b>${esc(f.nickname || f.name)}</b>
-        <span class="tag">${f.gender === "male" ? "♂" : "♀"}</span>${tags.map((t) => ` <span class="tag">${t}</span>`).join("")}
-        <div class="sub">${esc(f.name)} · ${t("market.seller", { name: esc(l.seller_name || t("market.player")) })}</div></div>
-        <div style="text-align:right;flex-shrink:0">
-          <div class="mk-price">${CUR_GEM} ${l.price_diamonds}</div>
-          ${own
-            ? `<button class="pill-btn" data-mkcancel="${l.listing_id}">${t("market.cancel")}</button>`
-            : `<button class="pill-btn gold" data-mkbuy="${l.listing_id}">${t("shop.buy")}</button>`}
-        </div></div>`;
+      if (lin.hybrid) return "hybrid";
+      if (f.origin === "event") return "event";
+      if (f.origin === "bred") return "bred";
+      return "normal";
+    };
+    const badge = (k) => ({ hybrid: "✨", event: "🏆", bred: "🧬", normal: "" })[k];
+    function gridHtml() {
+      const list = r.listings
+        .filter((l) => tab === "mine" ? l.seller_id === me : true)
+        .filter((l) => filter === "all" || kindOf(l) === filter);
+      if (!list.length) return `<div class="empty">${t("market.empty")}</div>`;
+      return `<div class="mk-grid">` + list.map((l) => {
+        const f = l.fish, k = kindOf(l), own = l.seller_id === me;
+        return `<div class="mk-card${own ? " mk-own" : ""}">
+          <div class="mk-tile mk-${k}">${fishImg(f.species_id, 0, f.gender)}${badge(k) ? `<span class="mk-badge">${badge(k)}</span>` : ""}</div>
+          <div class="mk-foot">
+            <div class="mk-name">${esc(f.nickname || f.name)} <span style="opacity:.7">${f.gender === "male" ? "♂" : "♀"}</span></div>
+            <div class="mk-seller">${esc(l.seller_name || t("market.player"))}</div>
+            <div class="mk-price-row"><span class="mk-price">💎 ${l.price_diamonds}</span>
+              ${own
+                ? `<button class="mk-cancel" data-mkcancel="${l.listing_id}">${t("market.cancel")}</button>`
+                : `<button class="mk-buy" data-mkbuy="${l.listing_id}">${t("shop.buy")}</button>`}
+            </div>
+          </div></div>`;
+      }).join("") + `</div>`;
     }
-    body.innerHTML = html;
-    $("mk-add").onclick = () => renderMarketAdd(body);
-    body.querySelectorAll("[data-mkbuy]").forEach((b) => b.onclick = async () => {
-      const id = Number(b.dataset.mkbuy);
-      if (!confirm(htmlToText(t("market.confirm_buy")))) return;
-      b.disabled = true;
-      const r2 = await Api.marketBuy(id);
-      if (r2.ok) { AudioFX.coin(); toast(t("toast.fish_bought")); await App.refresh(); renderMarket(body); }
-      else { AudioFX.error(); toast(r2.error || t("toast.buy_failed")); b.disabled = false; }
-    });
-    body.querySelectorAll("[data-mkcancel]").forEach((b) => b.onclick = async () => {
-      const r2 = await Api.marketCancel(Number(b.dataset.mkcancel));
-      if (r2.ok) { toast(t("toast.listing_cancelled")); await App.refresh(); renderMarket(body); }
-      else toast(r2.error || t("toast.cancel_failed"));
-    });
+    function paint() {
+      body.innerHTML = `<div class="mk-dark">
+        <div class="mk-tabs">
+          <button class="mk-tab${tab === "explore" ? " active" : ""}" data-tab="explore">${t("market.explore")}</button>
+          <button class="mk-tab${tab === "mine" ? " active" : ""}" data-tab="mine">${t("market.my_listings")}</button>
+          <span style="flex:1"></span>
+          <button class="pill-btn gold" id="mk-add">${t("market.add_fish")}</button>
+        </div>
+        <div class="mk-filters">
+          <button class="mk-tab mk-filter${filter === "all" ? " active" : ""}" data-filter="all">${t("market.filter_all")}</button>
+          <button class="mk-tab mk-filter${filter === "hybrid" ? " active" : ""}" data-filter="hybrid">✨ ${t("tag.hybrid")}</button>
+          <button class="mk-tab mk-filter${filter === "event" ? " active" : ""}" data-filter="event">🏆 ${t("tag.event")}</button>
+          <button class="mk-tab mk-filter${filter === "bred" ? " active" : ""}" data-filter="bred">🧬 ${t("tag.bred")}</button>
+        </div>
+        <div class="sub" style="margin-bottom:10px;color:#9a9aa8">${t("market.intro")}</div>
+        ${gridHtml()}
+      </div>`;
+      $("mk-add").onclick = () => renderMarketAdd(body);
+      body.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { tab = b.dataset.tab; paint(); });
+      body.querySelectorAll("[data-filter]").forEach((b) => b.onclick = () => { filter = b.dataset.filter; paint(); });
+      body.querySelectorAll("[data-mkbuy]").forEach((b) => b.onclick = async () => {
+        const id = Number(b.dataset.mkbuy);
+        if (!confirm(htmlToText(t("market.confirm_buy")))) return;
+        b.disabled = true;
+        const r2 = await Api.marketBuy(id);
+        if (r2.ok) { AudioFX.coin(); toast(t("toast.fish_bought")); await App.refresh(); renderMarket(body); }
+        else { AudioFX.error(); toast(r2.error || t("toast.buy_failed")); b.disabled = false; }
+      });
+      body.querySelectorAll("[data-mkcancel]").forEach((b) => b.onclick = async () => {
+        const r2 = await Api.marketCancel(Number(b.dataset.mkcancel));
+        if (r2.ok) { toast(t("toast.listing_cancelled")); await App.refresh(); renderMarket(body); }
+        else toast(r2.error || t("toast.cancel_failed"));
+      });
+    }
+    paint();
   }
 
   /* ---------- market: add fish (event + hybrid only) ---------- */

@@ -409,7 +409,7 @@ const UI = (() => {
     close(true);
     currentScreen = name;
     if (name === "community" && arg) communityTab = arg;
-    if (name === "quests" && arg) questsTab = arg;
+    if (name === "quests" && arg) questsTab = arg === "missions" ? "daily" : arg;
     if (name === "shop" && arg) shopTab = arg;
     if (name === "lab" && arg) labTab = arg;
     if (name === "profile") profileUserId = arg || null;
@@ -1079,53 +1079,64 @@ const UI = (() => {
 
   /* ================= QUESTS ================= */
   /* ================= QUESTS + GAMES ================= */
-  let questsTab = "missions";
+  let questsTab = "daily";
   function renderQuestsScreen() {
     const body = $("screen-body");
     clearTimeout(MG.timer); MG.shellGen = (MG.shellGen || 0) + 1;
-    body.innerHTML = `<div class="tabbar comm-tabs">
-        <button class="pill-btn${questsTab === "missions" ? " active" : ""}" data-qtab="missions"><img src="assets/icons/icon_quests.png" alt=""><span>${t("nav.quests")}</span></button>
-        <button class="pill-btn${questsTab === "games" ? " active" : ""}" data-qtab="games"><img src="assets/icons/icon_games.png" alt=""><span>${t("mg.title")}</span></button>
+    const qs = state.quests || [];
+    const claimable = (period) => qs.filter((q) => q.period === period && !q.claimed && q.progress >= q.target).length;
+    const badge = (n) => n ? `<span class="qs-badge">${n}</span>` : "";
+    body.innerHTML = `<div class="qs-tabs">
+        <button class="qs-tab${questsTab === "daily" ? " active" : ""}" data-qtab="daily">☀️ ${t("quest.daily")}${badge(claimable("daily"))}</button>
+        <button class="qs-tab${questsTab === "weekly" ? " active" : ""}" data-qtab="weekly">📅 ${t("quest.weekly")}${badge(claimable("weekly"))}</button>
+        <button class="qs-tab${questsTab === "games" ? " active" : ""}" data-qtab="games">🎮 ${t("mg.title")}</button>
       </div><div id="quests-body"></div>`;
     body.querySelectorAll("[data-qtab]").forEach((b) => b.onclick = () => { questsTab = b.dataset.qtab; renderQuestsScreen(); });
     const sub = $("quests-body");
-    if (questsTab === "games") renderMinigame(sub); else renderQuests(sub);
+    if (questsTab === "games") renderMinigame(sub); else renderQuests(sub, questsTab);
   }
 
-  function renderQuests(root) {
+  // quest id -> where the "Ir" button goes (tank = close the overlay)
+  const QUEST_GO = { feed_3: "tank", wipe_5: "tank", minigame_1: "games", breed_1: "lab", buy_decor_1: "shop", own_8_fish: "inventory" };
+  function renderQuests(root, period) {
     const body = root || $("screen-body");
-    const qs = state.quests || [];
-    let html = `<div class="sub" style="margin-bottom:8px">${t("quest.reset_info")}</div>`;
-    const groups = [["daily", "☀️ " + t("quest.daily")], ["weekly", "📅 " + t("quest.weekly")]];
-    for (const [period, label] of groups) {
-      html += `<h3>${label}</h3>`;
-      const list = qs.filter((q) => q.period === period);
-      if (!list.length) html += `<div class="empty">${period === "daily" ? t("quest.no_daily") : t("quest.no_weekly")}</div>`;
-      for (const q of list) {
-        const pct = Math.min(100, Math.round((q.progress / Math.max(1, q.target)) * 100));
-        const done = q.progress >= q.target;
-        const qtk = "quest." + q.id + ".title";
-        const qtitle = t(qtk) === qtk ? q.title : t(qtk);
-        const qdk = "quest." + q.id + ".desc";
-        const qdesc = t(qdk) === qdk ? (q.desc || "") : t(qdk);
-        html += `<div class="row-card ${q.claimed ? "quest-done" : ""}"><div class="grow">
+    const qs = (state.quests || []).filter((q) => q.period === period);
+    let html = `<div class="qs-panel"><div class="sub" style="margin-bottom:10px">${t("quest.reset_info")}</div>`;
+    if (!qs.length) html += `<div class="empty">${period === "daily" ? t("quest.no_daily") : t("quest.no_weekly")}</div>`;
+    for (const q of qs) {
+      const pct = Math.min(100, Math.round((q.progress / Math.max(1, q.target)) * 100));
+      const done = q.progress >= q.target;
+      const qtk = "quest." + q.id + ".title";
+      const qtitle = t(qtk) === qtk ? q.title : t(qtk);
+      const qdk = "quest." + q.id + ".desc";
+      const qdesc = t(qdk) === qdk ? (q.desc || "") : t(qdk);
+      html += `<div class="qs-row ${q.claimed ? "qs-claimed" : ""}"><div class="grow">
           <b>${esc(qtitle)}</b>
           <div class="sub">${esc(qdesc)}</div>
-          <div class="progress"><i style="width:${pct}%"></i></div>
-          <div class="sub">${q.progress}/${q.target}${q.reward_coins ? ` · ${CUR_GOLD}${q.reward_coins}` : ""}${q.reward_gems ? ` · ${CUR_GEM}${q.reward_gems}` : ""}</div>
+          <div class="qs-progress"><i style="width:${pct}%"></i></div>
+          <div class="qs-rewards">${q.reward_coins ? `${CUR_GOLD} ×${q.reward_coins}` : ""}${q.reward_gems ? ` ${CUR_GEM} ×${q.reward_gems}` : ""}<span class="sub" style="margin-left:8px">${q.progress}/${q.target}</span></div>
         </div>
-        ${q.claimed ? `<span class="tag">${t("quest.claimed")}</span>`
-          : done ? `<button class="pill-btn pink" data-claim="${esc(q.id)}">${t("quest.claim")}</button>`
+        ${q.claimed ? `<span class="tag">✓ ${t("quest.claimed")}</span>`
+          : done ? `<button class="qs-collect" data-claim="${esc(q.id)}">${t("quest.claim")}</button>`
+          : QUEST_GO[q.id] ? `<button class="qs-go" data-go="${QUEST_GO[q.id]}">${t("quest.go")}</button>`
           : `<span class="tag">${pct}%</span>`}
         </div>`;
-      }
     }
+    html += `</div>`;
     body.innerHTML = html;
     body.querySelectorAll("[data-claim]").forEach((b) => b.onclick = async () => {
       const r = await Api.claimQuest(b.dataset.claim);
       if (r.ok) { AudioFX.coin(); toast(t("toast.quest_done", { coins: fmtCoins(r.coins || 0) }) + (r.gems ? t("toast.quest_done_gems", { gems: r.gems }) : "")); }
       else toast(r.error || t("toast.couldnt_claim"));
-      await App.refresh(); renderQuests(body);
+      await App.refresh(); renderQuests(body, period);
+    });
+    body.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => {
+      const dest = b.dataset.go;
+      if (dest === "tank") close();
+      else if (dest === "games") { questsTab = "games"; renderQuestsScreen(); }
+      else if (dest === "lab") open("lab", "breeding");
+      else if (dest === "shop") open("shop", "decor");
+      else if (dest === "inventory") open("inventory");
     });
   }
 

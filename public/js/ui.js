@@ -1839,7 +1839,7 @@ const UI = (() => {
           <button class="mk-tab mk-filter${filter === "event" ? " active" : ""}" data-filter="event">🏆 ${t("tag.event")}</button>
           <button class="mk-tab mk-filter${filter === "bred" ? " active" : ""}" data-filter="bred">🧬 ${t("tag.bred")}</button>
         </div>
-        <div class="sub" style="margin-bottom:10px;color:#9a9aa8">${t("market.intro")}</div>
+        <div class="sub" style="margin-bottom:10px">${t("market.intro")}</div>
         ${gridHtml()}
       </div>`;
       $("mk-add").onclick = () => renderMarketAdd(body);

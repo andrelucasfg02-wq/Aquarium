@@ -476,15 +476,16 @@ select.sel{padding:10px;border-radius:12px;border:2px solid var(--green-border);
 .mk-price{font-size:17px;font-weight:800;color:#2f7a45;margin-bottom:6px;white-space:nowrap}
 .fm-note{padding:8px 12px;font-size:13px;color:var(--ink-soft);text-align:center}
 /* dark grid market (Highrise-style) */
-.mk-dark{background:#17171c;border-radius:18px;padding:12px;color:#f2f2f5}
-.mk-dark .empty{color:#b9b9c4}
+.mk-dark{background:rgba(222,255,232,.88);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  border:2px solid var(--green-border);border-radius:18px;padding:12px;color:var(--ink);box-shadow:var(--shadow)}
+.mk-dark .empty{color:var(--ink-soft)}
 .mk-tabs{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
-.mk-tab{border:0;background:#26262e;color:#b9b9c4;border-radius:999px;padding:8px 16px;font-size:14px;font-weight:700;cursor:pointer}
-.mk-tab.active{background:#5b4bd4;color:#fff}
+.mk-tab{border:0;background:rgba(255,255,255,.65);color:var(--ink-soft);border-radius:999px;padding:8px 16px;font-size:14px;font-weight:700;cursor:pointer}
+.mk-tab.active{background:var(--green-d);color:#fff}
 .mk-filters{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .mk-filter{font-size:13px;padding:7px 13px}
 .mk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
-.mk-card{background:#23232b;border-radius:14px;overflow:hidden;border:2px solid transparent}
+.mk-card{background:#fff;border-radius:14px;overflow:hidden;border:2px solid var(--green-border);box-shadow:0 3px 10px rgba(46,120,70,.15)}
 .mk-card.mk-own{border-color:#e0508a}
 .mk-tile{aspect-ratio:1/.85;display:flex;align-items:center;justify-content:center;position:relative}
 .mk-tile img.fish-prev{width:82%;height:82%;object-fit:contain}
@@ -493,14 +494,14 @@ select.sel{padding:10px;border-radius:12px;border:2px solid var(--green-border);
 .mk-tile.mk-bred{background:linear-gradient(160deg,#0f9d8f,#0a4a44)}
 .mk-tile.mk-normal{background:linear-gradient(160deg,#1d5fa8,#123a6b)}
 .mk-badge{position:absolute;top:6px;right:6px;font-size:15px;text-shadow:0 1px 3px rgba(0,0,0,.6)}
-.mk-foot{padding:8px 10px 10px;background:#26262e}
-.mk-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mk-seller{font-size:11px;color:#9a9aa8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mk-foot{padding:8px 10px 10px;background:rgba(255,255,255,.75)}
+.mk-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.mk-seller{font-size:11px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mk-price-row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:5px}
-.mk-price-row .mk-price{font-size:15px;font-weight:800;color:#fff;margin:0}
+.mk-price-row .mk-price{font-size:15px;font-weight:800;color:#2f7a45;margin:0}
 .mk-buy{background:#ffd75e;border:0;color:#5a3d00;border-radius:999px;padding:5px 13px;font-weight:800;font-size:12px;cursor:pointer;flex-shrink:0}
 .mk-buy:disabled{opacity:.5}
-.mk-cancel{background:#3a3a44;border:0;color:#fff;border-radius:999px;padding:5px 13px;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0}
+.mk-cancel{background:#d8ecdc;border:0;color:var(--ink);border-radius:999px;padding:5px 13px;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0}
 
 /* ---------- public chat ---------- */
 .screen-body.chat-screen{display:flex;flex-direction:column;overflow:hidden;padding-bottom:calc(10px + var(--safe-b))}

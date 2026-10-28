@@ -1700,16 +1700,33 @@ const UI = (() => {
           <input id="prof-name" maxlength="24" value="${esc(p.name)}" autocomplete="off">
           <button class="pill-btn" id="prof-save">${t("profile.save_name")}</button>
         </div>
+        <div class="prof-actions">
+          <button class="pill-btn" id="prof-my-meadow" hidden>🌾 ${t("profile.my_meadow")}</button>
+        </div>
         <div class="sec-title">💬 ${t("guestbook.title")}</div>
         <div id="prof-guestbook"><div class="empty">${t("common.loading")}</div></div>`;
     } else {
       html += `<div class="prof-actions">
           <button class="pill-btn" id="prof-visit">🐠 ${t("profile.visit")}</button>
-          <button class="pill-btn" id="prof-visit-house" hidden>🏠 ${t("profile.visit_house")}</button>`;
+          <button class="pill-btn" id="prof-visit-house" hidden>🏠 ${t("profile.visit_house")}</button>
+          <button class="pill-btn" id="prof-visit-meadow" hidden>🌾 ${t("profile.visit_meadow")}</button>`;
       if (p.relation === "accepted") html += `<button class="pill-btn" id="prof-rm">${t("friends.remove")}</button>`;
       html += `</div>`;
     }
     body.innerHTML = html;
+    // Meadow entry (gated server-side too): own profile gets "My meadow",
+    // another allowed profile gets "Visit meadow". Anyone else never sees
+    // either button — the server enforces the same rule on every endpoint.
+    Api.meadowAccess().then((ac) => {
+      if (!ac.ok || !ac.allowed) return;
+      const myBtn = $("prof-my-meadow");
+      if (myBtn && p.mine) { myBtn.hidden = false; myBtn.onclick = () => { location.href = "/meadow/"; }; }
+      const vBtn = $("prof-visit-meadow");
+      if (vBtn && !p.mine && (p.id === 2 || p.id === 6) && p.id !== ac.user_id) {
+        vBtn.hidden = false;
+        vBtn.onclick = () => { location.href = `/meadow/?visit=${p.id}`; };
+      }
+    }).catch(() => {});
     if (p.mine) {
       Api.guestbook().then((gr) => {
         const gb = $("prof-guestbook");

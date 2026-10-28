@@ -111,6 +111,20 @@ const SCHEMA = `
       north INTEGER NOT NULL DEFAULT 0, state TEXT,
       chat_text TEXT, chat_until INTEGER, updated_at INTEGER);
     CREATE INDEX IF NOT EXISTS idx_house_presence_house ON house_presence(house_id, updated_at);
+    -- meadow (Prado): Room Decorator port, gated to user_id 2 and 6 only.
+    -- meadow_state holds the saved rooms JSON + a SEPARATE gold balance
+    -- (starts at 50,000 like the test version; never the real coin wallet).
+    CREATE TABLE IF NOT EXISTS meadow_state(
+      user_id INTEGER PRIMARY KEY, state TEXT, gold INTEGER NOT NULL DEFAULT 50000, updated_at INTEGER);
+    -- meadow multiplayer presence: one row per player inside a meadow
+    -- (owner_id = the meadow OWNER's user id). Same pattern as house_presence.
+    CREATE TABLE IF NOT EXISTS meadow_presence(
+      user_id INTEGER PRIMARY KEY, owner_id INTEGER NOT NULL, room TEXT NOT NULL DEFAULT 'home',
+      char TEXT NOT NULL DEFAULT 'lyh',
+      x REAL, y REAL, facing INTEGER NOT NULL DEFAULT 1,
+      north INTEGER NOT NULL DEFAULT 0, state TEXT,
+      chat_text TEXT, chat_until INTEGER, animals TEXT, updated_at INTEGER);
+    CREATE INDEX IF NOT EXISTS idx_meadow_presence_owner ON meadow_presence(owner_id, room, updated_at);
     CREATE TABLE IF NOT EXISTS friends(
       user_id INTEGER, friend_id INTEGER, status TEXT, created_at INTEGER,
       PRIMARY KEY(user_id, friend_id));

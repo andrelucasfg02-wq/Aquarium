@@ -12,6 +12,7 @@ const { openDb } = require('./db');
 const { authRequired } = require('./auth');
 const authRoutes = require('./routes/auth');
 const gameRoutes = require('./routes/game');
+const meadowRoutes = require('./routes/meadow');
 const { paymentRoutes, stripeWebhookHandler } = require('./routes/payments');
 
 async function createApp() {
@@ -30,6 +31,7 @@ async function createApp() {
 
   app.use('/api', authRoutes(db));
   app.use('/api', authRequired(db), gameRoutes(db));
+  app.use('/api', authRequired(db), meadowRoutes(db));
   app.use('/api', authRequired(db), paymentRoutes(db));
 
   // Frontend (single-container deploy): serve public/ for everything non-API.

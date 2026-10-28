@@ -108,6 +108,7 @@ const Api = (() => {
     friendRemove: (user_id) => post("/api/friends/remove", { user_id }),
     profile: () => get("/api/profile"),
     profileOf: (id) => get(`/api/profile/${id}`),
+    meadowAccess: () => get("/api/meadow/access"),
     profileRename: (name) => post("/api/profile/name", { name }),
     profileBio: (bio) => post("/api/profile/bio", { bio }),
     setAvatar: (avatar) => post("/api/me/avatar", { avatar }),

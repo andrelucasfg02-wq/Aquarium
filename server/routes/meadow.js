@@ -14,43 +14,31 @@ const PRESENCE_STALE = 12; // seconds
 const PRESENCE_MAX_CHAT = 140;
 const ROOM_SIZES = { home: 60, store: 42 };
 
-// Shop prices, exactly like the test version. Aquarium tanks are NOT
-// buyable here — the meadow only places tanks the player already owns in
-// AquaNim (see /api/house), so they are excluded from this table.
+// Shop prices, exactly like the test version. Furniture is ONLY the farm
+// set now (old ocean/wood/asia/basic sets are gone from the catalog);
+// every animal costs 10. Aquarium tanks are NOT buyable here — the
+// meadow only places tanks the player already owns in AquaNim (see
+// /api/house), so they are excluded from this table.
 const FURNITURE_PRICE = 400;
-const ANIMAL_PRICES = { duck: 600, turkey: 1200, hen: 800, chick: 300 };
+const ANIMAL_PRICES = { duck: 10, turkey: 10, hen: 10, chick: 10, pig: 10, piglet: 10, horse: 10, sheep: 10 };
 
 const FURNITURE_TYPES = new Set([
-  // ocean (15)
-  'ocean_shell_bed', 'ocean_shell_armchair', 'ocean_vanity', 'ocean_wardrobe',
-  'ocean_ottoman', 'ocean_treasure_chest', 'ocean_shell_sofa', 'ocean_coral_table',
-  'ocean_jellyfish_lamp', 'ocean_room_divider', 'ocean_bookshelf', 'ocean_nightstand',
-  'ocean_standing_mirror', 'ocean_jellyfish_lamp2', 'ocean_snowglobe_table',
-  // wood (24)
-  'wood_bed', 'wood_wardrobe', 'wood_sofa', 'wood_bookshelf', 'wood_armchair',
-  'wood_chair', 'wood_ottoman', 'wood_coffee_table', 'wood_bench', 'wood_vanity',
-  'wood_dresser', 'wood_divider', 'wood_nightstand', 'table_lamp', 'potted_plant',
-  'basket', 'storage_box', 'floor_lamp', 'wood_mirror', 'hanging_plant',
-  'wood_wall_shelf', 'oval_rug', 'square_rug', 'flower_rug',
-  // asian (49)
-  'asia_gazebo', 'asia_pavilion', 'asia_round_pavilion', 'asia_shrine',
-  'asia_market_stall', 'asia_food_stall', 'asia_koi_fountain', 'asia_waterfall',
-  'asia_pond', 'asia_long_pond', 'asia_stone_bridge', 'asia_arch_bridge',
-  'asia_low_table', 'asia_cloud_table', 'asia_torii', 'asia_tea_table',
-  'asia_screen', 'asia_cloud_sofa', 'asia_stall_small', 'asia_canopy_stall',
-  'asia_sakura', 'asia_wisteria', 'asia_maple', 'asia_bamboo', 'asia_flower_arch',
-  'asia_dragon', 'asia_cloud_bench', 'asia_lantern_garden', 'asia_bamboo_fountain',
-  'asia_bonsai_lantern', 'asia_lantern_rock', 'asia_bonsai_garden', 'asia_fence',
-  'asia_wood_bridge', 'asia_flower_planter', 'asia_lotus_planter', 'asia_lantern_post',
-  'asia_red_lanterns', 'asia_lantern_stand', 'asia_mini_shrine', 'asia_lion',
-  'asia_panda', 'asia_koi_statue', 'asia_tile_gold', 'asia_tile_cloud',
-  'asia_tile_stone', 'asia_tile_wood', 'asia_tile_pool', 'asia_path_stones',
-  // basic canvas-drawn types (12)
-  'bed', 'table', 'chair', 'sofa', 'plant', 'lamp', 'rug', 'shelf', 'tv',
-  'coffee', 'painting', 'walllamp',
+  // farm (47) — the only furniture set in the shop now
+  'farm_barn', 'farm_open_barn', 'farm_coop_red', 'farm_coop_green',
+  'farm_shelter_blue', 'farm_shelter_green', 'farm_shelter_hay', 'farm_shelter_red', 'farm_shelter_pool',
+  'farm_trough_hay', 'farm_trough_water', 'farm_veg_crate', 'farm_hay_rack',
+  'farm_hay_cart', 'farm_well', 'farm_bench_long', 'farm_crates',
+  'farm_fence_ivy', 'farm_fence_plain', 'farm_gate', 'farm_picket_fence', 'farm_rope_fence',
+  'farm_flower_arch', 'farm_flower_planter', 'farm_tree', 'farm_log',
+  'farm_hay_barrel', 'farm_hay_net', 'farm_pump_trough', 'farm_feeder',
+  'farm_hay_bales', 'farm_barrel_big', 'farm_barrel_pair', 'farm_barrel_small',
+  'farm_feed_sack', 'farm_milk_can', 'farm_post', 'farm_lantern_post', 'farm_sign_heart',
+  'farm_bench_small', 'farm_flower_bush', 'farm_stump',
+  'farm_lamp_vine', 'farm_birdhouse_lamp', 'farm_lamp_post', 'farm_signpost',
+  'farm_path_stones',
 ]);
 
-const ANIMAL_KINDS = new Set(['sheep', 'ram', 'horse', 'duck', 'turkey', 'hen', 'chick']);
+const ANIMAL_KINDS = new Set(['sheep', 'ram', 'horse', 'duck', 'turkey', 'hen', 'chick', 'pig', 'piglet']);
 const ANIMAL_POSES = {
   sheep: ['front', 'side', 'back', 'front_tilt', 'stand', 'sit', 'sleep', 'lounge', 'graze', 'back_small'],
   ram: ['front', 'side', 'back', 'front_tilt', 'stand', 'sit', 'sleep', 'lounge', 'graze'],
@@ -59,6 +47,8 @@ const ANIMAL_POSES = {
   turkey: ['front', 'side', 'back', 'call', 'stand', 'preen', 'sleep', 'graze'],
   hen: ['front', 'side', 'back', 'peck', 'stand', 'wings', 'sleep'],
   chick: ['front', 'back', 'peck', 'chirp', 'wings', 'sleep'],
+  pig: ['front', 'side', 'back', 'stand', 'graze', 'happy', 'sit', 'lounge', 'sleep', 'mud'],
+  piglet: ['front', 'side', 'back', 'happy', 'sit', 'lounge', 'rest', 'peck', 'sleep', 'mud'],
 };
 const walkPose = (kind, pose) => {
   if (!pose) return 'front';
